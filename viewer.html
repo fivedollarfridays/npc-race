@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NPC Race — Replay Viewer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    color: #e0e0e0;
+    font-family: 'Outfit', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: linear-gradient(180deg, #141420 0%, #0a0a0f 100%);
+    border-bottom: 1px solid #222;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .logo span { color: #ff6600; }
+
+  .race-info {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: #888;
+  }
+
+  .main-area {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .track-container {
+    flex: 1;
+    position: relative;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .sidebar {
+    width: 280px;
+    background: #111118;
+    border-left: 1px solid #222;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .sidebar-title {
+    padding: 14px 18px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #666;
+    border-bottom: 1px solid #1a1a22;
+  }
+
+  .leaderboard {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+
+  .car-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 18px;
+    gap: 12px;
+    transition: background 0.15s;
+  }
+
+  .car-row:hover { background: #1a1a24; }
+
+  .car-pos {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    width: 28px;
+    text-align: center;
+  }
+
+  .car-pos.p1 { color: #ffd700; }
+  .car-pos.p2 { color: #c0c0c0; }
+  .car-pos.p3 { color: #cd7f32; }
+
+  .car-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .car-details {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .car-name {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .car-stats {
+    display: flex;
+    gap: 10px;
+    margin-top: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #666;
+  }
+
+  .tire-bar {
+    width: 50px;
+    height: 4px;
+    background: #222;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 1px;
+  }
+
+  .tire-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.1s;
+  }
+
+  .boost-indicator {
+    font-size: 10px;
+    color: #ffcc00;
+    font-weight: 700;
+  }
+
+  .controls {
+    padding: 14px 18px;
+    border-top: 1px solid #222;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .controls-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  button {
+    font-family: 'Outfit', sans-serif;
+    background: #1a1a28;
+    color: #ccc;
+    border: 1px solid #333;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+
+  button:hover { background: #252535; border-color: #555; color: #fff; }
+  button.active { background: #ff6600; color: #000; border-color: #ff6600; }
+
+  .speed-btns { display: flex; gap: 4px; }
+
+  .scrubber {
+    width: 100%;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #222;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .scrubber::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ff6600;
+    cursor: pointer;
+  }
+
+  .lap-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #888;
+    text-align: center;
+  }
+
+  .finished-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(10, 10, 15, 0.92);
+    border: 1px solid #333;
+    border-radius: 16px;
+    padding: 40px 50px;
+    text-align: center;
+    display: none;
+    z-index: 10;
+  }
+
+  .finished-overlay h2 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 24px;
+  }
+
+  .finished-overlay h2 span { color: #ff6600; }
+
+  .result-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 0;
+    font-size: 16px;
+  }
+
+  .result-pos {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    width: 30px;
+  }
+
+  .result-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .drop-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 15, 0.95);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    font-size: 20px;
+    font-weight: 600;
+    color: #ff6600;
+    border: 2px dashed #ff6600;
+    margin: 20px;
+    border-radius: 16px;
+  }
+
+  .no-data {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: #555;
+  }
+
+  .no-data h2 { font-size: 24px; color: #888; }
+  .no-data p { font-size: 14px; max-width: 400px; text-align: center; line-height: 1.6; }
+  .no-data code {
+    font-family: 'JetBrains Mono', monospace;
+    background: #1a1a24;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NPC <span>Race</span></div>
+  <div class="race-info" id="raceInfo">Drag replay.json here or run play.py</div>
+</header>
+
+<div class="main-area">
+  <div class="track-container">
+    <canvas id="track"></canvas>
+    <div class="finished-overlay" id="finishedOverlay"></div>
+    <div class="no-data" id="noData">
+      <h2>No replay loaded</h2>
+      <p>Run <code>python play.py</code> then drag <code>replay.json</code> here,
+         or drop it directly onto this window.</p>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-title">Leaderboard</div>
+    <div class="leaderboard" id="leaderboard"></div>
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="100" value="0">
+      <div class="controls-row">
+        <button id="playBtn" onclick="togglePlay()">▶ Play</button>
+        <div class="speed-btns">
+          <button onclick="setSpeed(0.5, event)">0.5×</button>
+          <button onclick="setSpeed(1, event)" class="active" id="speed1">1×</button>
+          <button onclick="setSpeed(2, event)">2×</button>
+          <button onclick="setSpeed(4, event)">4×</button>
+        </div>
+      </div>
+      <div class="lap-display" id="lapDisplay">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="drop-overlay" id="dropOverlay">Drop replay.json</div>
+
+<script>
+// ─── State ──────────────────────────────────────────────────────────────────
+let replay = null;
+let frame = 0;
+let playing = false;
+let speed = 1;
+let animId = null;
+let lastTime = 0;
+let accumulator = 0;
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const canvas = document.getElementById('track');
+const ctx = canvas.getContext('2d');
+
+// ─── File Loading ───────────────────────────────────────────────────────────
+document.addEventListener('dragover', e => {
+  e.preventDefault();
+  document.getElementById('dropOverlay').style.display = 'flex';
+});
+
+document.addEventListener('dragleave', e => {
+  if (e.relatedTarget === null) {
+    document.getElementById('dropOverlay').style.display = 'none';
+  }
+});
+
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  document.getElementById('dropOverlay').style.display = 'none';
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        loadReplay(JSON.parse(ev.target.result));
+      } catch (err) {
+        alert('Invalid replay file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+});
+
+// Try loading replay.json from same directory
+fetch('replay.json')
+  .then(r => r.ok ? r.json() : null)
+  .then(data => { if (data) loadReplay(data); })
+  .catch(() => {});
+
+function loadReplay(data) {
+  replay = data;
+  frame = 0;
+  playing = false;
+
+  document.getElementById('noData').style.display = 'none';
+  document.getElementById('finishedOverlay').style.display = 'none';
+  document.getElementById('scrubber').max = replay.frames.length - 1;
+  document.getElementById('raceInfo').textContent =
+    `${replay.car_count} cars · ${replay.laps} laps · ${replay.frames.length} frames`;
+
+  resizeCanvas();
+  render();
+}
+
+// ─── Canvas ─────────────────────────────────────────────────────────────────
+function resizeCanvas() {
+  const container = canvas.parentElement;
+  canvas.width = container.clientWidth * devicePixelRatio;
+  canvas.height = container.clientHeight * devicePixelRatio;
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  if (replay && !playing) render();
+});
+
+// ─── Rendering ──────────────────────────────────────────────────────────────
+function render() {
+  if (!replay) return;
+
+  const w = canvas.width / devicePixelRatio;
+  const h = canvas.height / devicePixelRatio;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Compute transform to fit track
+  const track = replay.track;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of track) {
+    minX = Math.min(minX, p.x);
+    minY = Math.min(minY, p.y);
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
+  }
+
+  const padding = 60;
+  const tw = maxX - minX;
+  const th = maxY - minY;
+  const scale = Math.min((w - padding * 2) / tw, (h - padding * 2) / th);
+  const ox = (w - tw * scale) / 2 - minX * scale;
+  const oy = (h - th * scale) / 2 - minY * scale;
+
+  const tx = x => x * scale + ox;
+  const ty = y => y * scale + oy;
+
+  // Draw track surface
+  ctx.beginPath();
+  ctx.moveTo(tx(track[0].x), ty(track[0].y));
+  for (let i = 1; i < track.length; i++) {
+    ctx.lineTo(tx(track[i].x), ty(track[i].y));
+  }
+  ctx.closePath();
+  ctx.strokeStyle = '#1a1a2a';
+  ctx.lineWidth = replay.track_width * scale * 1.1;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Track road
+  ctx.beginPath();
+  ctx.moveTo(tx(track[0].x), ty(track[0].y));
+  for (let i = 1; i < track.length; i++) {
+    ctx.lineTo(tx(track[i].x), ty(track[i].y));
+  }
+  ctx.closePath();
+  ctx.strokeStyle = '#252530';
+  ctx.lineWidth = replay.track_width * scale;
+  ctx.stroke();
+
+  // Center line (dashed)
+  ctx.beginPath();
+  ctx.setLineDash([8, 12]);
+  ctx.moveTo(tx(track[0].x), ty(track[0].y));
+  for (let i = 1; i < track.length; i++) {
+    ctx.lineTo(tx(track[i].x), ty(track[i].y));
+  }
+  ctx.closePath();
+  ctx.strokeStyle = '#333340';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Start/finish line
+  const s0 = track[0];
+  const s1 = track[1];
+  const sdx = s1.x - s0.x;
+  const sdy = s1.y - s0.y;
+  const slen = Math.sqrt(sdx * sdx + sdy * sdy) + 0.001;
+  const snx = -sdy / slen;
+  const sny = sdx / slen;
+  const halfW = replay.track_width / 2;
+  ctx.beginPath();
+  ctx.moveTo(tx(s0.x + snx * halfW), ty(s0.y + sny * halfW));
+  ctx.lineTo(tx(s0.x - snx * halfW), ty(s0.y - sny * halfW));
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Draw cars
+  const cars = replay.frames[frame];
+  if (!cars) return;
+
+  // Sort so leader draws on top
+  const sorted = [...cars].sort((a, b) => b.position - a.position);
+
+  for (const car of sorted) {
+    const cx = tx(car.x);
+    const cy = ty(car.y);
+    const r = 7;
+
+    // Boost glow
+    if (car.boost) {
+      const glow = ctx.createRadialGradient(cx, cy, r, cx, cy, r * 3.5);
+      glow.addColorStop(0, car.color + '66');
+      glow.addColorStop(1, car.color + '00');
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = glow;
+      ctx.fill();
+    }
+
+    // Car body
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = car.color;
+    ctx.fill();
+
+    // Position number
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 9px JetBrains Mono';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(car.position, cx, cy);
+
+    // Name label
+    ctx.fillStyle = '#ddd';
+    ctx.font = '10px Outfit';
+    ctx.fillText(car.name, cx, cy - r - 8);
+  }
+
+  // Update leaderboard
+  updateLeaderboard(cars);
+  document.getElementById('scrubber').value = frame;
+
+  // Lap display
+  if (cars.length > 0) {
+    const leader = cars.find(c => c.position === 1);
+    if (leader) {
+      document.getElementById('lapDisplay').textContent =
+        leader.finished ? 'FINISHED' : `Lap ${Math.min(leader.lap + 1, replay.laps)} / ${replay.laps}`;
+    }
+  }
+
+  // Check if finished
+  if (frame >= replay.frames.length - 1 && replay.results) {
+    showResults();
+  }
+}
+
+function updateLeaderboard(cars) {
+  const lb = document.getElementById('leaderboard');
+  const sorted = [...cars].sort((a, b) => a.position - b.position);
+
+  lb.innerHTML = sorted.map(car => {
+    const posClass = car.position <= 3 ? ` p${car.position}` : '';
+    const tirePercent = Math.max(0, (1 - car.tire_wear) * 100);
+    const tireColor = tirePercent > 50 ? '#44cc44' : tirePercent > 25 ? '#ccaa00' : '#cc3333';
+    const boostHtml = car.boost ? '<span class="boost-indicator">⚡ BOOST</span>' : '';
+
+    return `<div class="car-row">
+      <div class="car-pos${posClass}">P${car.position}</div>
+      <div class="car-dot" style="background:${car.color}"></div>
+      <div class="car-details">
+        <div class="car-name">${esc(car.name)}</div>
+        <div class="car-stats">
+          <span>${Math.round(car.speed)} km/h</span>
+          <div class="tire-bar"><div class="tire-fill" style="width:${tirePercent}%;background:${tireColor}"></div></div>
+          ${boostHtml}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showResults() {
+  if (!replay.results) return;
+  const overlay = document.getElementById('finishedOverlay');
+  overlay.style.display = 'block';
+
+  overlay.innerHTML = `<h2>🏁 <span>RACE COMPLETE</span></h2>` +
+    replay.results.map(r => `
+      <div class="result-row">
+        <div class="result-pos" style="color:${r.position === 1 ? '#ffd700' : r.position === 2 ? '#c0c0c0' : r.position === 3 ? '#cd7f32' : '#888'}">
+          P${r.position}
+        </div>
+        <div class="result-dot" style="background:${r.color}"></div>
+        <div>${esc(r.name)}</div>
+      </div>
+    `).join('');
+}
+
+// ─── Playback ───────────────────────────────────────────────────────────────
+function togglePlay() {
+  if (!replay) return;
+  playing = !playing;
+  document.getElementById('playBtn').textContent = playing ? '⏸ Pause' : '▶ Play';
+  document.getElementById('finishedOverlay').style.display = 'none';
+
+  if (playing) {
+    if (frame >= replay.frames.length - 1) frame = 0;
+    lastTime = performance.now();
+    accumulator = 0;
+    tick();
+  } else {
+    cancelAnimationFrame(animId);
+  }
+}
+
+function tick() {
+  if (!playing || !replay) return;
+
+  const now = performance.now();
+  const delta = now - lastTime;
+  lastTime = now;
+  accumulator += delta;
+
+  const msPerFrame = 1000 / (replay.ticks_per_sec * speed);
+
+  while (accumulator >= msPerFrame) {
+    frame++;
+    accumulator -= msPerFrame;
+
+    if (frame >= replay.frames.length) {
+      frame = replay.frames.length - 1;
+      playing = false;
+      document.getElementById('playBtn').textContent = '▶ Play';
+      break;
+    }
+  }
+
+  render();
+  if (playing) animId = requestAnimationFrame(tick);
+}
+
+function setSpeed(s, e) {
+  speed = s;
+  document.querySelectorAll('.speed-btns button').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+}
+
+document.getElementById('scrubber').addEventListener('input', e => {
+  frame = parseInt(e.target.value);
+  playing = false;
+  document.getElementById('playBtn').textContent = '▶ Play';
+  document.getElementById('finishedOverlay').style.display = 'none';
+  render();
+});
+
+// ─── Init ───────────────────────────────────────────────────────────────────
+resizeCanvas();
+</script>
+</body>
+</html>
