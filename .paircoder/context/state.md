@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-03-15 T1.4 done
+> Last updated: 2026-03-15 T1.10 done
 
 ## Active Plan
 
@@ -10,7 +10,7 @@
 
 ## Current Focus
 
-T1.3 and T1.4 done. T1.5 (track integration) next, then T1.6.
+T1.10 done. car_template.py updated with complete strategy docs and 3 example strategies.
 
 ## Task Status
 
@@ -34,16 +34,16 @@ T1.3 and T1.4 done. T1.5 (track integration) next, then T1.6.
 
 | ID | Task | Status | Complexity | Depends |
 |----|------|--------|------------|---------|
-| T1.7 | CLI packaging -- npcrace via pyproject.toml | pending | 45 | T1.5, T1.6 |
+| T1.7 | CLI packaging -- npcrace via pyproject.toml | done | 45 | T1.5, T1.6 |
 | T1.8 | viewer.html -- show track name in header | pending | 15 | T1.5 |
 
 ### Sprint 4 — Wave 4: Polish + Validation
 
 | ID | Task | Status | Complexity | Depends |
 |----|------|--------|------------|---------|
-| T1.9 | Balance testing -- all cars on all tracks | pending | 40 | T1.1, T1.5 |
-| T1.10 | car_template.py -- final strategy state docs | pending | 15 | T1.9 |
-| T1.11 | Integration tests -- end-to-end on named tracks | pending | 35 | T1.5, T1.6, T1.3, T1.4 |
+| T1.9 | Balance testing -- all cars on all tracks | done | 40 | T1.1, T1.5 |
+| T1.10 | car_template.py -- final strategy state docs | done | 15 | T1.9 |
+| T1.11 | Integration tests -- end-to-end on named tracks | done | 35 | T1.5, T1.6, T1.3, T1.4 |
 
 **Total complexity: 400 | Estimated tokens: ~330k**
 
@@ -52,6 +52,66 @@ T1.3 and T1.4 done. T1.5 (track integration) next, then T1.6.
 None.
 
 ## What Was Just Done
+
+### Session: 2026-03-15 - T1.10 car_template.py final docs
+
+- Updated `car_template.py` docstring (59 -> 135 lines, under 200 limit)
+- Added complete strategy state field reference with exact types, ranges, and descriptions
+  - All 13 fields documented: speed (float), position (int), total_cars (int), lap (int), total_laps (int), tire_wear (float 0-1), boost_available (bool), boost_active (bool), curvature (float), nearby_cars (list of dicts), distance (float), track_length (float), lateral (float -1 to 1)
+  - nearby_cars sub-fields: name (str), distance_ahead (float), speed (float), lateral (float)
+- Added complete return value docs with defaults and tire wear rates per mode
+- Added 3 commented example strategy patterns: defensive (tire-saver), aggressive (full-send), draft-and-pass
+- Created `tests/test_car_template.py` (104 lines) with 13 tests verifying imports, constants, budget, strategy returns, line count, docstring completeness, field types, example presence, and nearby_cars fields
+- All 186 tests passing, ruff clean, file importable
+
+### Session: 2026-03-15 - T1.9 Balance testing
+
+- Created `tests/test_balance.py` (148 lines) with 7 tests across 3 test classes
+- TestRaceCompletion (3): all cars finish all tracks, deterministic results, all 5 cars present
+- TestNoDominance (2): no car wins >60% of tracks, at least 2 different winners
+- TestTrackCharacterDiversity (2): power vs technical have different winners, no car sweeps both
+- Created `scripts/balance_report.py` (132 lines) -- runs all 5 cars on 12 tracks, prints position matrix and win summary
+- Tuned physics in `engine/simulation.py` `_apply_physics()`:
+  - Replaced old curvature penalty formula with curvature-severity blend model
+  - base_max_speed = 120 + power*160 - weight*50 (was 160 + power*100 - weight*25)
+  - Corner speed uses linear blend: target = base_max*(1-severity) + grip_speed*severity
+  - curv_severity = min(1.0, curv*47.0) -- controls power/grip tradeoff crossover
+  - grip_speed = 50 + effective_grip*280 -- wider grip range for meaningful differentiation
+  - mass_factor = 1.0 + weight*1.2 (was weight*0.5) -- heavier weight penalty
+  - accel_rate = (40 + power*100) / mass_factor (was 60 + power*80)
+- Balance results across 12 tracks: GooseLoose 6 wins (50%), Silky 5 wins (42%), GlassCanon 1 win (8%)
+- No car exceeds 60% win rate -- balance threshold met
+- Power tracks split between GooseLoose and Silky, technical tracks similarly split
+- All 173 tests passing, ruff clean, files under limits
+
+### Session: 2026-03-15 - T1.11 Integration tests
+
+- Created `tests/test_integration.py` (213 lines) with 21 tests across 9 test classes
+- TestNamedTrackRace (3): track_name in replay, all cars present, schema complete
+- TestProceduralTrack (2): backward compat with seed-based tracks, default 3 laps
+- TestAllSeedCarsFinish (2): all 5 seed cars finish 1-lap race, correct car count
+- TestReplaySchema (3): track xy points, result fields, non-empty frames
+- TestCarValidation (2): missing stats rejected, over-budget rejected
+- TestMaliciousCarCaught (2): import os rejected, eval() call rejected
+- TestTrackSelection (4): get_track valid, unknown raises, random_track, list_tracks 20
+- TestCLI (2): --list-tracks output, --track monza produces correct replay
+- TestEndToEnd (1): full pipeline -- create cars, validate, run race, verify replay
+- All 21 integration tests passing, 169 total tests passing, ruff clean
+- File is 213 lines, well under 600-line test file limit
+
+### Session: 2026-03-15 - T1.7 CLI packaging
+
+- Created `cli/` package with hub-and-spoke pattern: `__init__.py` (8 lines), `main.py` (67 lines), `commands.py` (92 lines)
+- 5 subcommands: `run`, `init`, `validate`, `list-tracks`, `wizard` (stub)
+- `npcrace run` mirrors play.py behavior (--car-dir, --laps, --seed, --track, --output) without auto-browser
+- `npcrace init` creates cars/ dir and copies car_template.py
+- `npcrace validate` runs bot_scanner on positional car file args
+- `npcrace list-tracks` prints all 20 tracks with country and character
+- `npcrace wizard` prints "not yet implemented" stub
+- Created `pyproject.toml` with `[project.scripts] npcrace = "cli.main:main"` entry point
+- play.py continues to work as standalone script
+- 16 tests in `tests/test_cli.py` (213 lines) across 6 test classes
+- 145 total tests passing, ruff clean, all files under limits
 
 ### Session: 2026-03-15 - T1.3 bot_scanner for car files
 
@@ -121,10 +181,9 @@ None.
 
 ## What's Next
 
-1. T1.3 and T1.4 (security) done. Sprint 2 security tasks complete.
-2. T1.5 (integrate tracks into engine) ready -- depends on T1.1 + T1.2 (both done)
-3. T1.6 (play.py --track flag) depends on T1.5
-4. T1.11 (integration tests) now has T1.3 + T1.4 deps satisfied, still needs T1.5 + T1.6
+1. T1.10 (car_template.py docs) done.
+2. T1.8 (viewer.html track name) pending -- depends on T1.5
+3. T1.5 (engine track integration) pending -- blocks T1.6, T1.8
 
 ## Blockers
 

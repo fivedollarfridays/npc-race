@@ -199,23 +199,26 @@ class RaceSim:
         tire_grip_mult = max(0.3, 1.0 - state["tire_wear"] * 0.7)
 
         # Max speed from power (lighter = faster)
-        base_max_speed = 160 + power * 100 - weight * 25
+        base_max_speed = 120 + power * 160 - weight * 50
         if state["boost_active"] > 0:
             base_max_speed *= 1.25
 
-        # Curvature penalty
+        # Corner speed limit — blend between power (straights) and grip (corners)
         curv = self.get_curvature_at(state["distance"])
         effective_grip = grip * tire_grip_mult
-        grip_corner_ceiling = 100 + effective_grip * 200
-        corner_penalty = curv * (4.0 - effective_grip * 3.0)
-        corner_speed_limit = grip_corner_ceiling * max(0.2, 1.0 - corner_penalty)
-        corner_speed_limit = max(35, corner_speed_limit)
+        # Linear blend: grip-biased so power/grip tradeoff matters
+        curv_severity = min(1.0, curv * 47.0)
+        grip_speed = 50 + effective_grip * 280  # wider grip range
+        # On straights: power dominates. In corners: grip dominates.
+        target_speed = (
+            base_max_speed * (1.0 - curv_severity)
+            + grip_speed * curv_severity
+        ) * throttle
+        target_speed = max(40, target_speed)
 
-        target_speed = min(base_max_speed, corner_speed_limit) * throttle
-
-        # Acceleration / braking
-        mass_factor = 1.0 + weight * 0.5
-        accel_rate = (60 + power * 80) / mass_factor * dt
+        # Acceleration / braking — weight matters more
+        mass_factor = 1.0 + weight * 1.2
+        accel_rate = (40 + power * 100) / mass_factor * dt
         brake_rate = (80 + brakes * 100) * dt
 
         if target_speed > state["speed"]:
