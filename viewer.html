@@ -402,8 +402,9 @@ function loadReplay(data) {
   document.getElementById('noData').style.display = 'none';
   document.getElementById('finishedOverlay').style.display = 'none';
   document.getElementById('scrubber').max = replay.frames.length - 1;
-  document.getElementById('raceInfo').textContent =
-    `${replay.car_count} cars · ${replay.laps} laps · ${replay.frames.length} frames`;
+  const trackLabel = replay.track_name ? esc(replay.track_name) : 'Procedural Track';
+  document.getElementById('raceInfo').innerHTML =
+    `${trackLabel} — ${replay.car_count} cars · ${replay.laps} laps · ${replay.frames.length} frames`;
 
   resizeCanvas();
   render();

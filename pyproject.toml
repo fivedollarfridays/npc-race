@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "npc-race"
+version = "0.1.0"
+requires-python = ">=3.11"
+description = "NPC Race — you build the car, we run the race"
+
+[project.scripts]
+npcrace = "cli.main:main"
