@@ -33,7 +33,7 @@ def main():
         print(f"Car directory not found: {args.car_dir}")
         return
 
-    results = run_race(
+    run_race(
         car_dir=args.car_dir,
         laps=args.laps,
         track_seed=args.seed,
@@ -44,9 +44,9 @@ def main():
         viewer = os.path.join(os.path.dirname(__file__), "viewer.html")
         if os.path.exists(viewer):
             webbrowser.open(f"file://{os.path.abspath(viewer)}")
-            print(f"\nOpened viewer in browser")
+            print("\nOpened viewer in browser")
         else:
-            print(f"\nviewer.html not found — open it manually")
+            print("\nviewer.html not found — open it manually")
 
 
 if __name__ == "__main__":
