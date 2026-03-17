@@ -1,0 +1,46 @@
+name: Validate Car Submission
+
+"on":
+  pull_request:
+    paths:
+      - "cars/**"
+
+jobs:
+  validate:
+    name: Validate submitted car(s)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: pip install -e "."
+
+      - name: Validate changed car files
+        run: |
+          CARS=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'cars/*.py' \
+            | grep -v 'template\.py' | grep -v '^_' || true)
+          if [ -z "$CARS" ]; then
+            echo "No new/modified car files detected."
+            exit 0
+          fi
+          echo "Changed cars: $CARS"
+          FAILED=0
+          while IFS= read -r car; do
+            echo "--- Validating $car ---"
+            npcrace validate "$car" || FAILED=1
+          done <<< "$CARS"
+          exit $FAILED

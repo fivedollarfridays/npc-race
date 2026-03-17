@@ -72,6 +72,8 @@ def run_race(
 
     if car_data_dir:
         os.makedirs(car_data_dir, exist_ok=True)
+        # Seed cars write to this hardcoded path (required by bot_scanner security model)
+        os.makedirs("cars/data", exist_ok=True)
 
     cars = load_all_cars(car_dir)
     if len(cars) < 2:
