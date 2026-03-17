@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.backends._legacy:_Backend"
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "npc-race"
@@ -15,6 +15,10 @@ dev = [
     "pytest-timeout>=2.0",
     "ruff>=0.4",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cli*", "engine*", "security*", "tracks*", "viewer*"]
 
 [project.scripts]
 npcrace = "cli.main:main"
