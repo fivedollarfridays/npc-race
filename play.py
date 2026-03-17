@@ -53,7 +53,8 @@ def _resolve_track(args) -> str | None:
     return name
 
 
-def main():
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
         description="NPC Race -- you build the car, we run the race",
     )
@@ -71,7 +72,13 @@ def main():
                         help="Named track (e.g. monza) or 'random'")
     parser.add_argument("--list-tracks", action="store_true",
                         help="Print available tracks and exit")
-    args = parser.parse_args()
+    parser.add_argument("--data-dir", default=None,
+                        help="Directory for car persistent data (cross-race learning)")
+    return parser
+
+
+def main():
+    args = _build_parser().parse_args()
 
     if args.list_tracks:
         _print_tracks()
@@ -92,6 +99,7 @@ def main():
         track_seed=args.seed,
         output=args.output,
         track_name=track_name,
+        car_data_dir=args.data_dir,
     )
 
     if not args.no_browser:

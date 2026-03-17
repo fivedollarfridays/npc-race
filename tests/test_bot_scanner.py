@@ -108,7 +108,7 @@ class TestImportAllowlist:
         assert result.passed is True
 
     def test_allowed_imports_set(self):
-        assert ALLOWED_IMPORTS == {"math", "random", "collections", "itertools", "functools"}
+        assert ALLOWED_IMPORTS == {"math", "random", "collections", "itertools", "functools", "json"}
 
 
 # --- Blocked calls ---

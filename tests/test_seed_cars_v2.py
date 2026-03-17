@@ -104,11 +104,10 @@ class TestStrategyReturns:
 
 
 class TestPitStopStrategies:
-    def test_gooseloose_pits_at_45pct(self):
-        """GooseLoose should request pit around 45% race distance."""
+    def test_gooseloose_pits_on_tire_wear(self):
+        """GooseLoose pits when tire_wear > 0.70 (reactive, not lap_pct)."""
         mod = _load_car("gooseloose")
-        # At 45% of 20 laps = lap 9, no pit yet
-        state = _make_state(lap=9, total_laps=20, pit_stops=0, tire_compound="medium")
+        state = _make_state(tire_wear=0.75, pit_stops=0, tire_compound="medium")
         result = mod.strategy(state)
         assert result.get("pit_request") is True
         assert result.get("tire_compound_request") == "hard"
@@ -116,53 +115,54 @@ class TestPitStopStrategies:
     def test_gooseloose_no_pit_after_first(self):
         """GooseLoose should not pit again after first stop."""
         mod = _load_car("gooseloose")
-        state = _make_state(lap=15, total_laps=20, pit_stops=1, tire_compound="hard")
+        state = _make_state(lap=15, total_laps=20, pit_stops=1, tire_compound="hard",
+                            tire_wear=0.3)
         result = mod.strategy(state)
         assert result.get("pit_request", False) is False
 
-    def test_glasscanon_never_pits(self):
-        """GlassCanon 0-stop: never requests a pit stop."""
+    def test_glasscanon_no_pit_when_tires_ok(self):
+        """GlassCanon 0-stop preferred: no pit when tires are fine."""
         mod = _load_car("glasscanon")
-        for lap in range(20):
-            state = _make_state(lap=lap, total_laps=20, pit_stops=0,
-                                tire_compound="hard")
-            result = mod.strategy(state)
-            assert result.get("pit_request", False) is False
+        state = _make_state(tire_wear=0.5, pit_stops=0, tire_compound="hard")
+        result = mod.strategy(state)
+        assert result.get("pit_request", False) is False
 
-    def test_brickhouse_pits_twice(self):
-        """BrickHouse 2-stop: pits at ~30% and ~65%."""
+    def test_brickhouse_pits_on_tire_wear(self):
+        """BrickHouse 2-stop: pits based on tire_wear thresholds."""
         mod = _load_car("brickhouse")
-        # First pit at ~30% (lap 6 of 20)
-        state1 = _make_state(lap=6, total_laps=20, pit_stops=0, tire_compound="soft")
+        # First pit when softs worn past 0.65
+        state1 = _make_state(tire_wear=0.70, pit_stops=0, tire_compound="soft")
         r1 = mod.strategy(state1)
         assert r1.get("pit_request") is True
         assert r1.get("tire_compound_request") == "medium"
 
-        # Second pit at ~65% (lap 13 of 20)
-        state2 = _make_state(lap=13, total_laps=20, pit_stops=1, tire_compound="medium")
+        # Second pit when mediums worn past 0.70
+        state2 = _make_state(tire_wear=0.75, pit_stops=1, tire_compound="medium")
         r2 = mod.strategy(state2)
         assert r2.get("pit_request") is True
         assert r2.get("tire_compound_request") == "hard"
 
     def test_brickhouse_no_third_pit(self):
-        """BrickHouse should not pit a third time."""
+        """BrickHouse should not pit a third time (low wear)."""
         mod = _load_car("brickhouse")
-        state = _make_state(lap=18, total_laps=20, pit_stops=2, tire_compound="hard")
+        state = _make_state(lap=18, total_laps=20, pit_stops=2, tire_compound="hard",
+                            tire_wear=0.3)
         result = mod.strategy(state)
         assert result.get("pit_request", False) is False
 
-    def test_silky_pits_at_35pct(self):
-        """Silky pits around 35% race distance."""
+    def test_silky_pits_on_tire_wear(self):
+        """Silky pits when tire_wear > 0.72."""
         mod = _load_car("silky")
-        state = _make_state(lap=7, total_laps=20, pit_stops=0, tire_compound="soft")
+        state = _make_state(tire_wear=0.78, pit_stops=0, tire_compound="soft")
         result = mod.strategy(state)
         assert result.get("pit_request") is True
         assert result.get("tire_compound_request") == "medium"
 
-    def test_slipstream_pits_at_55pct(self):
-        """SlipStream pits around 55% for fresh softs."""
+    def test_slipstream_pits_with_gap_and_wear(self):
+        """SlipStream pits when tire_wear > 0.68 and gap_ahead > 18."""
         mod = _load_car("slipstream")
-        state = _make_state(lap=11, total_laps=20, pit_stops=0, tire_compound="medium")
+        state = _make_state(tire_wear=0.72, pit_stops=0, tire_compound="medium",
+                            gap_ahead_s=25.0)
         result = mod.strategy(state)
         assert result.get("pit_request") is True
         assert result.get("tire_compound_request") == "soft"
@@ -172,17 +172,17 @@ class TestPitStopStrategies:
 
 
 class TestEngineModes:
-    def test_gooseloose_push_first_stint(self):
+    def test_gooseloose_push_when_attacking(self):
         mod = _load_car("gooseloose")
-        state = _make_state(lap=3, total_laps=20, pit_stops=0)
+        state = _make_state(position=3, gap_ahead_s=1.5)
         result = mod.strategy(state)
         assert result["engine_mode"] == "push"
 
-    def test_gooseloose_standard_second_stint(self):
+    def test_gooseloose_conserve_when_leading(self):
         mod = _load_car("gooseloose")
-        state = _make_state(lap=15, total_laps=20, pit_stops=1)
+        state = _make_state(position=1, gap_behind_s=5.0)
         result = mod.strategy(state)
-        assert result["engine_mode"] == "standard"
+        assert result["engine_mode"] == "conserve"
 
     def test_silky_conserve_engine(self):
         mod = _load_car("silky")
@@ -197,17 +197,18 @@ class TestEngineModes:
             result = mod.strategy(state)
             assert result["engine_mode"] == "push"
 
-    def test_brickhouse_push_early_conserve_late(self):
+    def test_brickhouse_push_when_not_leading_conserve_when_p1(self):
         mod = _load_car("brickhouse")
-        early = mod.strategy(_make_state(lap=2, total_laps=20, pit_stops=0))
-        assert early["engine_mode"] == "push"
-        late = mod.strategy(_make_state(lap=16, total_laps=20, pit_stops=2))
-        assert late["engine_mode"] == "conserve"
+        behind = mod.strategy(_make_state(position=2, tire_wear=0.3))
+        assert behind["engine_mode"] == "push"
+        leading = mod.strategy(_make_state(position=1, tire_wear=0.3))
+        assert leading["engine_mode"] == "conserve"
 
     def test_slipstream_push_on_fresh_softs(self):
         mod = _load_car("slipstream")
         state = _make_state(lap=14, total_laps=20, pit_stops=1,
-                            tire_compound="soft", tire_age_laps=2)
+                            tire_compound="soft", tire_age_laps=2,
+                            gap_ahead_s=2.0)
         result = mod.strategy(state)
         assert result["engine_mode"] == "push"
 

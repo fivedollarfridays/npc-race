@@ -6,6 +6,7 @@ and replay export.
 """
 
 import json
+import os
 
 from tracks import get_track
 from .car_loader import load_all_cars
@@ -37,16 +38,29 @@ def _print_results(results):
         print(f"  P{r['position']}  {r['name']:20s}  {status}")
 
 
-def run_race(car_dir="cars", laps=None, track_seed=42, output="replay.json",
-             track_name=None):
+def run_race(
+    car_dir: str = "cars",
+    laps: int | None = None,
+    track_seed: int = 42,
+    output: str = "replay.json",
+    track_name: str | None = None,
+    car_data_dir: str | None = None,
+    race_number: int = 1,
+) -> list[dict]:
     """Load cars, run race, export replay.
 
     Parameters
     ----------
+    car_dir : str
+        Directory containing car Python files.
     track_name : str | None
-        Named track preset key (e.g. "monza").
+        Named track preset key (e.g. "monza").  ``None`` generates a random track.
     laps : int | None
         Number of laps.  ``None`` means "use track default" (or 3).
+    car_data_dir : str | None
+        Directory for cross-race learning JSON files.  ``None`` disables learning.
+    race_number : int
+        Sequential race number within a tournament (passed to car strategies).
     """
     track, effective_laps, real_length_m = _resolve_track(
         track_name, track_seed, laps
@@ -55,6 +69,9 @@ def run_race(car_dir="cars", laps=None, track_seed=42, output="replay.json",
     print(f"\n🏁 NPC RACE -- {effective_laps} laps")
     print(f"{'─' * 40}")
     print(f"Loading cars from: {car_dir}/\n")
+
+    if car_data_dir:
+        os.makedirs(car_data_dir, exist_ok=True)
 
     cars = load_all_cars(car_dir)
     if len(cars) < 2:
@@ -68,7 +85,8 @@ def run_race(car_dir="cars", laps=None, track_seed=42, output="replay.json",
     print(f"{'─' * 40}\n")
 
     sim = RaceSim(cars, track, laps=effective_laps, seed=track_seed,
-                  track_name=track_name, real_length_m=real_length_m)
+                  track_name=track_name, real_length_m=real_length_m,
+                  car_data_dir=car_data_dir, race_number=race_number)
     results = sim.run()
 
     _print_results(results)

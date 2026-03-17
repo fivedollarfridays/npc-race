@@ -4,12 +4,15 @@ Each function corresponds to a subcommand and receives the parsed
 argparse namespace.
 """
 
+import json
 import os
 import shutil
 
 from engine import run_race
 from security.bot_scanner import scan_car_file
 from tracks import TRACKS, list_tracks
+
+F1_POINTS = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
 
 
 def cmd_list_tracks(_args) -> None:
@@ -90,3 +93,94 @@ def _resolve_track(args) -> str | None:
         print(f"Available tracks: {', '.join(list_tracks())}")
         return None
     return name
+
+
+def cmd_tournament(args) -> None:
+    """Run multi-race tournament with F1 championship points."""
+    tracks = [t.strip().lower() for t in args.tracks.split(",")]
+
+    # Validate track names up front
+    invalid = [t for t in tracks if t not in TRACKS]
+    if invalid:
+        print(f"Unknown track(s): {', '.join(invalid)}")
+        print(f"Available tracks: {', '.join(sorted(TRACKS))}")
+        return
+
+    races_per_track = args.races
+    laps = args.laps
+    car_dir = args.car_dir
+    data_dir = args.data_dir or os.path.join(car_dir, "data")
+    output_dir = args.output_dir
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    standings: dict[str, int] = {}
+    race_num = 0
+
+    _print_tournament_header(tracks, races_per_track, laps)
+
+    for track_name in tracks:
+        for _race_idx in range(races_per_track):
+            race_num += 1
+            output = os.path.join(output_dir, f"race_{race_num}_{track_name}.json")
+
+            run_race(
+                car_dir=car_dir,
+                laps=laps,
+                track_name=track_name,
+                output=output,
+                car_data_dir=data_dir,
+                race_number=race_num,
+            )
+
+            try:
+                with open(output) as f:
+                    replay = json.load(f)
+            except (OSError, json.JSONDecodeError) as e:
+                print(f"  [Error reading replay for race {race_num}: {e}]")
+                continue
+
+            _award_points(standings, replay["results"], race_num, track_name)
+
+    _print_final_standings(standings)
+
+
+def _print_tournament_header(tracks, races_per_track, laps):
+    """Print the tournament banner and configuration."""
+    print("=" * 60)
+    print("NPC RACE -- CHAMPIONSHIP TOURNAMENT")
+    print("=" * 60)
+    print(f"Tracks: {', '.join(tracks)}")
+    print(f"Races per track: {races_per_track}")
+    print(f"Laps per race: {laps}")
+    print()
+
+
+def _award_points(standings, results, race_num, track_name):
+    """Award F1 points from a single race and print race summary."""
+    print(f"\n--- Race {race_num}: {track_name.upper()} ---")
+    for result in results:
+        name = result["name"]
+        pos = result["position"]
+        points = F1_POINTS.get(pos, 0)
+        standings[name] = standings.get(name, 0) + points
+        print(f"  P{pos}  {name:20s}  +{points} pts")
+
+    print(f"\n  Championship after Race {race_num}:")
+    for rank, (name, pts) in enumerate(
+        sorted(standings.items(), key=lambda x: -x[1]), 1,
+    ):
+        print(f"    {rank}. {name:20s}  {pts} pts")
+
+
+def _print_final_standings(standings):
+    """Print the final championship standings table."""
+    print()
+    print("=" * 60)
+    print("FINAL CHAMPIONSHIP STANDINGS")
+    print("=" * 60)
+    for rank, (name, pts) in enumerate(
+        sorted(standings.items(), key=lambda x: -x[1]), 1,
+    ):
+        marker = " CHAMPION" if rank == 1 else ""
+        print(f"  {rank}. {name:20s}  {pts} pts{marker}")

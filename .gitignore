@@ -2,3 +2,13 @@ replay.json
 __pycache__/
 *.pyc
 .DS_Store
+
+# Car learning data (runtime-generated)
+cars/data/
+
+# PairCoder runtime artifacts
+.paircoder/cache/
+.paircoder/telemetry/
+.paircoder/history/
+.paircoder/feedback/
+.paircoder/.cli_version
