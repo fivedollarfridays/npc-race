@@ -86,3 +86,30 @@ def compute_track_data(track_points):
     total_length += math.sqrt(dx * dx + dy * dy)
 
     return distances, curvatures, total_length
+
+
+def compute_track_headings(track_points):
+    """Compute heading angle (radians) at each track point.
+
+    Returns a list of atan2-based heading angles, one per point,
+    using the direction vector to the next point (wrapping at end).
+    """
+    n = len(track_points)
+    headings = []
+    for i in range(n):
+        nxt = (i + 1) % n
+        dx = track_points[nxt][0] - track_points[i][0]
+        dy = track_points[nxt][1] - track_points[i][1]
+        headings.append(math.atan2(dy, dx))
+    return headings
+
+
+def get_curvature_at(distance, distances, curvatures, track_length):
+    """Get track curvature at a given distance along the track."""
+    d = distance % track_length
+    if d < 0:
+        d += track_length
+    for i in range(len(distances) - 1):
+        if distances[i] <= d <= distances[i + 1]:
+            return curvatures[i]
+    return 0.0

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NPC Race — Replay Viewer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    color: #e0e0e0;
+    font-family: 'Outfit', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: linear-gradient(180deg, #141420 0%, #0a0a0f 100%);
+    border-bottom: 1px solid #222;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .logo span { color: #ff6600; }
+
+  .track-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ccc;
+    letter-spacing: 0.5px;
+  }
+
+  .track-name .track-label {
+    color: #ff6600;
+  }
+
+  .race-info {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: #888;
+  }
+
+  .main-area {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .track-container {
+    flex: 1;
+    position: relative;
+  }
+
+  .track-container canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .bottom-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(10, 10, 15, 0.85);
+    padding: 10px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 20;
+    border-top: 1px solid #222;
+  }
+
+  .controls-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  button {
+    font-family: 'Outfit', sans-serif;
+    background: #1a1a28;
+    color: #ccc;
+    border: 1px solid #333;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+
+  button:hover { background: #252535; border-color: #555; color: #fff; }
+  button.active { background: #ff6600; color: #000; border-color: #ff6600; }
+
+  .speed-btns { display: flex; gap: 4px; }
+
+  .scrubber {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #222;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .scrubber::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ff6600;
+    cursor: pointer;
+  }
+
+  .finished-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(10, 10, 15, 0.92);
+    border: 1px solid #333;
+    border-radius: 16px;
+    padding: 40px 50px;
+    text-align: center;
+    display: none;
+    z-index: 10;
+  }
+
+  .finished-overlay h2 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 24px;
+  }
+
+  .finished-overlay h2 span { color: #ff6600; }
+
+  .result-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 0;
+    font-size: 16px;
+  }
+
+  .result-pos {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    width: 30px;
+  }
+
+  .result-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .drop-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 15, 0.95);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    font-size: 20px;
+    font-weight: 600;
+    color: #ff6600;
+    border: 2px dashed #ff6600;
+    margin: 20px;
+    border-radius: 16px;
+  }
+
+  .no-data {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: #555;
+  }
+
+  .no-data h2 { font-size: 24px; color: #888; }
+  .no-data p { font-size: 14px; max-width: 400px; text-align: center; line-height: 1.6; }
+  .no-data code {
+    font-family: 'JetBrains Mono', monospace;
+    background: #1a1a24;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NPC <span>Race</span></div>
+  <div class="track-name" id="trackName"></div>
+  <div class="race-info" id="raceInfo">Drag replay.json here or run play.py</div>
+</header>
+
+<div class="main-area">
+  <div class="track-container">
+    <canvas id="trackBg"></canvas>
+    <canvas id="carLayer"></canvas>
+    <canvas id="overlayLayer"></canvas>
+    <div class="finished-overlay" id="finishedOverlay"></div>
+    <div class="no-data" id="noData">
+      <h2>No replay loaded</h2>
+      <p>Run <code>python play.py</code> then drag <code>replay.json</code> here,
+         or drop it directly onto this window.</p>
+    </div>
+    <div class="bottom-bar" id="bottomBar">
+      <div class="controls-row">
+        <button id="playBtn" onclick="togglePlay()">&#9654; Play</button>
+        <div class="speed-btns">
+          <button onclick="setSpeed(0.5, event)">0.5&times;</button>
+          <button onclick="setSpeed(1, event)" class="active" id="speed1">1&times;</button>
+          <button onclick="setSpeed(2, event)">2&times;</button>
+          <button onclick="setSpeed(4, event)">4&times;</button>
+        </div>
+        <input type="range" class="scrubber" id="scrubber" min="0" max="100" value="0">
+      </div>
+      <div class="controls-row">
+        <button class="cam-btn active" id="cam-full" onclick="setCameraMode('full')">Track</button>
+        <button class="cam-btn" id="cam-follow" onclick="setCameraMode('follow')">Follow</button>
+        <button class="cam-btn" id="cam-onboard" onclick="setCameraMode('onboard')">Onboard</button>
+        <span style="width:20px"></span>
+        <button id="muteBtn" onclick="toggleMute()">&#128264;</button>
+        <input type="range" id="volumeSlider" min="0" max="100" value="50"
+               oninput="setVolume(this.value/100)" style="width:80px">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="drop-overlay" id="dropOverlay">Drop replay.json</div>
+
+<!-- INJECT:js/data-enrichment.js -->
+<!-- INJECT:js/track-renderer.js -->
+<!-- INJECT:js/car-renderer.js -->
+<!-- INJECT:js/overlay.js -->
+<!-- INJECT:js/sound-engine.js -->
+<!-- INJECT:js/physics-fx.js -->
+<!-- INJECT:js/camera.js -->
+<!-- INJECT:js/main.js -->
+</body>
+</html>

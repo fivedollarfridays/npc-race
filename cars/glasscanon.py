@@ -1,6 +1,7 @@
 """
 GlassCanon — Yolo speed.
-Almost everything in power. Pray for straights.
+0-stop gamble on hards. Full push engine all race.
+Blocks on straights when car behind is close. Full throttle everywhere.
 """
 
 CAR_NAME = "GlassCanon"
@@ -14,18 +15,25 @@ BRAKES = 15
 
 
 def strategy(state):
-    in_curve = state["curvature"] > 0.08
+    nearby = state["nearby_cars"]
+    curv = state["curvature"]
 
-    # Must manage corners carefully with low grip
-    if in_curve:
-        throttle = 0.4
-    else:
-        throttle = 1.0
+    # --- Pit strategy: 0-stop, never pit ---
+    # --- Engine mode: full push always ---
+    engine_mode = "push"
 
-    # Always push tires — we win on speed or we lose
-    tire_mode = "push"
+    # --- Throttle: full send, slight lift in tight corners ---
+    in_curve = curv > 0.08
+    throttle = 0.5 if in_curve else 1.0
 
-    # Boost immediately on first straight of last lap
+    # --- Lateral: block on straights when car behind is close ---
+    lateral = 0.0
+    behind = [c for c in nearby if c["distance_ahead"] < 0]
+    if not in_curve and behind and state["gap_behind_s"] < 1.0:
+        closest = max(behind, key=lambda c: c["distance_ahead"])
+        lateral = closest["lateral"]
+
+    # --- Boost on first straight of last lap ---
     use_boost = (
         state["boost_available"]
         and state["lap"] >= state["total_laps"] - 1
@@ -35,5 +43,9 @@ def strategy(state):
     return {
         "throttle": throttle,
         "boost": use_boost,
-        "tire_mode": tire_mode,
+        "tire_mode": "push",
+        "lateral_target": lateral,
+        "pit_request": False,
+        "tire_compound_request": None,
+        "engine_mode": engine_mode,
     }

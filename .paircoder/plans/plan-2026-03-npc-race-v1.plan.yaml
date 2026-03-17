@@ -1,0 +1,16 @@
+id: plan-2026-03-npc-race-v1
+title: NPC Race — Ship v1.0
+type: feature
+status: in_progress
+created_at: '2026-03-15T01:42:53.393676'
+skills:
+- planning-with-pm
+goals:
+- Build 20 named track presets
+- Decompose engine.py into modules under 400 lines
+- Add security (bot scanner + sandbox)
+- Add --track and --list-tracks to play.py
+- CLI packaging via pyproject.toml entry points
+- Balance test all seed cars on all tracks
+- Update viewer.html with track name
+- Finalize car_template.py with strategy state docs

@@ -46,6 +46,13 @@ class TestListTracks:
         )
         assert "power" in result.stdout.lower()
 
+    def test_list_tracks_shows_count(self):
+        result = subprocess.run(
+            [sys.executable, PLAY_PY, "--list-tracks"],
+            capture_output=True, text=True,
+        )
+        assert "20 tracks available" in result.stdout
+
 
 # ── Cycle 2: --track NAME runs on named track ──────────────────────────────
 
@@ -86,6 +93,15 @@ class TestTrackRandom:
         )
         assert result.returncode == 0
 
+    def test_track_random_prints_selection(self):
+        result = subprocess.run(
+            [sys.executable, PLAY_PY, "--track", "random", "--no-browser",
+             "--output", "/dev/null"],
+            capture_output=True, text=True,
+            cwd=PROJECT_ROOT,
+        )
+        assert "random track selected" in result.stdout.lower()
+
 
 # ── Cycle 4: invalid --track gives clear error ─────────────────────────────
 
@@ -98,7 +114,15 @@ class TestTrackInvalid:
             capture_output=True, text=True,
             cwd=PROJECT_ROOT,
         )
-        assert result.returncode != 0 or "not found" in result.stdout.lower() or "unknown" in result.stdout.lower()
+        assert result.returncode != 0
+
+    def test_invalid_track_lists_available(self):
+        result = subprocess.run(
+            [sys.executable, PLAY_PY, "--track", "nonexistent_track_xyz"],
+            capture_output=True, text=True,
+            cwd=PROJECT_ROOT,
+        )
+        assert "available tracks" in result.stdout.lower()
 
     def test_invalid_track_mentions_name(self):
         result = subprocess.run(

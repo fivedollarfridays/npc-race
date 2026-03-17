@@ -38,6 +38,17 @@
 
   .logo span { color: #ff6600; }
 
+  .track-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ccc;
+    letter-spacing: 0.5px;
+  }
+
+  .track-name .track-label {
+    color: #ff6600;
+  }
+
   .race-info {
     font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
@@ -55,116 +66,26 @@
     position: relative;
   }
 
-  canvas {
+  .track-container canvas {
+    position: absolute;
+    top: 0; left: 0;
     width: 100%;
     height: 100%;
     display: block;
   }
 
-  .sidebar {
-    width: 280px;
-    background: #111118;
-    border-left: 1px solid #222;
+  .bottom-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(10, 10, 15, 0.85);
+    padding: 10px 20px;
     display: flex;
     flex-direction: column;
-    flex-shrink: 0;
-  }
-
-  .sidebar-title {
-    padding: 14px 18px 10px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: #666;
-    border-bottom: 1px solid #1a1a22;
-  }
-
-  .leaderboard {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 0;
-  }
-
-  .car-row {
-    display: flex;
-    align-items: center;
-    padding: 10px 18px;
-    gap: 12px;
-    transition: background 0.15s;
-  }
-
-  .car-row:hover { background: #1a1a24; }
-
-  .car-pos {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 18px;
-    font-weight: 700;
-    width: 28px;
-    text-align: center;
-  }
-
-  .car-pos.p1 { color: #ffd700; }
-  .car-pos.p2 { color: #c0c0c0; }
-  .car-pos.p3 { color: #cd7f32; }
-
-  .car-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .car-details {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .car-name {
-    font-size: 14px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .car-stats {
-    display: flex;
-    gap: 10px;
-    margin-top: 3px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    color: #666;
-  }
-
-  .tire-bar {
-    width: 50px;
-    height: 4px;
-    background: #222;
-    border-radius: 2px;
-    overflow: hidden;
-    margin-top: 1px;
-  }
-
-  .tire-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.1s;
-  }
-
-  .boost-indicator {
-    font-size: 10px;
-    color: #ffcc00;
-    font-weight: 700;
-  }
-
-  .controls {
-    padding: 14px 18px;
+    gap: 8px;
+    z-index: 20;
     border-top: 1px solid #222;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    flex-shrink: 0;
   }
 
   .controls-row {
@@ -192,7 +113,7 @@
   .speed-btns { display: flex; gap: 4px; }
 
   .scrubber {
-    width: 100%;
+    flex: 1;
     height: 6px;
     -webkit-appearance: none;
     appearance: none;
@@ -209,13 +130,6 @@
     border-radius: 50%;
     background: #ff6600;
     cursor: pointer;
-  }
-
-  .lap-display {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: #888;
-    text-align: center;
   }
 
   .finished-overlay {
@@ -302,41 +216,1415 @@
 
 <header>
   <div class="logo">NPC <span>Race</span></div>
+  <div class="track-name" id="trackName"></div>
   <div class="race-info" id="raceInfo">Drag replay.json here or run play.py</div>
 </header>
 
 <div class="main-area">
   <div class="track-container">
-    <canvas id="track"></canvas>
+    <canvas id="trackBg"></canvas>
+    <canvas id="carLayer"></canvas>
+    <canvas id="overlayLayer"></canvas>
     <div class="finished-overlay" id="finishedOverlay"></div>
     <div class="no-data" id="noData">
       <h2>No replay loaded</h2>
       <p>Run <code>python play.py</code> then drag <code>replay.json</code> here,
          or drop it directly onto this window.</p>
     </div>
-  </div>
-
-  <div class="sidebar">
-    <div class="sidebar-title">Leaderboard</div>
-    <div class="leaderboard" id="leaderboard"></div>
-    <div class="controls">
-      <input type="range" class="scrubber" id="scrubber" min="0" max="100" value="0">
+    <div class="bottom-bar" id="bottomBar">
       <div class="controls-row">
-        <button id="playBtn" onclick="togglePlay()">▶ Play</button>
+        <button id="playBtn" onclick="togglePlay()">&#9654; Play</button>
         <div class="speed-btns">
-          <button onclick="setSpeed(0.5, event)">0.5×</button>
-          <button onclick="setSpeed(1, event)" class="active" id="speed1">1×</button>
-          <button onclick="setSpeed(2, event)">2×</button>
-          <button onclick="setSpeed(4, event)">4×</button>
+          <button onclick="setSpeed(0.5, event)">0.5&times;</button>
+          <button onclick="setSpeed(1, event)" class="active" id="speed1">1&times;</button>
+          <button onclick="setSpeed(2, event)">2&times;</button>
+          <button onclick="setSpeed(4, event)">4&times;</button>
         </div>
+        <input type="range" class="scrubber" id="scrubber" min="0" max="100" value="0">
       </div>
-      <div class="lap-display" id="lapDisplay">—</div>
+      <div class="controls-row">
+        <button class="cam-btn active" id="cam-full" onclick="setCameraMode('full')">Track</button>
+        <button class="cam-btn" id="cam-follow" onclick="setCameraMode('follow')">Follow</button>
+        <button class="cam-btn" id="cam-onboard" onclick="setCameraMode('onboard')">Onboard</button>
+        <span style="width:20px"></span>
+        <button id="muteBtn" onclick="toggleMute()">&#128264;</button>
+        <input type="range" id="volumeSlider" min="0" max="100" value="50"
+               oninput="setVolume(this.value/100)" style="width:80px">
+      </div>
     </div>
   </div>
 </div>
 
 <div class="drop-overlay" id="dropOverlay">Drop replay.json</div>
 
+<script>
+// Data enrichment — derive missing fields for backward compat
+function enrichReplayData(replay) {
+  const track = replay.track;
+  const n = track.length;
+
+  // Compute headings if missing
+  if (!replay.track_headings) {
+    replay.track_headings = [];
+    for (let i = 0; i < n; i++) {
+      const next = track[(i + 1) % n];
+      const dx = next.x - track[i].x;
+      const dy = next.y - track[i].y;
+      replay.track_headings.push(Math.atan2(dy, dx));
+    }
+  }
+
+  // Compute curvatures if missing
+  if (!replay.track_curvatures) {
+    replay.track_curvatures = [];
+    for (let i = 0; i < n; i++) {
+      const p0 = track[(i - 1 + n) % n];
+      const p1 = track[i];
+      const p2 = track[(i + 1) % n];
+      const dx1 = p1.x - p0.x, dy1 = p1.y - p0.y;
+      const dx2 = p2.x - p1.x, dy2 = p2.y - p1.y;
+      const cross = Math.abs(dx1 * dy2 - dy1 * dx2);
+      const d1 = Math.sqrt(dx1 * dx1 + dy1 * dy1) + 0.001;
+      const d2 = Math.sqrt(dx2 * dx2 + dy2 * dy2) + 0.001;
+      replay.track_curvatures.push(cross / (d1 * d2));
+    }
+  }
+
+  // Compute distances array (needed for seg lookup)
+  if (!replay._distances) {
+    replay._distances = [0];
+    for (let i = 1; i < n; i++) {
+      const dx = track[i].x - track[i - 1].x;
+      const dy = track[i].y - track[i - 1].y;
+      replay._distances.push(replay._distances[i - 1] + Math.sqrt(dx * dx + dy * dy));
+    }
+    // Total length including closing segment
+    const dx = track[0].x - track[n - 1].x;
+    const dy = track[0].y - track[n - 1].y;
+    replay._trackLength = replay._distances[n - 1] + Math.sqrt(dx * dx + dy * dy);
+  }
+
+  // Compute track normals (needed for edge lines, kerbs)
+  if (!replay._normals) {
+    replay._normals = [];
+    for (let i = 0; i < n; i++) {
+      const next = track[(i + 1) % n];
+      const dx = next.x - track[i].x;
+      const dy = next.y - track[i].y;
+      const len = Math.sqrt(dx * dx + dy * dy) + 0.001;
+      replay._normals.push({ x: -dy / len, y: dx / len });
+    }
+  }
+}
+</script>
+<script>
+// ─── Track Renderer ─────────────────────────────────────────────────────────
+// Renders the track with realistic visuals on the background canvas.
+// Called from renderBackground() in main.js.
+
+function _drawTrackPath(ctx, track, transform) {
+  const s = transform.scale;
+  const ox = transform.ox;
+  const oy = transform.oy;
+  ctx.moveTo(track[0].x * s + ox, track[0].y * s + oy);
+  for (let i = 1; i < track.length; i++) {
+    ctx.lineTo(track[i].x * s + ox, track[i].y * s + oy);
+  }
+  ctx.closePath();
+}
+
+function _drawGrass(ctx, transform) {
+  // Green grass background
+  ctx.fillStyle = '#1a3a1a';
+  ctx.fillRect(0, 0, transform.w, transform.h);
+
+  // Subtle darker patches for texture variation
+  ctx.fillStyle = '#15321a';
+  const patchSize = 40;
+  for (let y = 0; y < transform.h; y += patchSize) {
+    for (let x = 0; x < transform.w; x += patchSize) {
+      if ((x * 7 + y * 13) % 5 === 0) {
+        ctx.fillRect(x, y, patchSize * 0.6, patchSize * 0.6);
+      }
+    }
+  }
+}
+
+function _drawRunoff(ctx, track, trackWidth, transform) {
+  // Run-off area: wider stroke in gravel gray
+  ctx.beginPath();
+  _drawTrackPath(ctx, track, transform);
+  ctx.strokeStyle = '#3a3a3a';
+  ctx.lineWidth = trackWidth * transform.scale * 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+}
+
+function _drawAsphalt(ctx, track, trackWidth, transform) {
+  // Asphalt surface
+  ctx.beginPath();
+  _drawTrackPath(ctx, track, transform);
+  ctx.strokeStyle = '#252530';
+  ctx.lineWidth = trackWidth * transform.scale;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Noise texture overlay via offscreen pattern
+  const texCanvas = document.createElement('canvas');
+  texCanvas.width = 4;
+  texCanvas.height = 4;
+  const texCtx = texCanvas.getContext('2d');
+  const imgData = texCtx.createImageData(4, 4);
+  for (let i = 0; i < imgData.data.length; i += 4) {
+    const v = 30 + ((i * 7) % 15);
+    imgData.data[i] = v;
+    imgData.data[i + 1] = v;
+    imgData.data[i + 2] = v + 5;
+    imgData.data[i + 3] = 25;
+  }
+  texCtx.putImageData(imgData, 0, 0);
+
+  const pattern = ctx.createPattern(texCanvas, 'repeat');
+  ctx.beginPath();
+  _drawTrackPath(ctx, track, transform);
+  ctx.strokeStyle = pattern;
+  ctx.lineWidth = trackWidth * transform.scale;
+  ctx.stroke();
+}
+
+function _drawEdgeLines(ctx, track, normals, halfWidth, transform) {
+  const s = transform.scale;
+  const ox = transform.ox;
+  const oy = transform.oy;
+
+  // Left edge
+  ctx.beginPath();
+  for (let i = 0; i < track.length; i++) {
+    const ex = (track[i].x + normals[i].x * halfWidth) * s + ox;
+    const ey = (track[i].y + normals[i].y * halfWidth) * s + oy;
+    if (i === 0) ctx.moveTo(ex, ey);
+    else ctx.lineTo(ex, ey);
+  }
+  ctx.closePath();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Right edge
+  ctx.beginPath();
+  for (let i = 0; i < track.length; i++) {
+    const ex = (track[i].x - normals[i].x * halfWidth) * s + ox;
+    const ey = (track[i].y - normals[i].y * halfWidth) * s + oy;
+    if (i === 0) ctx.moveTo(ex, ey);
+    else ctx.lineTo(ex, ey);
+  }
+  ctx.closePath();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function _drawKerbs(ctx, track, normals, curvatures, halfWidth, transform) {
+  const s = transform.scale;
+  const ox = transform.ox;
+  const oy = transform.oy;
+  const kerbThreshold = 0.04;
+  const kerbWidth = 4;
+
+  for (let i = 0; i < track.length; i++) {
+    if (curvatures[i] < kerbThreshold) continue;
+
+    // Determine inside direction from cross product sign
+    const prev = (i - 1 + track.length) % track.length;
+    const next = (i + 1) % track.length;
+    const dx1 = track[i].x - track[prev].x;
+    const dy1 = track[i].y - track[prev].y;
+    const dx2 = track[next].x - track[i].x;
+    const dy2 = track[next].y - track[i].y;
+    const cross = dx1 * dy2 - dy1 * dx2;
+    const sign = cross > 0 ? 1 : -1;
+
+    // Inside edge position
+    const ex = (track[i].x + normals[i].x * halfWidth * sign) * s + ox;
+    const ey = (track[i].y + normals[i].y * halfWidth * sign) * s + oy;
+
+    // Alternating red (#cc0000) / white kerb blocks
+    ctx.fillStyle = (i % 2 === 0) ? '#cc0000' : '#ffffff';
+    ctx.fillRect(ex - kerbWidth / 2, ey - kerbWidth / 2, kerbWidth, kerbWidth);
+  }
+}
+
+function _drawRacingLine(ctx, track, curvatures, normals, transform) {
+  const s = transform.scale;
+  const ox = transform.ox;
+  const oy = transform.oy;
+
+  ctx.beginPath();
+  ctx.setLineDash([6, 10]);
+  ctx.strokeStyle = '#333340';
+  ctx.lineWidth = 1;
+
+  for (let i = 0; i < track.length; i++) {
+    // Bias toward inside at corners
+    let biasX = 0;
+    let biasY = 0;
+    if (curvatures[i] > 0.02) {
+      const prev = (i - 1 + track.length) % track.length;
+      const next = (i + 1) % track.length;
+      const dx1 = track[i].x - track[prev].x;
+      const dy1 = track[i].y - track[prev].y;
+      const dx2 = track[next].x - track[i].x;
+      const dy2 = track[next].y - track[i].y;
+      const cross = dx1 * dy2 - dy1 * dx2;
+      const sign = cross > 0 ? 1 : -1;
+      const bias = Math.min(curvatures[i] * 5, 0.3);
+      biasX = normals[i].x * bias * sign * 10;
+      biasY = normals[i].y * bias * sign * 10;
+    }
+
+    const px = (track[i].x + biasX) * s + ox;
+    const py = (track[i].y + biasY) * s + oy;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+
+  ctx.closePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function _drawStartFinish(ctx, track, normals, halfWidth, transform) {
+  const s = transform.scale;
+  const ox = transform.ox;
+  const oy = transform.oy;
+
+  // Heading direction at track[0]
+  const next = track[1];
+  const dx = next.x - track[0].x;
+  const dy = next.y - track[0].y;
+  const len = Math.sqrt(dx * dx + dy * dy) + 0.001;
+  const hdx = dx / len;
+  const hdy = dy / len;
+
+  const nx = normals[0].x;
+  const ny = normals[0].y;
+  const gridCount = 6;
+  const gridSize = (halfWidth * 2) / gridCount;
+  const lineDepth = gridSize;
+
+  // Checkered pattern across track width
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < gridCount; col++) {
+      const isBlack = (row + col) % 2 === 0;
+      ctx.fillStyle = isBlack ? '#111111' : '#ffffff';
+
+      const offsetAlong = (row - 0.5) * lineDepth;
+      const offsetAcross = (col - gridCount / 2 + 0.5) * gridSize;
+
+      const cx = track[0].x + hdx * offsetAlong + nx * offsetAcross;
+      const cy = track[0].y + hdy * offsetAlong + ny * offsetAcross;
+
+      const sx = cx * s + ox;
+      const sy = cy * s + oy;
+      const sz = gridSize * s;
+
+      ctx.fillRect(sx - sz / 2, sy - sz / 2, sz, sz);
+    }
+  }
+}
+
+function renderTrack(ctx, replay, transform) {
+  if (!replay || !replay.track) return;
+
+  const track = replay.track;
+  const trackWidth = replay.track_width || 12;
+  const halfWidth = trackWidth / 2;
+  const normals = replay._normals || [];
+  const curvatures = replay.track_curvatures || [];
+
+  // Layer 1: grass
+  _drawGrass(ctx, transform);
+
+  // Layer 2: run-off areas
+  _drawRunoff(ctx, track, trackWidth, transform);
+
+  // Layer 3: asphalt surface with texture
+  _drawAsphalt(ctx, track, trackWidth, transform);
+
+  // Layer 4: white edge lines
+  if (normals.length === track.length) {
+    _drawEdgeLines(ctx, track, normals, halfWidth, transform);
+  }
+
+  // Layer 5: red/white kerbs at corners
+  if (normals.length === track.length && curvatures.length === track.length) {
+    _drawKerbs(ctx, track, normals, curvatures, halfWidth, transform);
+  }
+
+  // Layer 6: racing line
+  if (curvatures.length === track.length && normals.length === track.length) {
+    _drawRacingLine(ctx, track, curvatures, normals, transform);
+  }
+
+  // Layer 7: start/finish checkered line
+  if (normals.length > 0) {
+    _drawStartFinish(ctx, track, normals, halfWidth, transform);
+  }
+}
+</script>
+<script>
+// ─── Car Renderer ───────────────────────────────────────────────────────────
+// Top-down realistic race car rendering with wheels, effects, and labels.
+
+/**
+ * Darken a hex color by a given fraction (0–1).
+ */
+function darkenColor(hex, amount) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const f = 1 - amount;
+  return (
+    '#' +
+    Math.round(r * f).toString(16).padStart(2, '0') +
+    Math.round(g * f).toString(16).padStart(2, '0') +
+    Math.round(b * f).toString(16).padStart(2, '0')
+  );
+}
+
+/**
+ * Clamp a number between min and max.
+ */
+function clamp(val, lo, hi) {
+  return Math.max(lo, Math.min(hi, val));
+}
+
+/**
+ * Compute the steering angle based on heading look-ahead.
+ * Returns a clamped angle delta between current and future track heading.
+ */
+function computeSteerAngle(replay, seg) {
+  if (!replay.track_headings) return 0;
+  const n = replay.track_headings.length;
+  const current = replay.track_headings[seg % n];
+  const ahead = replay.track_headings[(seg + 5) % n];
+  let delta = ahead - current;
+  // Normalize to [-PI, PI]
+  while (delta > Math.PI) delta -= 2 * Math.PI;
+  while (delta < -Math.PI) delta += 2 * Math.PI;
+  return clamp(delta, -0.3, 0.3);
+}
+
+/**
+ * Draw a single wheel (dark rectangle).
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} x - center x in local car coords
+ * @param {number} y - center y in local car coords
+ * @param {number} wLen - wheel length (scaled)
+ * @param {number} wWid - wheel width (scaled)
+ * @param {number} angle - additional rotation (steering)
+ */
+function drawWheel(ctx, x, y, wLen, wWid, angle) {
+  ctx.save();
+  ctx.translate(x, y);
+  if (angle) ctx.rotate(angle);
+  ctx.fillStyle = '#111';
+  ctx.fillRect(-wLen / 2, -wWid / 2, wLen, wWid);
+  ctx.restore();
+}
+
+/**
+ * Draw a shadow ellipse beneath the car.
+ */
+function drawShadow(ctx, bodyLen, bodyWid) {
+  ctx.save();
+  ctx.translate(2, 2);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, bodyLen / 2 + 1, bodyWid / 2 + 1, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#00000044';
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
+ * Draw the main car body as a tapered shape with nose cone.
+ */
+function drawBody(ctx, bodyLen, bodyWid, color) {
+  const halfL = bodyLen / 2;
+  const halfW = bodyWid / 2;
+  const noseW = halfW * 0.6;
+
+  ctx.beginPath();
+  // Start at rear-left, go clockwise
+  ctx.moveTo(-halfL, -halfW);
+  // Left side to front taper point
+  ctx.lineTo(halfL * 0.4, -halfW);
+  // Nose cone left
+  ctx.lineTo(halfL, -noseW);
+  // Nose tip (rounded)
+  ctx.quadraticCurveTo(halfL + 2, 0, halfL, noseW);
+  // Nose cone right
+  ctx.lineTo(halfL * 0.4, halfW);
+  // Right side to rear
+  ctx.lineTo(-halfL, halfW);
+  // Rear
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+/**
+ * Draw a cockpit area (darker oval in front-center).
+ */
+function drawCockpit(ctx, bodyLen, bodyWid, color) {
+  const cockpitX = bodyLen * 0.1;
+  const cockpitW = bodyLen * 0.18;
+  const cockpitH = bodyWid * 0.3;
+  ctx.beginPath();
+  ctx.ellipse(cockpitX, 0, cockpitW, cockpitH, 0, 0, Math.PI * 2);
+  ctx.fillStyle = darkenColor(color, 0.3);
+  ctx.fill();
+}
+
+/**
+ * Draw the rear wing (thin dark bar at the back, slightly wider than body).
+ */
+function drawRearWing(ctx, bodyLen, bodyWid) {
+  const wingX = -bodyLen / 2 - 1;
+  const wingW = bodyWid * 0.6;
+  const wingH = 2;
+  ctx.fillStyle = '#222';
+  ctx.fillRect(wingX - wingH / 2, -wingW, wingH, wingW * 2);
+}
+
+/**
+ * Draw four wheels at the corners of the car body.
+ */
+function drawWheels(ctx, bodyLen, bodyWid, scale, steerAngle) {
+  const wLen = 3 * scale;
+  const wWid = 1.5 * scale;
+  const halfL = bodyLen / 2;
+  const halfW = bodyWid / 2;
+
+  // Front wheels (with steering)
+  drawWheel(ctx, halfL * 0.55, -halfW + wWid * 0.3, wLen, wWid, steerAngle);
+  drawWheel(ctx, halfL * 0.55, halfW - wWid * 0.3, wLen, wWid, steerAngle);
+
+  // Rear wheels (no steering)
+  drawWheel(ctx, -halfL * 0.6, -halfW + wWid * 0.3, wLen, wWid, 0);
+  drawWheel(ctx, -halfL * 0.6, halfW - wWid * 0.3, wLen, wWid, 0);
+}
+
+/**
+ * Draw brake lights (two small red circles at rear).
+ * Only glow when braking (speed drop > 2 km/h).
+ */
+function drawBrakeLights(ctx, bodyLen, bodyWid, isBraking) {
+  if (!isBraking) return;
+
+  const rearX = -bodyLen / 2 + 1;
+  const spread = bodyWid * 0.3;
+  const radius = 2;
+
+  for (const offsetY of [-spread, spread]) {
+    const grad = ctx.createRadialGradient(
+      rearX, offsetY, 0,
+      rearX, offsetY, radius * 3
+    );
+    grad.addColorStop(0, '#ff0000');
+    grad.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(rearX, offsetY, radius * 3, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(rearX, offsetY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff0000';
+    ctx.fill();
+  }
+}
+
+/**
+ * Draw subtle boost exhaust glow behind the car.
+ */
+function drawBoostGlow(ctx, bodyLen, color) {
+  const rearX = -bodyLen / 2;
+  const glowRadius = bodyLen * 0.6;
+  const grad = ctx.createRadialGradient(
+    rearX, 0, 2,
+    rearX - glowRadius * 0.3, 0, glowRadius
+  );
+  grad.addColorStop(0, color + '88');
+  grad.addColorStop(0.3, '#ff880044');
+  grad.addColorStop(1, '#ff880000');
+  ctx.beginPath();
+  ctx.arc(rearX - glowRadius * 0.15, 0, glowRadius, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+/**
+ * Draw the position number on the car body.
+ */
+function drawPositionNumber(ctx, position) {
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 8px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(position, 0, 0);
+}
+
+/**
+ * Render a single top-down race car.
+ *
+ * @param {CanvasRenderingContext2D} ctx - car layer context
+ * @param {Object} car - current frame car data (x, y, name, color, speed, position, boost, seg, ...)
+ * @param {Object|null} prevCar - same car from previous frame (for braking detection)
+ * @param {Object} replay - full replay object (track_headings, track, etc.)
+ * @param {Object} transform - { scale, ox, oy }
+ */
+function renderCar(ctx, car, prevCar, replay, transform) {
+  const pos = worldToScreen(car.x, car.y);
+  const sx = pos.x;
+  const sy = pos.y;
+  const s = transform.scale;
+
+  // Car dimensions in screen units
+  const bodyLen = 14 * s;
+  const bodyWid = 6 * s;
+
+  // Heading from track_headings
+  const heading = (replay.track_headings && car.seg != null)
+    ? replay.track_headings[car.seg % replay.track_headings.length]
+    : 0;
+
+  // Steering angle for front wheels
+  const steerAngle = computeSteerAngle(replay, car.seg || 0);
+
+  // Braking detection
+  const isBraking = prevCar != null && (car.speed < prevCar.speed - 2);
+
+  ctx.save();
+  ctx.translate(sx, sy);
+  ctx.rotate(heading);
+
+  // 1. Shadow
+  drawShadow(ctx, bodyLen, bodyWid);
+
+  // 2. Boost glow (behind car, drawn before body)
+  if (car.boost) {
+    drawBoostGlow(ctx, bodyLen, car.color);
+  }
+
+  // 3. Car body
+  drawBody(ctx, bodyLen, bodyWid, car.color);
+
+  // 4. Cockpit
+  drawCockpit(ctx, bodyLen, bodyWid, car.color);
+
+  // 5. Rear wing
+  drawRearWing(ctx, bodyLen, bodyWid);
+
+  // 6. Wheels
+  drawWheels(ctx, bodyLen, bodyWid, s, steerAngle);
+
+  // 7. Brake lights
+  drawBrakeLights(ctx, bodyLen, bodyWid, isBraking);
+
+  // 8. Position number
+  drawPositionNumber(ctx, car.position);
+
+  ctx.restore();
+
+  // 9. Name label (drawn without rotation for readability)
+  ctx.fillStyle = '#ddd';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(car.name, sx, sy - bodyWid / 2 - 4);
+}
+</script>
+<script>
+// ─── Broadcast Overlay ──────────────────────────────────────────────────────
+// F1 TV-style overlay rendered on the overlay canvas layer.
+
+const overlayState = {
+  overtakeQueue: [],      // {text, startTime, duration}
+  selectedCar: null,      // name of selected car for follow cam
+  lapTimes: {},           // {carName: [frameCounts per lap]}
+  fastestLap: null,       // {carName, frames}
+  lastPositions: {},      // {carName: position} from previous frame
+  lastLaps: {},           // {carName: lap} for detecting lap boundaries
+  lapStartFrames: {},     // {carName: frameIndex} when current lap started
+};
+
+// ─── Timing Tower ───────────────────────────────────────────────────────────
+function renderTimingTower(ctx, cars, replay, w, h) {
+  const sorted = [...cars].sort((a, b) => a.position - b.position);
+  const startY = 60;
+  const rowH = 30;
+  const x = 16;
+  const colW = 200;
+
+  // Background panel
+  const panelH = sorted.length * rowH + 12;
+  ctx.save();
+  ctx.beginPath();
+  _roundRect(ctx, x - 8, startY - 6, colW, panelH, 6);
+  ctx.fillStyle = 'rgba(10, 10, 15, 0.82)';
+  ctx.fill();
+  ctx.restore();
+
+  for (let i = 0; i < sorted.length; i++) {
+    const car = sorted[i];
+    const y = startY + i * rowH;
+
+    // P1 gold accent bar
+    if (car.position === 1) {
+      ctx.fillStyle = 'rgba(255, 215, 0, 0.15)';
+      ctx.fillRect(x - 8, y - 2, colW, rowH - 2);
+    }
+
+    // Position number
+    ctx.font = 'bold 14px JetBrains Mono';
+    ctx.fillStyle = car.position === 1 ? '#ffd700' : '#ccc';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(car.position, x + 20, y + 12);
+
+    // Color bar
+    ctx.fillStyle = car.color;
+    ctx.fillRect(x + 26, y + 3, 4, 20);
+
+    // 3-char abbreviation
+    const abbr = car.name.substring(0, 3).toUpperCase();
+    ctx.font = '600 13px Outfit';
+    ctx.fillStyle = '#e0e0e0';
+    ctx.textAlign = 'left';
+    ctx.fillText(abbr, x + 36, y + 12);
+
+    // Speed
+    ctx.font = '12px JetBrains Mono';
+    ctx.fillStyle = '#888';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${Math.round(car.speed)} km/h`, x + colW - 16, y + 12);
+
+    // Fastest lap purple dot
+    if (overlayState.fastestLap && overlayState.fastestLap.carName === car.name) {
+      ctx.beginPath();
+      ctx.arc(x + colW - 8, y + 4, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#9900ff';
+      ctx.fill();
+    }
+  }
+}
+
+// ─── Lap Counter ────────────────────────────────────────────────────────────
+function renderLapCounter(ctx, replay, frame, w, h) {
+  const cars = replay.frames[frame];
+  if (!cars || cars.length === 0) return;
+
+  const leader = cars.reduce((a, b) => a.position < b.position ? a : b);
+  const currentLap = Math.min(leader.lap + 1, replay.laps);
+  const text = `LAP ${currentLap} / ${replay.laps}`;
+
+  const cx = w / 2;
+  const y = 24;
+
+  // Background bar
+  ctx.save();
+  const metrics = ctx.measureText(text);
+  ctx.font = '600 16px Outfit';
+  const tw = ctx.measureText(text).width;
+  ctx.beginPath();
+  _roundRect(ctx, cx - tw / 2 - 16, y - 14, tw + 32, 30, 6);
+  ctx.fillStyle = 'rgba(10, 10, 15, 0.82)';
+  ctx.fill();
+
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, cx, y);
+  ctx.restore();
+}
+
+// ─── Race Status Badge ──────────────────────────────────────────────────────
+function renderRaceStatus(ctx, replay, frame, w, h) {
+  const cars = replay.frames[frame];
+  if (!cars || cars.length === 0) return;
+
+  const leader = cars.reduce((a, b) => a.position < b.position ? a : b);
+
+  let label, bgColor;
+  if (leader.finished) {
+    label = 'CHEQUERED FLAG';
+    bgColor = '#666';
+  } else if (leader.lap >= replay.laps - 1) {
+    label = 'FINAL LAP';
+    bgColor = '#ccaa00';
+  } else {
+    label = 'RACE';
+    bgColor = '#44cc44';
+  }
+
+  const cx = w / 2;
+  const y = 56;
+
+  ctx.save();
+  ctx.font = 'bold 11px Outfit';
+  const tw = ctx.measureText(label).width;
+  ctx.beginPath();
+  _roundRect(ctx, cx - tw / 2 - 10, y - 10, tw + 20, 22, 4);
+  ctx.fillStyle = bgColor;
+  ctx.fill();
+
+  ctx.fillStyle = '#000';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, cx, y);
+  ctx.restore();
+}
+
+// ─── Speed Readout ──────────────────────────────────────────────────────────
+function renderSpeedReadout(ctx, cars, w, h) {
+  if (!cars || cars.length === 0) return;
+
+  const leader = cars.reduce((a, b) => a.position < b.position ? a : b);
+  const text = `${Math.round(leader.speed)} km/h`;
+
+  const cx = w / 2 + 120;
+  const y = 24;
+
+  ctx.save();
+  ctx.font = '14px JetBrains Mono';
+  ctx.fillStyle = '#aaa';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, cx, y);
+  ctx.restore();
+}
+
+// ─── Overtake Notifications ─────────────────────────────────────────────────
+function renderOvertakeNotification(ctx, cars, prevCars, w, h, currentTime) {
+  if (prevCars) {
+    for (const car of cars) {
+      const prev = prevCars.find(c => c.name === car.name);
+      if (!prev) continue;
+      if (car.position < prev.position) {
+        // Car gained a position -- find who was displaced
+        const displaced = cars.find(c => c.position === prev.position && c.name !== car.name);
+        const displacedName = displaced ? displaced.name : '???';
+        const text = `OVERTAKE \u2014 ${car.name} passes ${displacedName} for P${car.position}`;
+        overlayState.overtakeQueue.push({
+          text,
+          startTime: currentTime,
+          duration: 2000,
+        });
+      }
+    }
+  }
+
+  // Draw active notifications
+  const active = overlayState.overtakeQueue.filter(
+    n => currentTime - n.startTime < n.duration
+  );
+  // Keep only recent (max 3)
+  while (overlayState.overtakeQueue.length > 10) {
+    overlayState.overtakeQueue.shift();
+  }
+
+  for (let i = 0; i < Math.min(active.length, 3); i++) {
+    const notif = active[i];
+    const elapsed = currentTime - notif.startTime;
+    const alpha = Math.max(0, 1 - elapsed / notif.duration);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = 'bold 14px Outfit';
+    const tw = ctx.measureText(notif.text).width;
+    const nx = w / 2;
+    const ny = h - 60 - i * 36;
+
+    ctx.beginPath();
+    _roundRect(ctx, nx - tw / 2 - 16, ny - 14, tw + 32, 30, 6);
+    ctx.fillStyle = 'rgba(10, 10, 15, 0.85)';
+    ctx.fill();
+
+    ctx.fillStyle = '#ff6600';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(notif.text, nx, ny);
+    ctx.restore();
+  }
+}
+
+// ─── Fastest Lap Tracking ───────────────────────────────────────────────────
+function renderFastestLap(ctx, replay, frame, cars) {
+  if (!cars) return;
+
+  for (const car of cars) {
+    const prevLap = overlayState.lastLaps[car.name];
+    if (prevLap !== undefined && car.lap > prevLap) {
+      // Lap boundary crossed
+      const startFrame = overlayState.lapStartFrames[car.name];
+      if (startFrame !== undefined) {
+        const lapFrames = frame - startFrame;
+        if (!overlayState.lapTimes[car.name]) {
+          overlayState.lapTimes[car.name] = [];
+        }
+        overlayState.lapTimes[car.name].push(lapFrames);
+
+        if (!overlayState.fastestLap || lapFrames < overlayState.fastestLap.frames) {
+          overlayState.fastestLap = { carName: car.name, frames: lapFrames };
+        }
+      }
+      overlayState.lapStartFrames[car.name] = frame;
+    }
+    if (overlayState.lastLaps[car.name] === undefined) {
+      overlayState.lapStartFrames[car.name] = 0;
+    }
+    overlayState.lastLaps[car.name] = car.lap;
+  }
+}
+
+// ─── Main Entry Point ───────────────────────────────────────────────────────
+function renderBroadcastOverlay(ctx, replay, frame, w, h) {
+  const cars = replay.frames[frame];
+  if (!cars) return;
+  const prevCars = frame > 0 ? replay.frames[frame - 1] : null;
+
+  renderFastestLap(ctx, replay, frame, cars);
+  renderTimingTower(ctx, cars, replay, w, h);
+  renderLapCounter(ctx, replay, frame, w, h);
+  renderRaceStatus(ctx, replay, frame, w, h);
+  renderSpeedReadout(ctx, cars, w, h);
+  renderOvertakeNotification(ctx, cars, prevCars, w, h, performance.now());
+}
+
+// ─── Utility ────────────────────────────────────────────────────────────────
+function _roundRect(ctx, x, y, w, h, r) {
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+</script>
+<script>
+// Sound engine -- procedural audio synthesis via Web Audio API
+// No external audio files. All sounds generated from oscillators and noise buffers.
+
+const sound = {
+  ctx: null,        // AudioContext
+  master: null,     // GainNode (master volume)
+  engine: null,     // OscillatorNode (sawtooth)
+  engineGain: null, // GainNode
+  engine2: null,    // 2nd harmonic oscillator
+  engine2Gain: null,
+  aero: null,       // BufferSource for aero whoosh
+  aeroGain: null,
+  tireNode: null,   // BufferSource for tire squeal
+  tireGain: null,
+  tireBand: null,   // BiquadFilter (bandpass)
+  crowd: null,      // BufferSource for crowd ambience
+  crowdGain: null,
+  muted: false,
+  volume: 0.5,
+  initialized: false,
+};
+
+function initAudio() {
+  if (sound.initialized) return;
+  sound.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  sound.master = sound.ctx.createGain();
+  sound.master.gain.value = sound.volume;
+  sound.master.connect(sound.ctx.destination);
+
+  // Engine -- sawtooth oscillator at base 80 Hz
+  sound.engine = sound.ctx.createOscillator();
+  sound.engine.type = 'sawtooth';
+  sound.engine.frequency.value = 80;
+  sound.engineGain = sound.ctx.createGain();
+  sound.engineGain.gain.value = 0;
+  sound.engine.connect(sound.engineGain);
+  sound.engineGain.connect(sound.master);
+  sound.engine.start();
+
+  // 2nd harmonic
+  sound.engine2 = sound.ctx.createOscillator();
+  sound.engine2.type = 'sawtooth';
+  sound.engine2.frequency.value = 160;
+  sound.engine2Gain = sound.ctx.createGain();
+  sound.engine2Gain.gain.value = 0;
+  sound.engine2.connect(sound.engine2Gain);
+  sound.engine2Gain.connect(sound.master);
+  sound.engine2.start();
+
+  // Aero whoosh -- white noise through lowpass filter
+  var aeroBuffer = createNoiseBuffer(sound.ctx, 2);
+  sound.aero = sound.ctx.createBufferSource();
+  sound.aero.buffer = aeroBuffer;
+  sound.aero.loop = true;
+  var aeroLow = sound.ctx.createBiquadFilter();
+  aeroLow.type = 'lowpass';
+  aeroLow.frequency.value = 400;
+  sound.aeroGain = sound.ctx.createGain();
+  sound.aeroGain.gain.value = 0;
+  sound.aero.connect(aeroLow);
+  aeroLow.connect(sound.aeroGain);
+  sound.aeroGain.connect(sound.master);
+  sound.aero.start();
+
+  // Tire squeal -- white noise through bandpass filter
+  var tireBuffer = createNoiseBuffer(sound.ctx, 2);
+  sound.tireNode = sound.ctx.createBufferSource();
+  sound.tireNode.buffer = tireBuffer;
+  sound.tireNode.loop = true;
+  sound.tireBand = sound.ctx.createBiquadFilter();
+  sound.tireBand.type = 'bandpass';
+  sound.tireBand.frequency.value = 3000;
+  sound.tireBand.Q.value = 5;
+  sound.tireGain = sound.ctx.createGain();
+  sound.tireGain.gain.value = 0;
+  sound.tireNode.connect(sound.tireBand);
+  sound.tireBand.connect(sound.tireGain);
+  sound.tireGain.connect(sound.master);
+  sound.tireNode.start();
+
+  // Crowd ambience -- brown noise at low volume
+  var crowdBuffer = createBrownNoiseBuffer(sound.ctx, 4);
+  sound.crowd = sound.ctx.createBufferSource();
+  sound.crowd.buffer = crowdBuffer;
+  sound.crowd.loop = true;
+  sound.crowdGain = sound.ctx.createGain();
+  sound.crowdGain.gain.value = 0.05;
+  sound.crowd.connect(sound.crowdGain);
+  sound.crowdGain.connect(sound.master);
+  sound.crowd.start();
+
+  sound.initialized = true;
+}
+
+function createNoiseBuffer(audioCtx, seconds) {
+  var size = audioCtx.sampleRate * seconds;
+  var buffer = audioCtx.createBuffer(1, size, audioCtx.sampleRate);
+  var data = buffer.getChannelData(0);
+  for (var i = 0; i < size; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  return buffer;
+}
+
+function createBrownNoiseBuffer(audioCtx, seconds) {
+  var size = audioCtx.sampleRate * seconds;
+  var buffer = audioCtx.createBuffer(1, size, audioCtx.sampleRate);
+  var data = buffer.getChannelData(0);
+  var last = 0;
+  for (var i = 0; i < size; i++) {
+    var white = Math.random() * 2 - 1;
+    data[i] = (last + 0.02 * white) / 1.02;
+    last = data[i];
+    data[i] *= 3.5;
+  }
+  return buffer;
+}
+
+function updateSound(replay, frameIdx) {
+  if (!sound.initialized || !replay || sound.muted) return;
+
+  var cars = replay.frames[frameIdx];
+  if (!cars) return;
+
+  var leader = cars.find(function(c) { return c.position === 1; });
+  if (!leader) return;
+
+  var t = sound.ctx.currentTime;
+  var speed = leader.speed || 0;
+
+  // Engine pitch: 80 Hz at 0 km/h, 400 Hz at 300 km/h
+  var freq = 80 + (speed / 300) * 320;
+  sound.engine.frequency.setTargetAtTime(freq, t, 0.05);
+  sound.engine2.frequency.setTargetAtTime(freq * 2, t, 0.05);
+
+  // Engine volume: scales with speed
+  var engineVol = Math.min(0.15, speed / 300 * 0.15);
+  sound.engineGain.gain.setTargetAtTime(engineVol, t, 0.05);
+  sound.engine2Gain.gain.setTargetAtTime(engineVol * 0.3, t, 0.05);
+
+  // Aero whoosh: scales with speed
+  var aeroVol = Math.min(0.08, (speed / 300) * 0.08);
+  sound.aeroGain.gain.setTargetAtTime(aeroVol, t, 0.1);
+
+  // Tire squeal: curvature * speed
+  var seg = leader.seg || 0;
+  var curv = replay.track_curvatures ? (replay.track_curvatures[seg] || 0) : 0;
+  var squealIntensity = curv * speed * 0.001;
+  var squealVol = squealIntensity > 0.02 ? Math.min(0.12, squealIntensity) : 0;
+  sound.tireGain.gain.setTargetAtTime(squealVol, t, 0.03);
+
+  // Downshift pops: speed drop > 20 km/h between frames
+  if (frameIdx > 0) {
+    var prevCars = replay.frames[frameIdx - 1];
+    var prevLeader = prevCars
+      ? prevCars.find(function(c) { return c.name === leader.name; })
+      : null;
+    if (prevLeader && prevLeader.speed - leader.speed > 20) {
+      triggerDownshiftPop();
+    }
+  }
+}
+
+function triggerDownshiftPop() {
+  if (!sound.initialized) return;
+  var buf = createNoiseBuffer(sound.ctx, 0.05);
+  var src = sound.ctx.createBufferSource();
+  src.buffer = buf;
+  var gain = sound.ctx.createGain();
+  gain.gain.value = 0.1;
+  gain.gain.setTargetAtTime(0, sound.ctx.currentTime + 0.02, 0.01);
+  src.connect(gain);
+  gain.connect(sound.master);
+  src.start();
+  src.stop(sound.ctx.currentTime + 0.05);
+}
+
+function triggerCrowdSwell() {
+  if (!sound.initialized || !sound.crowdGain) return;
+  var t = sound.ctx.currentTime;
+  sound.crowdGain.gain.setTargetAtTime(0.2, t, 0.1);
+  sound.crowdGain.gain.setTargetAtTime(0.05, t + 0.5, 0.3);
+}
+
+function pauseSound() {
+  if (!sound.initialized) return;
+  var t = sound.ctx.currentTime;
+  sound.engineGain.gain.setTargetAtTime(0, t, 0.05);
+  sound.engine2Gain.gain.setTargetAtTime(0, t, 0.05);
+  sound.aeroGain.gain.setTargetAtTime(0, t, 0.05);
+  sound.tireGain.gain.setTargetAtTime(0, t, 0.05);
+}
+
+function setVolume(vol) {
+  sound.volume = vol;
+  if (sound.master) {
+    sound.master.gain.setTargetAtTime(vol, sound.ctx.currentTime, 0.05);
+  }
+}
+
+function toggleMute() {
+  sound.muted = !sound.muted;
+  if (sound.master) {
+    sound.master.gain.setTargetAtTime(
+      sound.muted ? 0 : sound.volume, sound.ctx.currentTime, 0.05
+    );
+  }
+}
+</script>
+<script>
+// ── Physics Visualization Effects ────────────────────────────────────────────
+// Tire marks, brake glow, drafting wake, and visual effects for the race viewer.
+
+const physicsFx = {
+  tireMarks: [],   // Array of {x, y, alpha} — persistent marks on track
+  maxMarks: 2000,  // Cap to prevent memory issues
+};
+
+/**
+ * Clear all physics effects state.
+ * Called on replay load and when scrubbing.
+ */
+function resetPhysicsFx() {
+  physicsFx.tireMarks = [];
+}
+
+/**
+ * Add tire marks for cars cornering at speed.
+ * @param {Object} replay - full replay object
+ * @param {number} frameIdx - current frame index
+ * @param {Object} transform - { scale, ox, oy }
+ */
+function updateTireMarks(replay, frameIdx, transform) {
+  const cars = replay.frames[frameIdx];
+  if (!cars || !replay.track_curvatures) return;
+
+  const curvatures = replay.track_curvatures;
+  const n = curvatures.length;
+
+  for (const car of cars) {
+    const seg = car.seg != null ? car.seg % n : 0;
+    const curv = curvatures[seg] || 0;
+
+    if (curv > 0.03 && car.speed > 80) {
+      physicsFx.tireMarks.push({ x: car.x, y: car.y, alpha: 0.15 });
+    }
+  }
+
+  // Cap at maxMarks — remove oldest
+  if (physicsFx.tireMarks.length > physicsFx.maxMarks) {
+    physicsFx.tireMarks.splice(0, physicsFx.tireMarks.length - physicsFx.maxMarks);
+  }
+}
+
+/**
+ * Draw accumulated tire marks on the background canvas.
+ * @param {CanvasRenderingContext2D} ctx - background canvas context
+ * @param {Object} transform - { scale, ox, oy }
+ */
+function renderTireMarks(ctx, transform) {
+  const s = transform.scale;
+  const ox = transform.ox;
+  const oy = transform.oy;
+  const radius = 1.5 * s;
+
+  for (const mark of physicsFx.tireMarks) {
+    const sx = mark.x * s + ox;
+    const sy = mark.y * s + oy;
+    ctx.globalAlpha = mark.alpha;
+    ctx.beginPath();
+    ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#111';
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/**
+ * Draw a red glow trail behind a braking car.
+ * @param {CanvasRenderingContext2D} ctx - car layer context
+ * @param {Object} car - current frame car data
+ * @param {Object|null} prevCar - same car from previous frame
+ * @param {number} screenX - car screen X position
+ * @param {number} screenY - car screen Y position
+ * @param {number} heading - car heading angle
+ * @param {number} scale - world-to-screen scale factor
+ */
+function renderBrakeGlow(ctx, car, prevCar, screenX, screenY, heading, scale) {
+  if (!prevCar) return;
+
+  const speedDrop = prevCar.speed - car.speed;
+  if (speedDrop <= 5) return;
+
+  const intensity = Math.min(speedDrop / 30, 1);
+  const glowLen = 10 * scale * intensity;
+  const glowRadius = 6 * scale * intensity;
+
+  // Position behind the car
+  const behindX = screenX - Math.cos(heading) * 8 * scale;
+  const behindY = screenY - Math.sin(heading) * 8 * scale;
+
+  ctx.save();
+  const grad = ctx.createRadialGradient(
+    behindX, behindY, 1,
+    behindX, behindY, glowRadius
+  );
+  grad.addColorStop(0, '#ff00004d');  // red, alpha ~0.3
+  grad.addColorStop(0.5, '#ff00001a');
+  grad.addColorStop(1, '#ff000000');
+
+  ctx.beginPath();
+  ctx.arc(behindX, behindY, glowRadius, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Trail line behind the glow
+  const trailX = behindX - Math.cos(heading) * glowLen;
+  const trailY = behindY - Math.sin(heading) * glowLen;
+  ctx.beginPath();
+  ctx.moveTo(behindX, behindY);
+  ctx.lineTo(trailX, trailY);
+  ctx.strokeStyle = '#ff000026';
+  ctx.lineWidth = 3 * scale;
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * Draw faint slipstream lines between closely spaced cars.
+ * @param {CanvasRenderingContext2D} ctx - car layer context
+ * @param {Array} cars - current frame car array
+ * @param {Object} replay - full replay object
+ * @param {Object} transform - { scale, ox, oy }
+ */
+function renderDraftingWake(ctx, cars, replay, transform) {
+  if (!cars || cars.length < 2) return;
+
+  for (let i = 0; i < cars.length; i++) {
+    for (let j = i + 1; j < cars.length; j++) {
+      const dx = cars[i].x - cars[j].x;
+      const dy = cars[i].y - cars[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 5 || dist > 40) continue;
+
+      const p1 = worldToScreen(cars[i].x, cars[i].y);
+      const p2 = worldToScreen(cars[j].x, cars[j].y);
+
+      // Draw 3 thin slipstream lines slightly spread
+      ctx.save();
+      ctx.globalAlpha = 0.06;
+      ctx.strokeStyle = '#ffffff10';
+      ctx.lineWidth = 1;
+
+      const perpX = -(p2.y - p1.y) / (dist + 0.001);
+      const perpY = (p2.x - p1.x) / (dist + 0.001);
+
+      for (const offset of [-2, 0, 2]) {
+        ctx.beginPath();
+        ctx.moveTo(p1.x + perpX * offset, p1.y + perpY * offset);
+        ctx.lineTo(p2.x + perpX * offset, p2.y + perpY * offset);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+}
+</script>
+<script>
+// ── Camera System ─────────────────────────────────────────────────────────────
+// Three camera modes: full track, follow cam, onboard cam.
+// Smooth lerp transitions between modes.
+
+const cameraSystem = {
+  mode: 'full',           // 'full', 'follow', 'onboard'
+  targetX: 0,
+  targetY: 0,
+  targetZoom: 1,
+  targetRotation: 0,
+  currentX: 0,
+  currentY: 0,
+  currentZoom: 1,
+  currentRotation: 0,
+  selectedCar: null,      // car name string
+  lerpSpeed: 0.08,        // Per-frame lerp factor
+};
+
+/**
+ * Switch camera mode. For follow/onboard, auto-selects leader if no car selected.
+ */
+function setCameraMode(mode) {
+  if (mode === 'follow' || mode === 'onboard') {
+    if (!cameraSystem.selectedCar) {
+      // Auto-select leader if no car selected
+      if (typeof replay !== 'undefined' && replay && replay.frames && replay.frames[frame]) {
+        const leader = replay.frames[frame].find(c => c.position === 1);
+        if (leader) cameraSystem.selectedCar = leader.name;
+      }
+      if (!cameraSystem.selectedCar) return;
+    }
+  }
+  cameraSystem.mode = mode;
+  updateCameraButtons();
+}
+
+/**
+ * Select a car for follow/onboard cam. Auto-switches to follow if in full mode.
+ */
+function selectCar(name) {
+  cameraSystem.selectedCar = name;
+  if (cameraSystem.mode === 'full') {
+    setCameraMode('follow');
+  }
+}
+
+/**
+ * Update camera targets based on current mode and frame data.
+ * Called each tick before rendering.
+ */
+function updateCamera(replayData, frameIdx) {
+  if (!replayData) return;
+  const cars = replayData.frames[frameIdx];
+  if (!cars) return;
+
+  if (cameraSystem.mode === 'full') {
+    _updateCameraFull();
+  } else if (cameraSystem.mode === 'follow') {
+    _updateCameraFollow(cars, replayData);
+  } else if (cameraSystem.mode === 'onboard') {
+    _updateCameraOnboard(cars, replayData);
+  }
+
+  _lerpCamera();
+}
+
+/**
+ * Full track mode: reset to default view.
+ */
+function _updateCameraFull() {
+  cameraSystem.targetZoom = 1;
+  cameraSystem.targetRotation = 0;
+}
+
+/**
+ * Follow cam: track selected car with look-ahead.
+ */
+function _updateCameraFollow(cars, replayData) {
+  const car = cars.find(c => c.name === cameraSystem.selectedCar);
+  if (!car) return;
+
+  const heading = _getCarHeading(car, replayData);
+  const lookAhead = 30;
+
+  cameraSystem.targetX = car.x + Math.cos(heading) * lookAhead;
+  cameraSystem.targetY = car.y + Math.sin(heading) * lookAhead;
+  cameraSystem.targetZoom = 3;
+  cameraSystem.targetRotation = 0;
+}
+
+/**
+ * Onboard cam: tight zoom with rotation so car faces up.
+ */
+function _updateCameraOnboard(cars, replayData) {
+  const car = cars.find(c => c.name === cameraSystem.selectedCar);
+  if (!car) return;
+
+  const heading = _getCarHeading(car, replayData);
+  const lookAhead = 20;
+
+  cameraSystem.targetX = car.x + Math.cos(heading) * lookAhead;
+  cameraSystem.targetY = car.y + Math.sin(heading) * lookAhead;
+  cameraSystem.targetZoom = 6;
+  cameraSystem.targetRotation = -heading + Math.PI / 2;
+}
+
+/**
+ * Get heading angle for a car from track headings data.
+ */
+function _getCarHeading(car, replayData) {
+  if (replayData.track_headings && car.seg !== undefined) {
+    return replayData.track_headings[car.seg] || 0;
+  }
+  return 0;
+}
+
+/**
+ * Lerp current values toward targets for smooth transitions.
+ */
+function _lerpCamera() {
+  const s = cameraSystem.lerpSpeed;
+  cameraSystem.currentX += (cameraSystem.targetX - cameraSystem.currentX) * s;
+  cameraSystem.currentY += (cameraSystem.targetY - cameraSystem.currentY) * s;
+  cameraSystem.currentZoom += (cameraSystem.targetZoom - cameraSystem.currentZoom) * s;
+  cameraSystem.currentRotation +=
+    (cameraSystem.targetRotation - cameraSystem.currentRotation) * s;
+}
+
+/**
+ * Update active state on camera mode buttons in the UI.
+ */
+function updateCameraButtons() {
+  document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('cam-' + cameraSystem.mode);
+  if (btn) btn.classList.add('active');
+}
+</script>
 <script>
 // ─── State ──────────────────────────────────────────────────────────────────
 let replay = null;
@@ -347,6 +1635,13 @@ let animId = null;
 let lastTime = 0;
 let accumulator = 0;
 
+// Cached transform values (recomputed on resize / load)
+let _scale = 1;
+let _baseScale = 1;
+let _ox = 0;
+let _oy = 0;
+let _rotation = 0;
+
 function esc(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -356,8 +1651,15 @@ function esc(s) {
     .replace(/'/g, '&#39;');
 }
 
-const canvas = document.getElementById('track');
-const ctx = canvas.getContext('2d');
+// ─── Canvas refs ────────────────────────────────────────────────────────────
+const bgCanvas = document.getElementById('trackBg');
+const bgCtx = bgCanvas.getContext('2d');
+
+const carCanvas = document.getElementById('carLayer');
+const carCtx = carCanvas.getContext('2d');
+
+const overlayCanvas = document.getElementById('overlayLayer');
+const overlayCtx = overlayCanvas.getContext('2d');
 
 // ─── File Loading ───────────────────────────────────────────────────────────
 document.addEventListener('dragover', e => {
@@ -399,41 +1701,32 @@ function loadReplay(data) {
   frame = 0;
   playing = false;
 
+  enrichReplayData(replay);
+  resetPhysicsFx();
+
   document.getElementById('noData').style.display = 'none';
   document.getElementById('finishedOverlay').style.display = 'none';
   document.getElementById('scrubber').max = replay.frames.length - 1;
   const trackLabel = replay.track_name ? esc(replay.track_name) : 'Procedural Track';
-  document.getElementById('raceInfo').innerHTML =
-    `${trackLabel} — ${replay.car_count} cars · ${replay.laps} laps · ${replay.frames.length} frames`;
+  document.getElementById('trackName').innerHTML =
+    `<span class="track-label">\u25B6</span> ${trackLabel}`;
+  document.getElementById('raceInfo').textContent =
+    `${replay.car_count} cars \u00B7 ${replay.laps} laps \u00B7 ${replay.frames.length} frames`;
 
-  resizeCanvas();
+  resizeAllCanvases();
+  computeTransform();
+  renderBackground();
   render();
 }
 
-// ─── Canvas ─────────────────────────────────────────────────────────────────
-function resizeCanvas() {
-  const container = canvas.parentElement;
-  canvas.width = container.clientWidth * devicePixelRatio;
-  canvas.height = container.clientHeight * devicePixelRatio;
-  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-}
-
-window.addEventListener('resize', () => {
-  resizeCanvas();
-  if (replay && !playing) render();
-});
-
-// ─── Rendering ──────────────────────────────────────────────────────────────
-function render() {
+// ─── World-to-screen transform ──────────────────────────────────────────────
+function computeTransform() {
   if (!replay) return;
 
-  const w = canvas.width / devicePixelRatio;
-  const h = canvas.height / devicePixelRatio;
-
-  ctx.clearRect(0, 0, w, h);
-
-  // Compute transform to fit track
+  const w = bgCanvas.width / devicePixelRatio;
+  const h = bgCanvas.height / devicePixelRatio;
   const track = replay.track;
+
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const p of track) {
     minX = Math.min(minX, p.x);
@@ -445,150 +1738,136 @@ function render() {
   const padding = 60;
   const tw = maxX - minX;
   const th = maxY - minY;
-  const scale = Math.min((w - padding * 2) / tw, (h - padding * 2) / th);
-  const ox = (w - tw * scale) / 2 - minX * scale;
-  const oy = (h - th * scale) / 2 - minY * scale;
+  _baseScale = Math.min((w - padding * 2) / tw, (h - padding * 2) / th);
 
-  const tx = x => x * scale + ox;
-  const ty = y => y * scale + oy;
-
-  // Draw track surface
-  ctx.beginPath();
-  ctx.moveTo(tx(track[0].x), ty(track[0].y));
-  for (let i = 1; i < track.length; i++) {
-    ctx.lineTo(tx(track[i].x), ty(track[i].y));
+  if (cameraSystem.mode !== 'full') {
+    // Camera-based transform: center on camera position with zoom
+    _scale = _baseScale * cameraSystem.currentZoom;
+    _ox = w / 2 - cameraSystem.currentX * _scale;
+    _oy = h / 2 - cameraSystem.currentY * _scale;
+    _rotation = cameraSystem.currentRotation;
+  } else {
+    _scale = _baseScale;
+    _ox = (w - tw * _scale) / 2 - minX * _scale;
+    _oy = (h - th * _scale) / 2 - minY * _scale;
+    _rotation = 0;
   }
-  ctx.closePath();
-  ctx.strokeStyle = '#1a1a2a';
-  ctx.lineWidth = replay.track_width * scale * 1.1;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.stroke();
+}
 
-  // Track road
-  ctx.beginPath();
-  ctx.moveTo(tx(track[0].x), ty(track[0].y));
-  for (let i = 1; i < track.length; i++) {
-    ctx.lineTo(tx(track[i].x), ty(track[i].y));
+function worldToScreen(wx, wy) {
+  let sx = wx * _scale + _ox;
+  let sy = wy * _scale + _oy;
+
+  if (_rotation !== 0) {
+    const w = bgCanvas.width / devicePixelRatio;
+    const h = bgCanvas.height / devicePixelRatio;
+    const cx = w / 2, cy = h / 2;
+    const cos = Math.cos(_rotation);
+    const sin = Math.sin(_rotation);
+    const dx = sx - cx, dy = sy - cy;
+    sx = cx + dx * cos - dy * sin;
+    sy = cy + dx * sin + dy * cos;
   }
-  ctx.closePath();
-  ctx.strokeStyle = '#252530';
-  ctx.lineWidth = replay.track_width * scale;
-  ctx.stroke();
 
-  // Center line (dashed)
-  ctx.beginPath();
-  ctx.setLineDash([8, 12]);
-  ctx.moveTo(tx(track[0].x), ty(track[0].y));
-  for (let i = 1; i < track.length; i++) {
-    ctx.lineTo(tx(track[i].x), ty(track[i].y));
+  return { x: sx, y: sy };
+}
+
+// ─── Canvas sizing ──────────────────────────────────────────────────────────
+function resizeOneCanvas(cvs) {
+  const container = cvs.parentElement;
+  cvs.width = container.clientWidth * devicePixelRatio;
+  cvs.height = container.clientHeight * devicePixelRatio;
+  cvs.getContext('2d').setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+
+function resizeAllCanvases() {
+  resizeOneCanvas(bgCanvas);
+  resizeOneCanvas(carCanvas);
+  resizeOneCanvas(overlayCanvas);
+}
+
+window.addEventListener('resize', () => {
+  resizeAllCanvases();
+  if (replay) {
+    computeTransform();
+    renderBackground();
+    if (!playing) render();
   }
-  ctx.closePath();
-  ctx.strokeStyle = '#333340';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.setLineDash([]);
+});
 
-  // Start/finish line
-  const s0 = track[0];
-  const s1 = track[1];
-  const sdx = s1.x - s0.x;
-  const sdy = s1.y - s0.y;
-  const slen = Math.sqrt(sdx * sdx + sdy * sdy) + 0.001;
-  const snx = -sdy / slen;
-  const sny = sdx / slen;
-  const halfW = replay.track_width / 2;
-  ctx.beginPath();
-  ctx.moveTo(tx(s0.x + snx * halfW), ty(s0.y + sny * halfW));
-  ctx.lineTo(tx(s0.x - snx * halfW), ty(s0.y - sny * halfW));
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 3;
-  ctx.stroke();
+// ─── Background renderer (track surface) ────────────────────────────────────
+function renderBackground() {
+  const w = bgCanvas.width / devicePixelRatio;
+  const h = bgCanvas.height / devicePixelRatio;
+  bgCtx.clearRect(0, 0, w, h);
 
-  // Draw cars
+  if (!replay) return;
+  computeTransform();
+  renderTrack(bgCtx, replay, { scale: _scale, ox: _ox, oy: _oy, w, h });
+  renderTireMarks(bgCtx, { scale: _scale, ox: _ox, oy: _oy });
+}
+
+// ─── Car renderer ───────────────────────────────────────────────────────────
+function renderCars() {
+  const w = carCanvas.width / devicePixelRatio;
+  const h = carCanvas.height / devicePixelRatio;
+  carCtx.clearRect(0, 0, w, h);
+  if (!replay) return;
+
   const cars = replay.frames[frame];
   if (!cars) return;
+
+  const prevCars = frame > 0 ? replay.frames[frame - 1] : null;
+  const transform = { scale: _scale, ox: _ox, oy: _oy };
+
+  // Update tire marks for this frame
+  updateTireMarks(replay, frame, transform);
 
   // Sort so leader draws on top
   const sorted = [...cars].sort((a, b) => b.position - a.position);
 
   for (const car of sorted) {
-    const cx = tx(car.x);
-    const cy = ty(car.y);
-    const r = 7;
+    const prevCar = prevCars ? prevCars.find(c => c.name === car.name) : null;
 
-    // Boost glow
-    if (car.boost) {
-      const glow = ctx.createRadialGradient(cx, cy, r, cx, cy, r * 3.5);
-      glow.addColorStop(0, car.color + '66');
-      glow.addColorStop(1, car.color + '00');
-      ctx.beginPath();
-      ctx.arc(cx, cy, r * 3.5, 0, Math.PI * 2);
-      ctx.fillStyle = glow;
-      ctx.fill();
-    }
+    // Brake glow behind the car (drawn before car body)
+    const heading = (replay.track_headings && car.seg != null)
+      ? replay.track_headings[car.seg % replay.track_headings.length] : 0;
+    const pos = worldToScreen(car.x, car.y);
+    renderBrakeGlow(carCtx, car, prevCar, pos.x, pos.y, heading, _scale);
 
-    // Car body
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fillStyle = car.color;
-    ctx.fill();
-
-    // Position number
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 9px JetBrains Mono';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(car.position, cx, cy);
-
-    // Name label
-    ctx.fillStyle = '#ddd';
-    ctx.font = '10px Outfit';
-    ctx.fillText(car.name, cx, cy - r - 8);
+    renderCar(carCtx, car, prevCar, replay, transform);
   }
 
-  // Update leaderboard
-  updateLeaderboard(cars);
+  // Drafting wake between close cars
+  renderDraftingWake(carCtx, cars, replay, transform);
+}
+
+// ─── Overlay renderer (HUD / leaderboard) ───────────────────────────────────
+function renderOverlay() {
+  if (!replay) return;
+
+  const w = overlayCanvas.width / devicePixelRatio;
+  const h = overlayCanvas.height / devicePixelRatio;
+  overlayCtx.clearRect(0, 0, w, h);
+
+  const cars = replay.frames[frame];
+  if (!cars) return;
+
+  // Canvas broadcast overlay
+  renderBroadcastOverlay(overlayCtx, replay, frame, w, h);
+
   document.getElementById('scrubber').value = frame;
 
-  // Lap display
-  if (cars.length > 0) {
-    const leader = cars.find(c => c.position === 1);
-    if (leader) {
-      document.getElementById('lapDisplay').textContent =
-        leader.finished ? 'FINISHED' : `Lap ${Math.min(leader.lap + 1, replay.laps)} / ${replay.laps}`;
-    }
-  }
-
-  // Check if finished
   if (frame >= replay.frames.length - 1 && replay.results) {
     showResults();
   }
 }
 
-function updateLeaderboard(cars) {
-  const lb = document.getElementById('leaderboard');
-  const sorted = [...cars].sort((a, b) => a.position - b.position);
-
-  lb.innerHTML = sorted.map(car => {
-    const posClass = car.position <= 3 ? ` p${car.position}` : '';
-    const tirePercent = Math.max(0, (1 - car.tire_wear) * 100);
-    const tireColor = tirePercent > 50 ? '#44cc44' : tirePercent > 25 ? '#ccaa00' : '#cc3333';
-    const boostHtml = car.boost ? '<span class="boost-indicator">⚡ BOOST</span>' : '';
-
-    return `<div class="car-row">
-      <div class="car-pos${posClass}">P${car.position}</div>
-      <div class="car-dot" style="background:${car.color}"></div>
-      <div class="car-details">
-        <div class="car-name">${esc(car.name)}</div>
-        <div class="car-stats">
-          <span>${Math.round(car.speed)} km/h</span>
-          <div class="tire-bar"><div class="tire-fill" style="width:${tirePercent}%;background:${tireColor}"></div></div>
-          ${boostHtml}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+// ─── Main render (per-frame) ────────────────────────────────────────────────
+function render() {
+  if (!replay) return;
+  renderCars();
+  renderOverlay();
 }
 
 function showResults() {
@@ -616,12 +1895,14 @@ function togglePlay() {
   document.getElementById('finishedOverlay').style.display = 'none';
 
   if (playing) {
+    initAudio();
     if (frame >= replay.frames.length - 1) frame = 0;
     lastTime = performance.now();
     accumulator = 0;
     tick();
   } else {
     cancelAnimationFrame(animId);
+    pauseSound();
   }
 }
 
@@ -647,7 +1928,15 @@ function tick() {
     }
   }
 
+  updateCamera(replay, frame);
+
+  if (cameraSystem.mode !== 'full') {
+    computeTransform();
+    renderBackground();
+  }
+
   render();
+  updateSound(replay, frame);
   if (playing) animId = requestAnimationFrame(tick);
 }
 
@@ -662,11 +1951,40 @@ document.getElementById('scrubber').addEventListener('input', e => {
   playing = false;
   document.getElementById('playBtn').textContent = '▶ Play';
   document.getElementById('finishedOverlay').style.display = 'none';
+  pauseSound();
+  resetPhysicsFx();
+  renderBackground();
   render();
 });
 
+// ─── Camera keyboard shortcuts ──────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 't' || e.key === 'T') setCameraMode('full');
+  if (e.key === 'f' || e.key === 'F') setCameraMode('follow');
+  if (e.key === 'o' || e.key === 'O') setCameraMode('onboard');
+  if (e.key === 'Escape') setCameraMode('full');
+});
+
+// ─── Overlay click: select car from timing tower ────────────────────────────
+overlayCanvas.addEventListener('click', e => {
+  const rect = overlayCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  // Timing tower is on the left, starting at y=60, each row ~30px
+  if (x < 200 && replay) {
+    const cars = replay.frames[frame];
+    if (!cars) return;
+    const sorted = [...cars].sort((a, b) => a.position - b.position);
+    const rowIdx = Math.floor((y - 60) / 30);
+    if (rowIdx >= 0 && rowIdx < sorted.length) {
+      selectCar(sorted[rowIdx].name);
+    }
+  }
+});
+
 // ─── Init ───────────────────────────────────────────────────────────────────
-resizeCanvas();
+resizeAllCanvases();
 </script>
 </body>
 </html>

@@ -6,6 +6,8 @@ SILVERSTONE = {
     "country": "United Kingdom",
     "character": "balanced",
     "laps_default": 5,
+    "real_length_m": 5891,
+    "real_laps": 52,
     "control_points": [
         (400, 200),  # Start/finish (Wellington Straight)
         (550, 180),  # Copse
@@ -31,6 +33,8 @@ SUZUKA = {
     "country": "Japan",
     "character": "balanced",
     "laps_default": 5,
+    "real_length_m": 5807,
+    "real_laps": 53,
     "control_points": [
         (300, 200),  # Start/finish
         (450, 150),  # Turn 1-2 (esses entry)
@@ -55,6 +59,8 @@ AUSTIN = {
     "country": "United States",
     "character": "balanced",
     "laps_default": 5,
+    "real_length_m": 5513,
+    "real_laps": 56,
     "control_points": [
         (200, 350),  # Start/finish
         (250, 250),  # Turn 1 climb
@@ -78,6 +84,8 @@ BARCELONA = {
     "country": "Spain",
     "character": "balanced",
     "laps_default": 5,
+    "real_length_m": 4675,
+    "real_laps": 66,
     "control_points": [
         (350, 200),  # Start/finish
         (520, 170),  # Turn 1 (Elf)
@@ -101,6 +109,8 @@ BAHRAIN = {
     "country": "Bahrain",
     "character": "balanced",
     "laps_default": 5,
+    "real_length_m": 5412,
+    "real_laps": 57,
     "control_points": [
         (300, 250),  # Start/finish
         (450, 200),  # Turn 1 braking

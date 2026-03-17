@@ -98,7 +98,7 @@ class TestCarLoader:
             'CAR_COLOR = "not-a-color"\n'
             'POWER = 20\nGRIP = 20\nWEIGHT = 20\nAERO = 20\nBRAKES = 20\n'
         )
-        with pytest.raises(ValueError, match="hex color"):
+        with pytest.raises(ValueError, match="hex"):
             load_car(str(car_file))
 
     def test_load_car_rejects_negative_stat(self, tmp_path):

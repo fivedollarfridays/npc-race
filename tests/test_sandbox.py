@@ -4,7 +4,15 @@ import time
 
 from security.sandbox import safe_strategy_call
 
-DEFAULTS = {"throttle": 1.0, "boost": False, "tire_mode": "balanced"}
+DEFAULTS = {
+    "throttle": 1.0,
+    "boost": False,
+    "tire_mode": "balanced",
+    "lateral_target": 0.0,
+    "pit_request": False,
+    "tire_compound_request": None,
+    "engine_mode": "standard",
+}
 
 
 class TestSafeStrategyCallBasic:

@@ -1,6 +1,7 @@
 """
 SlipStream — The drafter.
-High aero build. Sits behind others for draft bonus, then slingshots past.
+1-stop: medium -> soft (late undercut). Sits in draft of car ahead.
+Standard engine while drafting, push on fresh softs. Slingshot strategy.
 """
 
 CAR_NAME = "SlipStream"
@@ -13,28 +14,46 @@ AERO = 35
 BRAKES = 15
 
 
+def _draft_info(nearby):
+    """Analyze nearby cars for drafting opportunities."""
+    cars_ahead = [c for c in nearby if c["distance_ahead"] > 0]
+    drafting = any(5 < c["distance_ahead"] < 35 for c in cars_ahead)
+    lateral = 0.0
+    if cars_ahead:
+        closest = min(cars_ahead, key=lambda c: c["distance_ahead"])
+        lateral = closest["lateral"]
+    return cars_ahead, drafting, lateral
+
+
 def strategy(state):
-    behind_someone = any(
-        0 < c["distance_ahead"] < 35 for c in state["nearby_cars"]
-    )
+    lap = state["lap"]
+    total = max(state["total_laps"], 1)
+    lap_pct = lap / total
+    pit_stops = state["pit_stops"]
+    compound = state["tire_compound"]
 
-    # Drafting — sit tight and conserve
-    if behind_someone and state["position"] > 1:
-        tire_mode = "conserve"
-        throttle = 0.95  # just enough to stay in draft range
-    else:
-        tire_mode = "balanced"
-        throttle = 1.0
+    _, drafting, draft_lateral = _draft_info(state["nearby_cars"])
 
-    # Boost when close behind someone on last lap
-    use_boost = (
-        state["lap"] >= state["total_laps"] - 1
-        and state["boost_available"]
-        and behind_someone
-    )
+    # --- Pit strategy: 1-stop at ~55% for fresh softs ---
+    pit_request = pit_stops == 0 and lap_pct >= 0.50
+    compound_req = "soft" if pit_request else None
+
+    # --- Engine mode: push on fresh softs, standard otherwise ---
+    on_fresh_softs = compound == "soft" and pit_stops >= 1
+    engine_mode = "push" if on_fresh_softs else "standard"
+
+    # --- Throttle: sit tight in draft range ---
+    throttle = 0.95 if (drafting and state["position"] > 1) else 1.0
+
+    # --- Boost when close behind on last lap ---
+    use_boost = lap >= total - 1 and state["boost_available"] and drafting
 
     return {
         "throttle": throttle,
         "boost": use_boost,
-        "tire_mode": tire_mode,
+        "tire_mode": "balanced",
+        "lateral_target": draft_lateral,
+        "pit_request": pit_request,
+        "tire_compound_request": compound_req,
+        "engine_mode": engine_mode,
     }

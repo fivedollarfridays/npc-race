@@ -21,7 +21,7 @@ STATS (int, each 0-100, sum <= 100)
 
 STRATEGY STATE (dict passed to strategy() each tick)
 -----------------------------------------------------
-  speed           float   Your current speed (units/sec, typically 40-300)
+  speed           float   Your current speed (km/h, typically 40-300)
   position        int     Your race position (1 = first place)
   total_cars      int     Number of cars in the race
   lap             int     Current lap (0-indexed, so lap 0 = first lap)
@@ -39,19 +39,35 @@ STRATEGY STATE (dict passed to strategy() each tick)
   distance        float   Total distance you have traveled (units)
   track_length    float   Length of one full lap (units)
   lateral         float   Your lateral lane position (-1.0 to 1.0)
+  fuel_remaining  float   Fuel in kg remaining
+  fuel_pct        float   0.0-1.0 percentage of starting fuel remaining
+  tire_compound   str     Current tire compound ("soft"/"medium"/"hard")
+  tire_age_laps   int     Laps since last tire change
+  engine_mode     str     Current engine mode ("push"/"standard"/"conserve")
+  pit_status      str     "racing", "pit_entry", "pit_stationary", "pit_exit"
+  pit_stops       int     Number of pit stops completed
+  gap_ahead_s     float   Gap to car ahead in seconds (0.0 if leading)
+  gap_behind_s    float   Gap to car behind in seconds (0.0 if last)
 
 STRATEGY RETURNS (dict)
 -----------------------
-  throttle   float   0.0 (coast) to 1.0 (full throttle). Default: 1.0
-  boost      bool    True to activate boost. One-time use, lasts 3 seconds.
-                     Gives 1.25x top speed while active. Default: False
-  tire_mode  str     One of:
-                       "conserve"  -- Low wear (0.00008/tick), saves tires
-                       "balanced"  -- Normal wear (0.00018/tick)
-                       "push"      -- High wear (0.00035/tick), max grip
-                     Default: "balanced"
+  throttle              float   0.0 (coast) to 1.0 (full throttle). Default: 1.0
+  boost                 bool    True to activate boost. One-time use, lasts 3 sec.
+                                Gives 1.25x top speed while active. Default: False
+  tire_mode             str     One of: "conserve", "balanced", "push".
+                                Modulates tire wear rate. Default: "balanced"
+  lateral_target        float   Target lateral position. -1.0=inside, 0.0=center,
+                                1.0=outside. Clamped to [-1, 1]. Default: 0.0
+  pit_request           bool    True to request a pit stop. Default: False
+  tire_compound_request str     Compound for next pit stop: "soft", "medium",
+                                or "hard". Ignored if pit_request is False.
+                                Default: None (no change)
+  engine_mode           str     "push" (fast, burns more fuel),
+                                "standard" (balanced),
+                                "conserve" (slow, saves fuel). Default: "standard"
 
 If strategy() raises an exception or returns a non-dict, defaults are used.
+Partial returns are merged with defaults -- you only need to return fields you change.
 """
 
 CAR_NAME = "MyCar"
@@ -70,6 +86,7 @@ def strategy(state):
         "throttle": 1.0,
         "boost": state["lap"] >= state["total_laps"] - 1,
         "tire_mode": "balanced",
+        "engine_mode": "standard",
     }
 
 
@@ -110,8 +127,32 @@ def strategy(state):
 #
 #     return {"throttle": throttle, "boost": use_boost, "tire_mode": "push"}
 
-# --- Example 3: Draft-and-pass ---
-# Sits behind opponents to draft, then passes on straights.
+# --- Example 3: Pit stop strategy ---
+# Starts on soft tires, pits for mediums at half distance, manages fuel.
+#
+# def strategy(state):
+#     halfway = state["lap"] >= state["total_laps"] // 2
+#     need_pit = halfway and state["pit_stops"] == 0
+#     low_fuel = state["fuel_pct"] < 0.3
+#
+#     if low_fuel:
+#         engine_mode = "conserve"
+#     elif state["lap"] >= state["total_laps"] - 1:
+#         engine_mode = "push"
+#     else:
+#         engine_mode = "standard"
+#
+#     return {
+#         "throttle": 1.0,
+#         "boost": state["lap"] >= state["total_laps"] - 1,
+#         "tire_mode": "balanced",
+#         "pit_request": need_pit,
+#         "tire_compound_request": "medium" if need_pit else None,
+#         "engine_mode": engine_mode,
+#     }
+
+# --- Example 4: Draft-and-pass with lateral movement ---
+# Uses lateral position to set up overtakes on straights.
 #
 # def strategy(state):
 #     cars_ahead = [c for c in state["nearby_cars"] if c["distance_ahead"] > 0]
@@ -119,17 +160,18 @@ def strategy(state):
 #     on_straight = state["curvature"] < 0.005
 #     last_lap = state["lap"] >= state["total_laps"] - 1
 #
-#     if drafting and on_straight and last_lap:
-#         # Slingshot pass
-#         throttle = 1.0
-#         tire_mode = "push"
-#     elif drafting:
-#         # Tuck in and save tires
-#         throttle = 0.95
-#         tire_mode = "conserve"
-#     else:
-#         throttle = 1.0
-#         tire_mode = "balanced"
+#     lateral = 0.0
+#     if drafting and on_straight:
+#         # Move outside to overtake
+#         lateral = 1.0
+#     elif state["curvature"] > 0.01:
+#         # Take the inside line in corners
+#         lateral = -1.0
 #
 #     use_boost = last_lap and on_straight and state["boost_available"]
-#     return {"throttle": throttle, "boost": use_boost, "tire_mode": tire_mode}
+#     return {
+#         "throttle": 1.0,
+#         "boost": use_boost,
+#         "tire_mode": "push" if last_lap else "balanced",
+#         "lateral_target": lateral,
+#     }

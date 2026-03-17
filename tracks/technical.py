@@ -6,6 +6,8 @@ MONACO = {
     "country": "Monaco",
     "character": "technical",
     "laps_default": 7,
+    "real_length_m": 3337,
+    "real_laps": 78,
     "control_points": [
         (400, 100),  # Start/finish
         (550, 80),   # Sainte Devote
@@ -31,6 +33,8 @@ SINGAPORE = {
     "country": "Singapore",
     "character": "technical",
     "laps_default": 6,
+    "real_length_m": 5063,
+    "real_laps": 62,
     "control_points": [
         (300, 600),  # Start/finish
         (150, 580),  # Turn 1
@@ -55,6 +59,8 @@ ZANDVOORT = {
     "country": "Netherlands",
     "character": "technical",
     "laps_default": 6,
+    "real_length_m": 4259,
+    "real_laps": 72,
     "control_points": [
         (350, 150),  # Start/finish
         (500, 120),  # Tarzan banked entry

@@ -6,6 +6,8 @@ MONZA = {
     "country": "Italy",
     "character": "power",
     "laps_default": 5,
+    "real_length_m": 5793,
+    "real_laps": 53,
     "control_points": [
         (400, 100),  # Start/finish straight top
         (600, 80),   # Variante del Rettifilo approach
@@ -32,6 +34,8 @@ BAKU = {
     "country": "Azerbaijan",
     "character": "power",
     "laps_default": 5,
+    "real_length_m": 6003,
+    "real_laps": 51,
     "control_points": [
         (100, 600),  # Start/finish
         (100, 400),  # Long straight north
@@ -56,6 +60,8 @@ JEDDAH = {
     "country": "Saudi Arabia",
     "character": "power",
     "laps_default": 5,
+    "real_length_m": 6174,
+    "real_laps": 50,
     "control_points": [
         (200, 600),  # Start/finish
         (100, 500),  # Turn 1
@@ -80,6 +86,8 @@ SPA = {
     "country": "Belgium",
     "character": "power",
     "laps_default": 5,
+    "real_length_m": 7004,
+    "real_laps": 44,
     "control_points": [
         (200, 550),  # La Source hairpin
         (300, 600),  # Eau Rouge entry (downhill)

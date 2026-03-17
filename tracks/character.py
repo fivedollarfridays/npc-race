@@ -6,6 +6,8 @@ INTERLAGOS = {
     "country": "Brazil",
     "character": "character",
     "laps_default": 6,
+    "real_length_m": 4309,
+    "real_laps": 71,
     "control_points": [
         (500, 200),  # Start/finish
         (620, 160),  # Senna S entry (downhill)
@@ -29,6 +31,8 @@ IMOLA = {
     "country": "Italy",
     "character": "character",
     "laps_default": 6,
+    "real_length_m": 4909,
+    "real_laps": 63,
     "control_points": [
         (350, 300),  # Start/finish
         (500, 280),  # Tamburello approach
@@ -53,6 +57,8 @@ MELBOURNE = {
     "country": "Australia",
     "character": "character",
     "laps_default": 5,
+    "real_length_m": 5278,
+    "real_laps": 58,
     "control_points": [
         (400, 600),  # Start/finish
         (550, 580),  # Turn 1
@@ -76,6 +82,8 @@ MONTREAL = {
     "country": "Canada",
     "character": "character",
     "laps_default": 6,
+    "real_length_m": 4361,
+    "real_laps": 70,
     "control_points": [
         (250, 400),  # Start/finish
         (350, 350),  # Turn 1-2 chicane
@@ -99,6 +107,8 @@ MUGELLO = {
     "country": "Italy",
     "character": "character",
     "laps_default": 5,
+    "real_length_m": 5245,
+    "real_laps": 59,
     "control_points": [
         (300, 300),  # Start/finish
         (450, 250),  # San Donato
@@ -121,6 +131,8 @@ LUSAIL = {
     "country": "Qatar",
     "character": "character",
     "laps_default": 5,
+    "real_length_m": 5380,
+    "real_laps": 57,
     "control_points": [
         (350, 200),  # Start/finish
         (500, 160),  # Turn 1 long left
@@ -143,6 +155,8 @@ HUNGARORING = {
     "country": "Hungary",
     "character": "character",
     "laps_default": 7,
+    "real_length_m": 4381,
+    "real_laps": 70,
     "control_points": [
         (350, 150),  # Start/finish
         (500, 120),  # Turn 1 braking
@@ -166,6 +180,8 @@ SHANGHAI = {
     "country": "China",
     "character": "character",
     "laps_default": 5,
+    "real_length_m": 5451,
+    "real_laps": 56,
     "control_points": [
         (300, 300),  # Start/finish
         (420, 260),  # Turn 1 entry (spiral)

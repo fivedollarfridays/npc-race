@@ -8,6 +8,12 @@ hex colors, and stat types/ranges.
 import importlib.util
 import os
 import re
+from pathlib import Path
+
+try:
+    from security.bot_scanner import scan_car_source as _scan_car_source
+except ImportError:
+    _scan_car_source = None
 
 
 STAT_BUDGET = 100
@@ -20,6 +26,17 @@ def load_car(filepath):
     name = os.path.splitext(os.path.basename(filepath))[0]
     spec = importlib.util.spec_from_file_location(name, filepath)
     mod = importlib.util.module_from_spec(spec)
+
+    # Security scan before executing untrusted code
+    if _scan_car_source is not None:
+        source = Path(filepath).read_text(encoding="utf-8")
+        scan_result = _scan_car_source(source)
+        if not scan_result.passed:
+            raise ValueError(
+                f"Car file {filepath} failed security scan: "
+                f"{scan_result.violations}"
+            )
+
     spec.loader.exec_module(mod)
 
     car = {}
