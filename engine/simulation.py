@@ -4,6 +4,7 @@ Physics simulation with tire compounds, fuel load, pit stops,
 engine modes, and world-scale distance. Replay delegated to engine.replay.
 """
 
+import os
 import random
 
 from . import tire_model
@@ -38,9 +39,11 @@ class RaceSim:
     TRACK_WIDTH = 50
 
     def __init__(self, cars, track_points, laps=3, seed=42, track_name=None,
-                 real_length_m=None):
+                 real_length_m=None, car_data_dir=None, race_number=1):
         self.cars, self.track, self.laps = cars, track_points, laps
         self.rng, self.track_name = random.Random(seed), track_name
+        self.car_data_dir = car_data_dir
+        self.race_number = race_number
         self.distances, self.curvatures, self.track_length = compute_track_data(
             track_points)
         self.headings = compute_track_headings(track_points)
@@ -50,9 +53,8 @@ class RaceSim:
         # Using real_length_m directly caused inconsistent times because sim
         # physics can't reproduce real speed variance (160 vs 260 km/h avg).
         self.world_scale = self.track_length / 3333.0
-        # Use calibrated equivalent distance for fuel (3333m ≈ one lap at ws=0.52)
-        equiv_lap_m = self.track_length / self.world_scale
-        start_fuel = compute_starting_fuel(laps, equiv_lap_m)
+        # Calibrated equivalent distance for fuel: track_length/world_scale == 3333m always
+        start_fuel = compute_starting_fuel(laps, 3333.0)
         self.states = []
         for i, car in enumerate(cars):
             self.states.append({
@@ -112,6 +114,10 @@ class RaceSim:
             "pit_status": ps.get("status", "racing"),
             "pit_stops": ps.get("pit_stops", 0),
             "gap_ahead_s": gap_a, "gap_behind_s": gap_b,
+            "track_name": self.track_name,
+            "data_file": (os.path.join(self.car_data_dir, f"{cs['name']}.json")
+                          if self.car_data_dir else None),
+            "race_number": self.race_number,
         }
 
     def step(self):
@@ -209,23 +215,16 @@ class RaceSim:
 
     def _apply_physics(self, state, throttle, dt):
         """Calculate speed from power, grip, curvature, braking, fuel, engine."""
-        power = state["power"]
-        grip = state["grip"]
-        weight = state["weight"]
-        brakes = state["brakes"]
-
+        power, grip = state["power"], state["grip"]
+        weight, brakes = state["weight"], state["brakes"]
         tire_grip_mult = compute_grip_multiplier(
             state["tire_wear"], state.get("tire_compound", "medium")
         )
-
-        mode = get_engine_mode(state.get("engine_mode", "standard"))
-        power_mode = mode["power_mult"]
-
+        power_mode = get_engine_mode(state.get("engine_mode", "standard"))["power_mult"]
         base_max_speed = (BASE_SPEED + power * POWER_SPEED_FACTOR * power_mode
                          - weight * WEIGHT_SPEED_PENALTY)
         if state["boost_active"] > 0:
             base_max_speed *= 1.25
-
         curv = get_curvature_at(
             state["distance"], self.distances,
             self.curvatures, self.track_length,
@@ -238,7 +237,6 @@ class RaceSim:
             + grip_speed * curv_severity
         ) * throttle
         target_speed = max(40, target_speed)
-
         pit_st = state.get("pit_state", {})
         if pit_st and is_in_pit(pit_st):
             pit_limit = get_speed_limit(pit_st)
@@ -246,14 +244,12 @@ class RaceSim:
                 target_speed = min(target_speed, pit_limit)
             elif pit_st.get("status") == "pit_stationary":
                 target_speed = 0
-
         fuel_weight = compute_weight_from_fuel(
             state.get("fuel_kg", 0), state.get("max_fuel_kg", 1.0)
         )
         mass_factor = 1.0 + weight * WEIGHT_MASS_FACTOR + fuel_weight
         accel_rate = (ACCEL_BASE + power * ACCEL_POWER_FACTOR) / mass_factor * dt
         brake_rate = (BRAKE_BASE + brakes * BRAKE_FACTOR) * dt
-
         if target_speed > state["speed"]:
             state["speed"] = min(target_speed, state["speed"] + accel_rate)
         else:

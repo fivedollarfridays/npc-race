@@ -7,7 +7,14 @@ Uses argparse with subcommands.
 import argparse
 import sys
 
-from .commands import cmd_init, cmd_list_tracks, cmd_run, cmd_validate, cmd_wizard
+from .commands import (
+    cmd_init,
+    cmd_list_tracks,
+    cmd_run,
+    cmd_tournament,
+    cmd_validate,
+    cmd_wizard,
+)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -47,7 +54,31 @@ def _build_parser() -> argparse.ArgumentParser:
     # wizard (stub)
     subs.add_parser("wizard", help="Interactive car wizard (coming soon)")
 
+    # tournament
+    _add_tournament_parser(subs)
+
     return parser
+
+
+def _add_tournament_parser(subs) -> None:
+    """Add the tournament subparser to the CLI."""
+    tourn_p = subs.add_parser(
+        "tournament", help="Run multi-race tournament with championship points",
+    )
+    tourn_p.add_argument(
+        "--tracks", required=True,
+        help="Comma-separated track names (e.g., monaco,monza,silverstone)",
+    )
+    tourn_p.add_argument("--races", type=int, default=1,
+                         help="Races per track (default: 1)")
+    tourn_p.add_argument("--laps", type=int, default=5,
+                         help="Laps per race (default: 5)")
+    tourn_p.add_argument("--car-dir", default="cars",
+                         help="Car directory")
+    tourn_p.add_argument("--data-dir", default=None,
+                         help="Data directory for car persistence")
+    tourn_p.add_argument("--output-dir", default="tournaments",
+                         help="Output directory for replays")
 
 
 _DISPATCH = {
@@ -56,6 +87,7 @@ _DISPATCH = {
     "validate": cmd_validate,
     "list-tracks": cmd_list_tracks,
     "wizard": cmd_wizard,
+    "tournament": cmd_tournament,
 }
 
 

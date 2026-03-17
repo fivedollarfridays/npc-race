@@ -23,11 +23,11 @@ __all__ = [
 ]
 
 ALLOWED_IMPORTS: frozenset[str] = frozenset({
-    "math", "random", "collections", "itertools", "functools",
+    "math", "random", "collections", "itertools", "functools", "json",
 })
 
 BLOCKED_CALLS: frozenset[str] = frozenset({
-    "eval", "exec", "compile", "__import__", "open",
+    "eval", "exec", "compile", "__import__",
     "getattr", "setattr", "delattr",
     "globals", "locals", "vars",
     "type", "dir",
@@ -77,6 +77,24 @@ def _check_imports(tree: ast.AST) -> list[str]:
     return violations
 
 
+def _is_safe_data_path(path: str) -> bool:
+    """Check if a file path is safe for car data access."""
+    if ".." in path:
+        return False
+    if not path.startswith("cars/data/"):
+        return False
+    if not path.endswith(".json"):
+        return False
+    parts = path.split("/")
+    if len(parts) != 3:  # cars/data/filename.json
+        return False
+    # Reject empty filenames, null bytes, or non-alphanumeric characters
+    filename = parts[2]
+    if not re.match(r"^[a-zA-Z0-9_-]+\.json$", filename):
+        return False
+    return True
+
+
 def _check_calls(tree: ast.AST) -> list[str]:
     """Find dangerous function/method calls."""
     violations: list[str] = []
@@ -84,13 +102,31 @@ def _check_calls(tree: ast.AST) -> list[str]:
         if not isinstance(node, ast.Call):
             continue
         func = node.func
-        if isinstance(func, ast.Name) and func.id in BLOCKED_CALLS:
+        name = None
+        if isinstance(func, ast.Name):
+            name = func.id
+        elif isinstance(func, ast.Attribute):
+            name = func.attr
+
+        if name is None:
+            continue
+
+        # Path-gated open() — only string literals matching cars/data/*.json
+        if name == "open":
+            if (node.args
+                    and isinstance(node.args[0], ast.Constant)
+                    and isinstance(node.args[0].value, str)
+                    and _is_safe_data_path(node.args[0].value)):
+                continue
             violations.append(
-                f"Blocked call: '{func.id}()' (line {node.lineno})"
+                f"Line {node.lineno}: open() only allowed for "
+                f"cars/data/*.json paths"
             )
-        elif isinstance(func, ast.Attribute) and func.attr in BLOCKED_CALLS:
+            continue
+
+        if name in BLOCKED_CALLS:
             violations.append(
-                f"Blocked call: '{func.attr}()' (line {node.lineno})"
+                f"Blocked call: '{name}()' (line {node.lineno})"
             )
     return violations
 
@@ -165,34 +201,34 @@ def _check_semicolons(tree: ast.AST, source: str) -> list[str]:
 # --- Car metadata validation ---
 
 
+def _parse_top_level_assignments(tree: ast.Module) -> dict[str, object]:
+    """Extract name→value from top-level constant assignments (including negatives)."""
+    assignments: dict[str, object] = {}
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if not isinstance(target, ast.Name):
+                continue
+            if isinstance(node.value, ast.Constant):
+                assignments[target.id] = node.value.value
+            elif (isinstance(node.value, ast.UnaryOp)
+                  and isinstance(node.value.op, ast.USub)
+                  and isinstance(node.value.operand, ast.Constant)):
+                assignments[target.id] = -node.value.operand.value
+    return assignments
+
+
 def _check_car_metadata(tree: ast.Module) -> list[str]:
     """Validate CAR_NAME, CAR_COLOR, stats, and budget from AST constants."""
     violations: list[str] = []
-    assignments: dict[str, object] = {}
+    assignments = _parse_top_level_assignments(tree)
 
-    for node in tree.body:
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and isinstance(node.value, ast.Constant):
-                    assignments[target.id] = node.value.value
-        # Handle negative numbers: ast.UnaryOp(op=USub, operand=Constant)
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if (isinstance(target, ast.Name)
-                        and isinstance(node.value, ast.UnaryOp)
-                        and isinstance(node.value.op, ast.USub)
-                        and isinstance(node.value.operand, ast.Constant)):
-                    assignments[target.id] = -node.value.operand.value
-
-    # CAR_NAME
     if "CAR_NAME" not in assignments:
         violations.append("Missing CAR_NAME assignment")
-    else:
-        name = assignments["CAR_NAME"]
-        if not isinstance(name, str) or not name:
-            violations.append("CAR_NAME must be a non-empty string")
+    elif not isinstance(assignments["CAR_NAME"], str) or not assignments["CAR_NAME"]:
+        violations.append("CAR_NAME must be a non-empty string")
 
-    # CAR_COLOR
     if "CAR_COLOR" not in assignments:
         violations.append("Missing CAR_COLOR assignment")
     else:
@@ -202,7 +238,6 @@ def _check_car_metadata(tree: ast.Module) -> list[str]:
                 f"CAR_COLOR must be valid hex (#RRGGBB), got '{color}'"
             )
 
-    # Stats
     stat_total = 0
     for stat in STAT_FIELDS:
         if stat not in assignments:
@@ -216,7 +251,6 @@ def _check_car_metadata(tree: ast.Module) -> list[str]:
             violations.append(f"{stat} must not be negative, got {val}")
         stat_total += val
 
-    # Budget check (only if all stats present and numeric)
     all_stats_ok = all(
         stat in assignments and isinstance(assignments[stat], (int, float))
         for stat in STAT_FIELDS

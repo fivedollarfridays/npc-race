@@ -68,7 +68,14 @@ STRATEGY RETURNS (dict)
 
 If strategy() raises an exception or returns a non-dict, defaults are used.
 Partial returns are merged with defaults -- you only need to return fields you change.
+
+LEVEL 2: CROSS-RACE LEARNING (state fields)
+  data_file       str|None   Path to car's persistent JSON file (use load_data/save_data)
+  race_number     int        Race number in tournament sequence (1-indexed)
+  track_name      str|None   Track preset name (None for procedural)
 """
+
+import json
 
 CAR_NAME = "MyCar"
 CAR_COLOR = "#00ff88"
@@ -95,8 +102,6 @@ def strategy(state):
 # -----------------------------------------------------------------------
 
 # --- Example 1: Defensive / tire-saver ---
-# Conserves tires early, pushes on the last lap, saves boost for the finish.
-#
 # def strategy(state):
 #     last_lap = state["lap"] >= state["total_laps"] - 1
 #     worn_out = state["tire_wear"] > 0.6
@@ -116,8 +121,6 @@ def strategy(state):
 #     return {"throttle": throttle, "boost": use_boost, "tire_mode": tire_mode}
 
 # --- Example 2: Aggressive / full-send ---
-# Pushes hard from the start. Burns tires but builds an early lead.
-#
 # def strategy(state):
 #     in_corner = state["curvature"] > 0.02
 #     throttle = 0.9 if in_corner else 1.0
@@ -128,8 +131,6 @@ def strategy(state):
 #     return {"throttle": throttle, "boost": use_boost, "tire_mode": "push"}
 
 # --- Example 3: Pit stop strategy ---
-# Starts on soft tires, pits for mediums at half distance, manages fuel.
-#
 # def strategy(state):
 #     halfway = state["lap"] >= state["total_laps"] // 2
 #     need_pit = halfway and state["pit_stops"] == 0
@@ -152,8 +153,6 @@ def strategy(state):
 #     }
 
 # --- Example 4: Draft-and-pass with lateral movement ---
-# Uses lateral position to set up overtakes on straights.
-#
 # def strategy(state):
 #     cars_ahead = [c for c in state["nearby_cars"] if c["distance_ahead"] > 0]
 #     drafting = any(5 < c["distance_ahead"] < 40 for c in cars_ahead)
@@ -175,3 +174,24 @@ def strategy(state):
 #         "tire_mode": "push" if last_lap else "balanced",
 #         "lateral_target": lateral,
 #     }
+
+
+# --- Level 2: Cross-Race Learning Helpers ---
+
+def load_data(path: str | None) -> dict:
+    """Load car's persistent data. Returns {} if no data yet."""
+    if path is None:
+        return {}
+    try:
+        with open(path, "r") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_data(path: str | None, data: dict) -> None:
+    """Save car's persistent data."""
+    if path is None:
+        return
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
