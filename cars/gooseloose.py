@@ -15,15 +15,17 @@ BRAKES = 15
 
 _data = None
 _last_race = -1
+_saved = False
 
 
 def _ensure_data(state):
-    global _data, _last_race
+    global _data, _last_race, _saved
     rn = state.get("race_number", 1)
     if _data is not None and rn == _last_race:
         return
     _last_race = rn
     _data = {}
+    _saved = False
     if state.get("data_file"):
         try:
             with open("cars/data/GooseLoose.json") as f:
@@ -52,6 +54,7 @@ def _lateral_decision(curv, gap_behind, nearby):
 
 
 def strategy(state):
+    global _saved
     _ensure_data(state)
     tire_wear = state["tire_wear"]
     pit_stops = state["pit_stops"]
@@ -60,29 +63,25 @@ def strategy(state):
     gap_behind = state["gap_behind_s"]
     curv = state["curvature"]
     track = state.get("track_name") or "unknown"
-
-    # Record opponent speeds on last lap
-    if state.get("data_file") and state["lap"] >= state["total_laps"] - 1:
+    if state.get("data_file") and state["lap"] >= state["total_laps"] - 1 and not _saved:
         td = _data.setdefault(track, {"opponent_speeds": {}, "races": 0})
         for car in state["nearby_cars"]:
             td["opponent_speeds"][car["name"]] = car["speed"]
         td["races"] = td.get("races", 0) + 1
         td["last_position"] = position
         _save()
-
+        _saved = True
     pit_request = False
     compound_req = None
     if pit_stops == 0 and tire_wear > 0.70:
         pit_request = True
         compound_req = "hard"
-
     if position == 1 and gap_behind > 3.0:
         engine_mode = "conserve"
     elif gap_ahead < 2.0:
         engine_mode = "push"
     else:
         engine_mode = "standard"
-
     throttle = 0.75 if curv > 0.1 else 1.0
     lateral = _lateral_decision(curv, gap_behind, state["nearby_cars"])
     use_boost = (
