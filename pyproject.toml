@@ -8,5 +8,13 @@ version = "0.1.0"
 requires-python = ">=3.11"
 description = "NPC Race — you build the car, we run the race"
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-timeout>=2.0",
+    "ruff>=0.4",
+]
+
 [project.scripts]
 npcrace = "cli.main:main"
