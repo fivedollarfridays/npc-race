@@ -172,6 +172,7 @@ HUNGARORING = {
         (100, 250),  # Turn 14
         (200, 170),  # Final chicane
     ],
+    "drs_zones": [(0.05, 0.15)],
 }
 
 # Shanghai: Distinctive snail-shell Turn 1-2-3

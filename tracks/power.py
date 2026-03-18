@@ -26,6 +26,7 @@ MONZA = {
         (220, 140),  # Ascari exit
         (300, 110),  # Parabolica entry
     ],
+    "drs_zones": [(0.05, 0.18), (0.55, 0.70)],
 }
 
 # Baku: Street circuit with castle section and massive straight
@@ -105,6 +106,7 @@ SPA = {
         (120, 380),  # Bus Stop chicane
         (150, 480),  # Pit entry
     ],
+    "drs_zones": [(0.72, 0.88)],
 }
 
 

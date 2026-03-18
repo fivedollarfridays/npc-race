@@ -13,6 +13,8 @@ WEIGHT = 15
 AERO = 20
 BRAKES = 15
 
+SETUP = {"wing_angle": -0.2, "brake_bias": 0.55, "suspension": 0.1, "tire_pressure": 0.0}
+
 _data = None
 _last_race = -1
 _saved = False
@@ -73,7 +75,8 @@ def strategy(state):
         _saved = True
     pit_request = False
     compound_req = None
-    if pit_stops == 0 and tire_wear > 0.70:
+    tire_temp = state.get("tire_temp", 20.0)
+    if pit_stops == 0 and (tire_wear > 0.70 or (tire_temp > 105.0 and tire_wear > 0.55)):
         pit_request = True
         compound_req = "hard"
     if position == 1 and gap_behind > 3.0:

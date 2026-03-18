@@ -15,6 +15,9 @@ from .fuel_model import (compute_starting_fuel, compute_fuel_consumption,
                          compute_weight_from_fuel, get_engine_mode)
 from .pit_lane import (create_pit_state, request_pit_stop, update_pit_state,
                        is_in_pit, get_speed_limit, complete_pit_stop)
+from .tire_temperature import (heat_generation, heat_dissipation,
+                               update_tire_temp, tire_temp_grip_factor)
+from .drs_system import is_in_drs_zone, drs_speed_multiplier, update_drs_state
 
 VALID_ENGINE_MODES = {"push", "standard", "conserve"}
 
@@ -39,11 +42,13 @@ class RaceSim:
     TRACK_WIDTH = 50
 
     def __init__(self, cars, track_points, laps=3, seed=42, track_name=None,
-                 real_length_m=None, car_data_dir=None, race_number=1):
+                 real_length_m=None, car_data_dir=None, race_number=1,
+                 drs_zones=None):
         self.cars, self.track, self.laps = cars, track_points, laps
         self.rng, self.track_name = random.Random(seed), track_name
         self.car_data_dir = car_data_dir
         self.race_number = race_number
+        self.drs_zones = drs_zones or []
         self.distances, self.curvatures, self.track_length = compute_track_data(
             track_points)
         self.headings = compute_track_headings(track_points)
@@ -70,6 +75,9 @@ class RaceSim:
                 "power": car["POWER"] / 40.0, "grip": car["GRIP"] / 40.0,
                 "weight": car["WEIGHT"] / 40.0, "aero": car["AERO"] / 40.0,
                 "brakes": car["BRAKES"] / 40.0,
+                "tire_temp": 20.0, "drs_available": True, "drs_active": False,
+                "setup": car.get("setup", {}),
+                "setup_raw": car.get("setup_raw", {}), "_prev_lap": 0,
             })
         self.history, self.tick, self.race_over = [], 0, False
 
@@ -83,18 +91,15 @@ class RaceSim:
             if o["car_idx"] != cs["car_idx"]
             and abs(o["distance"] - cs["distance"]) < 100
         ]
-        # Compute gap to car ahead/behind
         by_dist = sorted(self.states, key=lambda s: -s["distance"])
         mi = next(i for i, s in enumerate(by_dist) if s["car_idx"] == cs["car_idx"])
         gap_a = gap_b = 0.0
         if mi > 0:
             spd = by_dist[mi - 1]["speed"] * (1 / 3.6) * self.world_scale
-            if spd > 0:
-                gap_a = (by_dist[mi - 1]["distance"] - cs["distance"]) / spd
+            gap_a = (by_dist[mi - 1]["distance"] - cs["distance"]) / spd if spd > 0 else 0.0
         if mi < len(by_dist) - 1:
             spd = cs["speed"] * (1 / 3.6) * self.world_scale
-            if spd > 0:
-                gap_b = (cs["distance"] - by_dist[mi + 1]["distance"]) / spd
+            gap_b = (cs["distance"] - by_dist[mi + 1]["distance"]) / spd if spd > 0 else 0.0
         ps = cs.get("pit_state", {})
         return {
             "speed": cs["speed"], "position": positions[cs["car_idx"]],
@@ -118,6 +123,11 @@ class RaceSim:
             "data_file": (os.path.join(self.car_data_dir, f"{cs['name']}.json")
                           if self.car_data_dir else None),
             "race_number": self.race_number,
+            "tire_temp": cs["tire_temp"],
+            "drs_available": cs["drs_available"],
+            "drs_active": cs["drs_active"],
+            "in_drs_zone": cs.get("_in_drs_zone", False),
+            "current_setup": cs.get("setup_raw", {}),
         }
 
     def step(self):
@@ -145,8 +155,6 @@ class RaceSim:
         """Advance a single car by one tick."""
         car = self.cars[state["car_idx"]]
 
-        # Get strategy decisions (lightweight exception guard;
-        # full sandbox with timeout used at load time via car_loader)
         strat_state = self.build_strategy_state(state, positions)
         try:
             decision = car["strategy"](strat_state)
@@ -180,6 +188,7 @@ class RaceSim:
 
         self._apply_boost(state, wants_boost)
         self._apply_tire_wear(state, tire_mode)
+        self._apply_tire_temp_drs(state, throttle, decision, strat_state, dt)
         self._apply_physics(state, throttle, dt)
         self._apply_drafting(state, dt)
         self._apply_lateral(state, lateral_target, dt)
@@ -213,13 +222,36 @@ class RaceSim:
             state["tire_wear"], compound, throttle_factor, curv
         )
 
+    def _apply_tire_temp_drs(self, state, throttle, decision, strat_state, dt):
+        """Update tire temperature and DRS activation state."""
+        curv = get_curvature_at(
+            state["distance"], self.distances, self.curvatures, self.track_length)
+        heat = heat_generation(throttle, curv, state["lateral"], dt)
+        heat *= state["setup"].get("temp_rate_mult", 1.0)
+        cool = heat_dissipation(state["tire_temp"], state["speed"], dt)
+        state["tire_temp"] = update_tire_temp(state["tire_temp"], heat, cool)
+        dist_in_lap = state["distance"] % self.track_length
+        dist_pct = dist_in_lap / self.track_length if self.track_length > 0 else 0.0
+        in_zone = is_in_drs_zone(dist_pct, self.drs_zones)
+        lap_changed = state["lap"] > state.get("_prev_lap", 0)
+        state["_prev_lap"] = state["lap"]
+        drs_requested = bool(decision.get("drs_request", False))
+        state["drs_available"], state["drs_active"] = update_drs_state(
+            state["drs_available"], state["drs_active"],
+            drs_requested, in_zone, strat_state["gap_ahead_s"], lap_changed)
+        state["_in_drs_zone"] = in_zone
+
     def _apply_physics(self, state, throttle, dt):
         """Calculate speed from power, grip, curvature, braking, fuel, engine."""
-        power, grip = state["power"], state["grip"]
-        weight, brakes = state["weight"], state["brakes"]
+        setup = state.get("setup", {})
+        power = setup.get("effective_power", state["power"])
+        grip = state["grip"]
+        weight, brakes = state["weight"], setup.get("effective_brakes", state["brakes"])
         tire_grip_mult = compute_grip_multiplier(
             state["tire_wear"], state.get("tire_compound", "medium")
         )
+        temp_grip = tire_temp_grip_factor(state["tire_temp"], state.get("tire_compound", "medium"))
+        tire_grip_mult *= temp_grip
         power_mode = get_engine_mode(state.get("engine_mode", "standard"))["power_mult"]
         base_max_speed = (BASE_SPEED + power * POWER_SPEED_FACTOR * power_mode
                          - weight * WEIGHT_SPEED_PENALTY)
@@ -237,6 +269,8 @@ class RaceSim:
             + grip_speed * curv_severity
         ) * throttle
         target_speed = max(40, target_speed)
+        drs_mult = drs_speed_multiplier(state.get("_in_drs_zone", False), state["drs_active"])
+        target_speed *= drs_mult
         pit_st = state.get("pit_state", {})
         if pit_st and is_in_pit(pit_st):
             pit_limit = get_speed_limit(pit_st)
@@ -257,7 +291,7 @@ class RaceSim:
 
     def _apply_drafting(self, state, dt):
         """Apply drafting speed bonus from cars ahead."""
-        aero = state["aero"]
+        aero = state.get("setup", {}).get("effective_aero", state["aero"])
         for other in self.states:
             if other["car_idx"] == state["car_idx"] or other["finished"]:
                 continue

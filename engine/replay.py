@@ -79,6 +79,8 @@ def record_frame(states, positions, track, distances, track_length,
             if isinstance(pit_state, dict) else "racing",
             "engine_mode": state.get("engine_mode", "standard"),
             "lateral": round(state.get("lateral", 0.0), 2),
+            "tire_temp": round(state.get("tire_temp", 20.0), 1),
+            "drs_active": bool(state.get("drs_active", False)),
         })
 
     return frame

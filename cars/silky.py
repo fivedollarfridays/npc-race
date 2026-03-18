@@ -13,6 +13,8 @@ WEIGHT = 15
 AERO = 15
 BRAKES = 20
 
+SETUP = {"wing_angle": 0.4, "brake_bias": 0.58, "suspension": -0.2, "tire_pressure": 0.1}
+
 _data = None
 _last_race = -1
 _use_medium_first = False
@@ -66,7 +68,7 @@ def strategy(state):
     if pit_stops == 0 and tire_wear > 0.72:
         pit_request = True
         compound_req = second
-    engine_mode = "conserve" if pit_stops == 0 else "standard"
+    engine_mode = "conserve" if (state.get("tire_temp", 20.0) > 100.0 or pit_stops == 0) else "standard"
     in_corner = curv > 0.05
     throttle = 0.9 if in_corner else 1.0
     lateral = 0.0

@@ -6,7 +6,7 @@ import sys
 
 import pytest
 
-from security.bot_scanner import scan_car_file
+from security.bot_scanner import scan_car_file, scan_car_source
 
 CARS_DIR = os.path.join(os.path.dirname(__file__), "..", "cars")
 CAR_MODULES = ["gooseloose", "silky", "glasscanon", "brickhouse", "slipstream"]
@@ -267,3 +267,72 @@ class TestFileSize:
         with open(path) as f:
             line_count = sum(1 for _ in f)
         assert line_count < 100, f"{name}.py is {line_count} lines (max 100)"
+
+
+# --- Cycle 7: Tier 2 Realism (Sprint 5) behaviors ---
+
+
+class TestTier2SeedCars:
+    def test_slipstream_requests_drs_when_eligible(self):
+        """SlipStream requests DRS when in zone, available, and gap < 1.0."""
+        mod = _load_car("slipstream")
+        state = _make_state(
+            in_drs_zone=True,
+            drs_available=True,
+            gap_ahead_s=0.5,
+        )
+        result = mod.strategy(state)
+        assert result.get("drs_request") is True
+
+    def test_slipstream_no_drs_request_when_gap_too_large(self):
+        """SlipStream does not request DRS when gap_ahead_s >= 1.0."""
+        mod = _load_car("slipstream")
+        state = _make_state(
+            in_drs_zone=True,
+            drs_available=True,
+            gap_ahead_s=2.0,
+        )
+        result = mod.strategy(state)
+        assert not result.get("drs_request")
+
+    def test_slipstream_no_drs_when_not_available(self):
+        """SlipStream does not request DRS when drs_available is False."""
+        mod = _load_car("slipstream")
+        state = _make_state(
+            in_drs_zone=True,
+            drs_available=False,
+            gap_ahead_s=0.5,
+        )
+        result = mod.strategy(state)
+        assert not result.get("drs_request")
+
+    def test_gooseloose_pits_early_when_overheating(self):
+        """GooseLoose pits when tire_temp > 105 and tire_wear > 0.55."""
+        mod = _load_car("gooseloose")
+        state = _make_state(
+            tire_temp=110.0,
+            tire_wear=0.60,
+            pit_stops=0,
+        )
+        result = mod.strategy(state)
+        assert result.get("pit_request") is True
+
+    def test_silky_conserves_when_tire_hot(self):
+        """Silky switches to conserve when tire_temp > 100, even after pit stop."""
+        mod = _load_car("silky")
+        # pit_stops=1 would normally give "standard", but hot tires override
+        state = _make_state(
+            tire_temp=102.0,
+            pit_stops=1,
+        )
+        result = mod.strategy(state)
+        assert result["engine_mode"] == "conserve"
+
+    def test_all_updated_cars_pass_bot_scanner(self):
+        """All 3 updated cars pass scan_car_source."""
+        for name in ("gooseloose", "slipstream", "silky"):
+            path = os.path.join(CARS_DIR, f"{name}.py")
+            with open(path) as f:
+                source = f.read()
+            result = scan_car_source(source)
+            assert result.passed, f"{name} failed scanner: {result.violations}"
