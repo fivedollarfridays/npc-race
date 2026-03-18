@@ -16,8 +16,12 @@ Options:
 """
 
 import argparse
+import http.server
 import os
+import shutil
+import socketserver
 import sys
+import threading
 import webbrowser
 
 from engine import run_race
@@ -51,6 +55,34 @@ def _resolve_track(args) -> str | None:
         sys.exit(1)
 
     return name
+
+
+def _open_viewer(replay_path: str) -> None:
+    """Serve viewer via HTTP and open browser. Blocks until Ctrl-C."""
+    viewer_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "viewer"))
+    if not os.path.isdir(viewer_dir):
+        print("\nviewer/ directory not found")
+        return
+
+    # Copy replay into viewer dir so fetch('replay.json') finds it
+    shutil.copy2(os.path.abspath(replay_path), os.path.join(viewer_dir, "replay.json"))
+
+    import functools
+    port = 8765
+    handler = functools.partial(
+        http.server.SimpleHTTPRequestHandler,
+        directory=viewer_dir,
+    )
+
+    socketserver.TCPServer.allow_reuse_address = True
+    with socketserver.TCPServer(("", port), handler) as httpd:
+        url = f"http://localhost:{port}/viewer.html"
+        print(f"\nViewer: {url}  (Ctrl-C to stop)")
+        threading.Timer(0.4, lambda: webbrowser.open(url)).start()
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nViewer stopped.")
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -103,12 +135,7 @@ def main():
     )
 
     if not args.no_browser:
-        viewer = os.path.join(os.path.dirname(__file__), "viewer.html")
-        if os.path.exists(viewer):
-            webbrowser.open(f"file://{os.path.abspath(viewer)}")
-            print("\nOpened viewer in browser")
-        else:
-            print("\nviewer.html not found -- open it manually")
+        _open_viewer(args.output)
 
 
 if __name__ == "__main__":

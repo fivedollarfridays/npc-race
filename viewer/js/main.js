@@ -71,7 +71,7 @@ fetch('replay.json')
 function loadReplay(data) {
   replay = data;
   frame = 0;
-  playing = false;
+  playing = true;
 
   enrichReplayData(replay);
   resetPhysicsFx();
@@ -89,6 +89,12 @@ function loadReplay(data) {
   computeTransform();
   renderBackground();
   render();
+
+  // Auto-start playback
+  document.getElementById('playBtn').textContent = '⏸ Pause';
+  lastTime = performance.now();
+  accumulator = 0;
+  requestAnimationFrame(tick);
 }
 
 // ─── World-to-screen transform ──────────────────────────────────────────────

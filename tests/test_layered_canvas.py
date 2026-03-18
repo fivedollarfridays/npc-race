@@ -69,17 +69,17 @@ class TestViewerShellThreeCanvases:
 
     def test_has_data_enrichment_inject(self):
         shell = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        assert "<!-- INJECT:js/data-enrichment.js -->" in shell
+        assert '<script src="js/data-enrichment.js"></script>' in shell
 
     def test_has_main_js_inject(self):
         shell = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        assert "<!-- INJECT:js/main.js -->" in shell
+        assert '<script src="js/main.js"></script>' in shell
 
     def test_enrichment_before_main(self):
         """data-enrichment.js must be injected before main.js."""
         shell = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        enrich_pos = shell.index("INJECT:js/data-enrichment.js")
-        main_pos = shell.index("INJECT:js/main.js")
+        enrich_pos = shell.index("<script src=\"js/data-enrichment.js")
+        main_pos = shell.index("<script src=\"js/main.js")
         assert enrich_pos < main_pos
 
 

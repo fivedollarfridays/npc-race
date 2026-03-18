@@ -32,12 +32,28 @@ def _resolve_track(track_name, track_seed, laps):
 
 
 def _print_results(results):
-    """Print race results to stdout."""
+    """Print race results to stdout with formatted times."""
     print("🏆 RESULTS")
-    print(f"{'─' * 40}")
+    print(f"{'─' * 50}")
+    leader_time = None
     for r in results:
-        status = f"Tick {r['finish_tick']}" if r["finished"] else "DNF"
-        print(f"  P{r['position']}  {r['name']:20s}  {status}")
+        if not r["finished"]:
+            print(f"  P{r['position']}  {r['name']:12s}  DNF")
+            continue
+        total = r.get("total_time_s") or 0
+        mins, secs = int(total // 60), total % 60
+        time_str = f"{mins}:{secs:06.3f}"
+        best = r.get("best_lap_s")
+        best_str = ""
+        if best:
+            bm, bs = int(best // 60), best % 60
+            best_str = f"  (best: {bm}:{bs:06.3f})"
+        if r["position"] == 1:
+            leader_time = total
+            gap = ""
+        else:
+            gap = f"  +{total - (leader_time or total):.3f}s"
+        print(f"  P{r['position']}  {r['name']:12s}  {time_str}{gap}{best_str}")
 
 
 def run_race(

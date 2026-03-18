@@ -182,7 +182,7 @@ class TestInjectOrder:
             "main.js",
         ]
         for name in expected:
-            assert f"<!-- INJECT:js/{name} -->" in html, f"Missing INJECT for {name}"
+            assert f'<script src=\"js/{name}\"></script>' in html, f"Missing INJECT for {name}"
 
     def test_inject_order_correct(self):
         html = _read_shell()
@@ -196,8 +196,8 @@ class TestInjectOrder:
             "camera.js",
             "main.js",
         ]
-        positions = [html.index(f"<!-- INJECT:js/{m} -->") for m in markers]
-        assert positions == sorted(positions), "INJECT markers not in correct order"
+        positions = [html.index(f'<script src=\"js/{m}\"></script>') for m in markers]
+        assert positions == sorted(positions), "script tags not in correct order"
 
 
 # ─── Cycle 5: Backward Compatibility ─────────────────────────────────────────

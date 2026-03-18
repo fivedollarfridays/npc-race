@@ -3,17 +3,17 @@
 Usage:
     python scripts/build_viewer.py
 
-Reads viewer/viewer.html (shell with <!-- INJECT:path --> markers),
-replaces each marker with the referenced JS file wrapped in <script> tags,
-and writes the result to viewer.html at the project root.
+Reads viewer/viewer.html (shell with <script src="path"> tags),
+replaces each external script tag with the referenced JS file wrapped in
+inline <script> tags, and writes the result to viewer.html at the project root.
 """
 import re
 import sys
 from pathlib import Path
 
 
-def _resolve_inject(match: str, viewer_dir: Path) -> str:
-    """Replace an INJECT marker with the inlined script content."""
+def _resolve_script_src(match: re.Match, viewer_dir: Path) -> str:
+    """Replace a <script src="..."> tag with inlined script content."""
     path = match.group(1).strip()
     js_path = viewer_dir / path
     if not js_path.exists():
@@ -32,8 +32,8 @@ def build() -> Path:
     shell = (viewer_dir / "viewer.html").read_text()
 
     result = re.sub(
-        r"<!-- INJECT:(.*?) -->",
-        lambda m: _resolve_inject(m, viewer_dir),
+        r'<script src="([^"]+)"></script>',
+        lambda m: _resolve_script_src(m, viewer_dir),
         shell,
     )
 

@@ -1,7 +1,97 @@
 id: plan-2026-03-npc-race-realism
-title: Tier 1 Realism Foundation
+title: 'Sprint 6: Realism & Timing'
 type: feature
 status: in_progress
-created_at: '2026-03-17T02:31:04.286809'
-skills:
-- planning-with-pm
+created: '2026-03-17'
+sprint: 6
+total_complexity: 140
+description: 'Two pillars: (1) Fix the speed explosion — cars currently reach 2,700
+  km/h
+
+  and lap Monza in 7 seconds. Target: ~350 km/h top speed, ~82s Monza laps,
+
+  ~2-5% performance spread between cars. (2) Add timing infrastructure —
+
+  per-lap times, sector splits, race clock, fastest lap tracking, gap-to-leader.
+
+
+  Prerequisite: extract physics from simulation.py (at 387/400 line limit)
+
+  into engine/physics.py to free space for timing integration.
+
+  '
+tasks:
+- id: T6.1
+  title: Extract physics to engine/physics.py
+  complexity: 25
+  depends_on: []
+  file: tasks/T6.1.task.md
+- id: T6.2
+  title: Speed recalibration — realistic F1 physics
+  complexity: 35
+  depends_on:
+  - T6.1
+  file: tasks/T6.2.task.md
+- id: T6.3
+  title: Tire and fuel recalibration
+  complexity: 20
+  depends_on:
+  - T6.2
+  file: tasks/T6.3.task.md
+- id: T6.4
+  title: Timing module — lap times, sectors, race clock
+  complexity: 25
+  depends_on:
+  - T6.1
+  file: tasks/T6.4.task.md
+- id: T6.5
+  title: Replay enrichment — timing + gaps in frames
+  complexity: 20
+  depends_on:
+  - T6.2
+  - T6.3
+  - T6.4
+  file: tasks/T6.5.task.md
+- id: T6.6
+  title: Integration gate — realism verification
+  complexity: 15
+  depends_on:
+  - T6.5
+  file: tasks/T6.6.task.md
+wave_plan: 'Wave 1:             T6.1                        (25 Cx — extract physics,
+  free sim.py space)
+
+  Wave 2 (parallel):  T6.2 + T6.4                 (60 Cx — speed recal + timing module)
+
+  Wave 3:             T6.3                         (20 Cx — retune tire/fuel to new
+  speed scale)
+
+  Wave 4:             T6.5                         (20 Cx — wire timing into replay
+  + sim)
+
+  Wave 5 (GATE):      T6.6                         (15 Cx — realism verification)
+
+  '
+critical_files:
+- engine/simulation.py
+- engine/physics.py
+- engine/timing.py
+- engine/tire_model.py
+- engine/tire_temperature.py
+- engine/fuel_model.py
+- engine/replay.py
+calibration_targets: 'Monza lap: 80-85s (currently 7.2s)
+
+  Monaco lap: 72-78s
+
+  Top speed: 340-350 km/h (currently 2,700 km/h)
+
+  P1/P5 spread: <20% (currently 400%)
+
+  Tire temp: 80-110C operating (currently 65C max)
+
+  Soft tire life: 15-25 laps (currently ~4)
+
+  Fuel: ~1.7 kg/lap (currently ~0)
+
+  '

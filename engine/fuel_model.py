@@ -6,7 +6,7 @@ computation, and weight-from-fuel calculation. Purely functional
 — no state mutation.
 """
 
-BASE_CONSUMPTION_KG_PER_M = 0.000055  # ~0.055 g/m, ~3.5 kg/lap at 5500m
+BASE_CONSUMPTION_KG_PER_M = 0.00028  # ~0.28 g/m, ~1.62 kg/lap at Monza (5793m)
 FUEL_MARGIN = 1.05  # 5% extra fuel loaded
 MAX_FUEL_WEIGHT_FACTOR = 0.6  # full tank adds 0.6 normalized weight
 

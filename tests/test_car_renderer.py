@@ -97,16 +97,16 @@ class TestCarRendererDrawingElements:
 
 
 class TestViewerHtmlInjectOrder:
-    """Cycle 3: viewer.html has car-renderer.js INJECT marker in correct position."""
+    """Cycle 3: viewer.html has car-renderer.js script tag in correct position."""
 
     def test_has_car_renderer_inject(self):
         html = VIEWER_HTML.read_text()
-        assert "<!-- INJECT:js/car-renderer.js -->" in html
+        assert '<script src="js/car-renderer.js"></script>' in html
 
     def test_car_renderer_before_main(self):
         html = VIEWER_HTML.read_text()
         car_pos = html.index("car-renderer.js")
-        main_pos = html.index("INJECT:js/main.js")
+        main_pos = html.index("<script src=\"js/main.js")
         assert car_pos < main_pos, "car-renderer.js must be injected before main.js"
 
     def test_car_renderer_after_data_enrichment(self):

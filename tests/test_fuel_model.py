@@ -71,9 +71,9 @@ class TestComputeStartingFuel:
         assert abs(fuel_long - 2 * fuel_short) < 0.001
 
     def test_monza_53_laps_reasonable(self):
-        """Monza 53 laps: ~17.7 kg expected."""
+        """Monza 53 laps: ~85-110 kg expected (real F1 ~1.6 kg/lap)."""
         fuel = compute_starting_fuel(53, 5793)
-        assert 15.0 < fuel < 25.0
+        assert 70.0 < fuel < 120.0
 
     def test_includes_margin(self):
         """Starting fuel includes FUEL_MARGIN multiplier."""

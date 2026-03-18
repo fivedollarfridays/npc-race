@@ -37,7 +37,7 @@ def _compute_positions(states):
 
 
 def record_frame(states, positions, track, distances, track_length,
-                 track_width):
+                 track_width, tick=0, ticks_per_sec=30):
     """Record one animation frame for replay."""
     frame = []
     for state in states:
@@ -81,30 +81,46 @@ def record_frame(states, positions, track, distances, track_length,
             "lateral": round(state.get("lateral", 0.0), 2),
             "tire_temp": round(state.get("tire_temp", 20.0), 1),
             "drs_active": bool(state.get("drs_active", False)),
+            "elapsed_s": round(tick / ticks_per_sec, 2),
+            "gap_ahead_s": round(state.get("_gap_ahead_s", 0.0), 3),
+            "current_sector": state.get("_timing", {}).get(
+                "current_sector", 0),
         })
 
     return frame
 
 
-def get_results(states, num_cars):
-    """Get final race results."""
+def get_results(states, num_cars, timings=None, ticks_per_sec=30):
+    """Get final race results with optional timing enrichment."""
     positions = _compute_positions(states)
     results = []
     for state in states:
-        results.append({
+        r = {
             "name": state["name"],
             "color": state["color"],
             "position": positions[state["car_idx"]],
             "finish_tick": state["finish_tick"],
             "finished": state["finished"],
-        })
+        }
+        ft = state.get("finish_tick")
+        r["total_time_s"] = round(ft / ticks_per_sec, 2) if ft else None
+        ps = state.get("pit_state", {})
+        r["pit_stops"] = ps.get("pit_stops", 0) if isinstance(ps, dict) else 0
+        if timings and state["name"] in timings:
+            ct = timings[state["name"]]
+            r["best_lap_s"] = ct.best_lap
+            r["lap_times"] = [round(t, 3) for t in ct.lap_times]
+        else:
+            r["best_lap_s"] = None
+            r["lap_times"] = []
+        results.append(r)
     results.sort(key=lambda r: r["position"])
     return results
 
 
 def export_replay(track, track_width, track_name, laps, ticks_per_sec,
                   history, states, num_cars, track_curvatures=None,
-                  track_headings=None):
+                  track_headings=None, timings=None):
     """Export replay data as JSON-compatible dict."""
     track_xy = [{"x": round(p[0], 1), "y": round(p[1], 1)} for p in track]
     replay = {
@@ -114,7 +130,7 @@ def export_replay(track, track_width, track_name, laps, ticks_per_sec,
         "laps": laps,
         "ticks_per_sec": ticks_per_sec,
         "frames": history,
-        "results": get_results(states, num_cars),
+        "results": get_results(states, num_cars, timings, ticks_per_sec),
         "car_count": num_cars,
     }
     if track_curvatures is not None:

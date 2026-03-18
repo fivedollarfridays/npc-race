@@ -15,10 +15,10 @@ class TestViewerShell:
 
     def test_shell_has_inject_marker(self):
         shell = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        assert "<!-- INJECT:js/main.js -->" in shell
+        assert '<script src="js/main.js"></script>' in shell
 
-    def test_shell_has_no_script_block(self):
-        """Shell should not contain inline JS — it uses INJECT markers."""
+    def test_shell_has_no_inline_script_block(self):
+        """Shell should not contain inline JS — it uses external script tags."""
         shell = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
         assert "<script>" not in shell
 
@@ -77,7 +77,7 @@ class TestBuildScript:
 
     def test_output_has_no_inject_markers(self):
         out = (PROJECT_ROOT / "viewer.html").read_text()
-        assert "<!-- INJECT:" not in out, "Output must not contain INJECT markers"
+        assert '<script src=' not in out, "Output must not contain external script tags"
 
     def test_output_starts_with_doctype(self):
         out = (PROJECT_ROOT / "viewer.html").read_text()
