@@ -1,18 +1,39 @@
 # Current State
 
-> Last updated: 2026-03-17 T4.6 done — Sprint 4 complete (Adaptive Intelligence)
+> Last updated: 2026-03-17 T5.6 done — Integration Gate (Sprint 5 complete)
 
 ## Active Plan
 
-**Plan:** plan-2026-03-npc-race-adaptive — Sprint 4: Adaptive Intelligence (Levels 1+2)
-**Status:** Complete (6 tasks, 4 waves)
-**Total Complexity:** 140 Cx
+**Plan:** plan-2026-03-npc-race-tier2 — Sprint 5: Tier 2 Realism
+**Status:** Complete (6/6 tasks done, 135 Cx)
+**Total Complexity:** 135 Cx
 
 ## Current Focus
 
-Sprint 4 complete. All 6 tasks done. 925 tests passing, ruff clean, arch clean.
+Sprint 5 planned. Pure simulation depth — no entertainment infrastructure (platform alignment with NPC-Wars deferred to Sprint 7+ after Wars stabilizes).
+
+| ID | Task | Cx | Status |
+|----|------|----|--------|
+| T5.1 | Tire Temperature Model | 25 | done |
+| T5.2 | DRS System | 20 | done |
+| T5.3 | Car Setup Sliders | 25 | done |
+| T5.4 | Simulation Integration | 30 | done |
+| T5.5 | Seed Cars + Template Update | 20 | done |
+| T5.6 | Integration Gate | 15 | done |
 
 ## What Was Just Done
+
+- **T5.6 done**: Integration gate. Created `tests/test_tier2_integration.py` with 12 tests across 5 classes: TestTireTemperatureIntegration (3 tests: tire_temp in every frame, temps rise from cold start, temps within 20-150 bounds), TestDRSIntegration (3 tests: drs_active field present, DRS activates on Monza, no DRS on procedural track), TestSetupIntegration (2 tests: setup loaded for SlipStream, mixed setup cars complete), TestBackwardCompatibility (2 tests: no drs_request runs, no SETUP runs), TestArchCompliance (2 tests: simulation.py <= 400 lines, tier2 modules under 130 lines each). All 998 tests passing, ruff clean. All 5 seed cars validate. Sprint 5 complete.
+
+- **T5.5 done**: Seed cars + template update. Updated `car_template.py` with Sprint 5 state field docs (tire_temp, DRS fields, current_setup), SETUP constant example, and drs_request return field. Updated 3 seed cars: GooseLoose gets SETUP dict (-0.2 wing) + overheating pit logic (tire_temp > 105 + tire_wear > 0.55); SlipStream gets SETUP dict (-0.4 wing) + DRS request logic (in_drs_zone + gap < 1.0 + drs_available); Silky gets SETUP dict (+0.4 wing) + tire_temp engine override (conserve when tire_temp > 100). BrickHouse and GlassCanon unchanged. 6 new tests in TestTier2SeedCars class in test_seed_cars_v2.py. All 5 cars pass validate, all under 100 lines. 986 tests passing, ruff clean.
+
+- **T5.4 done**: Simulation integration. Wired tire temperature, DRS, and setup models into `engine/simulation.py` and `engine/replay.py`. Added `tire_temp`, `drs_available`, `drs_active`, `setup`, `setup_raw`, `_prev_lap` to car state init. New `drs_zones` param on RaceSim (passed from `race_runner.py` via track data). Extracted `_apply_tire_temp_drs()` helper to stay under function length limit. `_apply_physics` now uses effective_power/effective_brakes from setup, tire_temp_grip_factor, and DRS speed multiplier. `build_strategy_state` exposes `tire_temp`, `drs_available`, `drs_active`, `in_drs_zone`, `current_setup`. Replay frames include `tire_temp` and `drs_active`. 8 new tests in `tests/test_simulation_v2.py` (TestTier2Simulation class). simulation.py: 387 lines / 15 functions, arch check clean (warning only). 980 tests passing, ruff clean.
+
+- **T5.3 done**: Car setup sliders. Created `engine/setup_model.py` (95 lines, 7 functions) with `validate_setup`, `wing_effect`, `brake_bias_effect`, `suspension_effect`, `tire_pressure_effect`, `apply_setup`. Wing angle trades aero for power (linear), brake bias parabolic around 0.58 optimal, suspension affects tire heat rate, tire pressure affects temp offset and rolling resistance. Updated `engine/car_loader.py` to read optional SETUP dict from car modules (backward compatible defaults). Extracted `_validate_car_fields` helper in car_loader to stay under arch limits. Exported via `engine/__init__.py`. 18 new tests in `tests/test_setup_model.py`. 972 tests passing, ruff clean, arch check clean.
+
+- **T5.2 done**: DRS system. Created `engine/drs_system.py` (62 lines, 4 functions) with `get_drs_zones`, `is_in_drs_zone`, `drs_speed_multiplier`, `update_drs_state`. Added `drs_zones` to 5 named tracks: monza (2 zones), bahrain (2 zones), silverstone (1 zone), spa (1 zone), hungaroring (1 zone). 15 new tests in `tests/test_drs_system.py`. Exported via `engine/__init__.py`. 972 tests passing (1 pre-existing failure in test_setup_model.py from sibling task), ruff clean.
+
+- **T5.1 done**: Tire temperature model. Created `engine/tire_temperature.py` (70 lines, 4 functions) with `heat_generation`, `heat_dissipation`, `update_tire_temp`, `tire_temp_grip_factor`. Per-compound optimal temps and windows (soft 90+/-20, medium 80+/-25, hard 70+/-30). Grip degrades linearly from 1.0 to 0.5 outside the window (cold or blistered). 14 new tests in `tests/test_tire_temperature.py`. Exported via `engine/__init__.py`. 954 tests passing, arch check clean.
 
 - **T4.6 done**: Integration gate complete. Fixed `_apply_physics` (simulation.py, was 51 lines → 44) and `_check_car_metadata` (bot_scanner.py, was 63 lines → 43) architecture violations by extracting `_parse_top_level_assignments()` helper and compacting the physics function. 10 integration tests in `tests/test_adaptive_integration.py` (tournament end-to-end, data file persistence, bot_scanner path-gating, backward compat, CLI registration). `scripts/tournament_demo.py` runs 3-race Monaco + 5-race Monza tournament to demo cross-race learning. 925 tests passing.
 
@@ -53,9 +74,17 @@ Replay enrichment, build system, layered canvas, track renderer (kerbs, grass, a
 | T3.9 | Replay enrichment (compounds, fuel, pit status) | done |
 | T3.10 | Balance testing + integration gate | done |
 
+### Sprint 4 — Adaptive Intelligence (6 tasks) ✓
+
+Tournament mode, data persistence, bot_scanner update, reactive cars, learning cars, integration gate. All done.
+
+### Sprint 5 — Tier 2 Realism (6 tasks, 135 Cx) ✓
+
+Tire temperature model, DRS system, car setup sliders, simulation integration, seed cars + template update, integration gate. All done.
+
 ## Key Metrics
 
-- **925 tests**, all passing
+- **998 tests**, all passing
 - **Monaco lap: ~58-65s** (target 40-90s)
 - **Monza lap: ~54-65s** (target 40-95s)
 - **Balance: Silky dominates after reactive rewrites** — thresholds relaxed in test_balance_v2.py
@@ -64,10 +93,9 @@ Replay enrichment, build system, layered canvas, track renderer (kerbs, grass, a
 
 ## What's Next
 
-1. Commit + PR for Sprint 4
-2. Tier 2 realism: tire temperature, DRS zones, expanded car setup (Sprint 5)
-3. Level 3: Genetic evolution (Sprint 5+)
-4. PyPI publish (T1.13), GitHub release (T1.14)
+1. Platform alignment sprint (NPC-Wars patterns) — Sprint 7+ after Wars stabilizes
+2. Level 3: Genetic evolution — Sprint 6+
+3. PyPI publish + GitHub release — after platform alignment
 
 ## Blockers
 
@@ -77,6 +105,6 @@ None.
 
 - Trello not connected (trello.enabled: false)
 - No external dependencies — Python stdlib only
-- simulation.py: ~353 lines / 14 functions (limits: 400/15)
+- simulation.py: 387 lines / 15 functions (limits: 400/15)
 - bot_scanner.py: ~298 lines (warning only, no error threshold until 400)
 - Archived full session history: `.paircoder/archive/state-pre-cleanup-2026-03-17.md`

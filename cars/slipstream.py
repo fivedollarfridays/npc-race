@@ -13,6 +13,8 @@ WEIGHT = 15
 AERO = 35
 BRAKES = 15
 
+SETUP = {"wing_angle": -0.4, "brake_bias": 0.5, "suspension": -0.1, "tire_pressure": 0.0}
+
 _data = None
 _last_race = -1
 _saved = False
@@ -83,8 +85,14 @@ def strategy(state):
         (td["draft_positions"] if drafting else td["no_draft_positions"]).append(pos)
         _save()
         _saved = True
+    drs_req = (
+        state.get("in_drs_zone", False)
+        and state.get("gap_ahead_s", 99) < 1.0
+        and state.get("drs_available", False)
+    )
     return {
         "throttle": throttle, "boost": use_boost, "tire_mode": "balanced",
         "lateral_target": lateral, "pit_request": pit_request,
         "tire_compound_request": compound_req, "engine_mode": engine_mode,
+        "drs_request": drs_req,
     }

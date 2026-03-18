@@ -15,18 +15,20 @@ from .simulation import RaceSim
 
 
 def _resolve_track(track_name, track_seed, laps):
-    """Return (track_points, effective_laps, real_length_m) for a race."""
+    """Return (track_points, effective_laps, real_length_m, drs_zones) for a race."""
     if track_name is not None:
         track_data = get_track(track_name)
         control = track_data["control_points"]
         effective_laps = laps if laps is not None else track_data["laps_default"]
         real_length_m = track_data.get("real_length_m")
+        drs_zones = track_data.get("drs_zones", [])
     else:
         control = generate_track(seed=track_seed, num_points=12)
         effective_laps = laps if laps is not None else 3
         real_length_m = None
+        drs_zones = []
     track = interpolate_track(control, resolution=500)
-    return track, effective_laps, real_length_m
+    return track, effective_laps, real_length_m, drs_zones
 
 
 def _print_results(results):
@@ -62,7 +64,7 @@ def run_race(
     race_number : int
         Sequential race number within a tournament (passed to car strategies).
     """
-    track, effective_laps, real_length_m = _resolve_track(
+    track, effective_laps, real_length_m, drs_zones = _resolve_track(
         track_name, track_seed, laps
     )
 
@@ -88,7 +90,8 @@ def run_race(
 
     sim = RaceSim(cars, track, laps=effective_laps, seed=track_seed,
                   track_name=track_name, real_length_m=real_length_m,
-                  car_data_dir=car_data_dir, race_number=race_number)
+                  car_data_dir=car_data_dir, race_number=race_number,
+                  drs_zones=drs_zones)
     results = sim.run()
 
     _print_results(results)

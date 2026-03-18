@@ -25,6 +25,7 @@ SILVERSTONE = {
         (250, 160),  # Aintree
         (320, 190),  # Wellington
     ],
+    "drs_zones": [(0.62, 0.78)],
 }
 
 # Suzuka: Figure-8 crossover, technically demanding
@@ -126,6 +127,7 @@ BAHRAIN = {
         (130, 460),  # Turn 14
         (80, 350),   # Back straight
     ],
+    "drs_zones": [(0.08, 0.20), (0.60, 0.73)],
 }
 
 

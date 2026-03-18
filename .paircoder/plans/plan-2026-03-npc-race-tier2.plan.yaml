@@ -1,0 +1,82 @@
+id: plan-2026-03-npc-race-tier2
+title: "Sprint 5: Tier 2 Realism"
+type: feature
+status: active
+created: "2026-03-17"
+sprint: 5
+total_complexity: 135
+
+description: |
+  Deepen the simulation with three F1-authentic systems: tire temperature
+  (operating window affects grip), DRS zones (drag reduction on named
+  track straights), and car setup sliders (wing angle, brake bias,
+  suspension, tire pressure as pre-race tradeoffs).
+
+  No entertainment infrastructure in this sprint — pure simulation depth.
+  Platform alignment with NPC-Wars happens after Wars stabilizes (2–3 sprints).
+
+tasks:
+  - id: T5.1
+    title: "Tire Temperature Model"
+    complexity: 25
+    depends_on: []
+    file: tasks/T5.1.task.md
+
+  - id: T5.2
+    title: "DRS System"
+    complexity: 20
+    depends_on: []
+    file: tasks/T5.2.task.md
+
+  - id: T5.3
+    title: "Car Setup Sliders"
+    complexity: 25
+    depends_on: []
+    file: tasks/T5.3.task.md
+
+  - id: T5.4
+    title: "Simulation Integration"
+    complexity: 30
+    depends_on: [T5.1, T5.2, T5.3]
+    file: tasks/T5.4.task.md
+
+  - id: T5.5
+    title: "Seed Cars + Template Update"
+    complexity: 20
+    depends_on: [T5.4]
+    file: tasks/T5.5.task.md
+
+  - id: T5.6
+    title: "Integration Gate"
+    complexity: 15
+    depends_on: [T5.5]
+    file: tasks/T5.6.task.md
+
+wave_plan: |
+  Wave 1 (parallel):  T5.1, T5.2, T5.3          (70 Cx — independent modules)
+  Wave 2:             T5.4                        (30 Cx — wires all three in)
+  Wave 3:             T5.5                        (20 Cx — seed cars + docs)
+  Wave 4 (gate):      T5.6                        (15 Cx — integration gate)
+
+critical_files:
+  - engine/simulation.py       # MUST stay ≤ 400 lines / ≤ 15 functions
+  - engine/tire_temperature.py # new
+  - engine/drs_system.py       # new
+  - engine/setup_model.py      # new
+  - engine/car_loader.py       # reads SETUP from car modules
+  - engine/replay.py           # add tire_temp, drs_active per frame
+  - tracks/*.py                # add drs_zones to 5-6 named tracks
+  - cars/*.py                  # 3 updated seed cars
+  - car_template.py            # new field docs + SETUP example
+
+architecture_risk: |
+  simulation.py is at 353 lines / 14 functions before Sprint 5.
+  T5.4 adds 3 new per-tick operations. Must extract to module functions —
+  simulation.py only calls, never contains the logic.
+
+notes:
+  - DRS effectiveness: 1.05× speed (conservative vs real ~1.08-1.12 — can tune later)
+  - Tire temp: cold start at 20°C, optimal 70-90°C compound-dependent
+  - Setup is pre-race only — no in-race adjustment in this sprint
+  - SETUP dict backward compatible: missing → all defaults, no car changes required
+  - Platform alignment sprint (Wars patterns) planned for Sprint 7+ after Wars stabilizes

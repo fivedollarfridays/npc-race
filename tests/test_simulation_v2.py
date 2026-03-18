@@ -379,3 +379,129 @@ class TestNewExports:
         from engine import create_pit_state, is_in_pit
         state = create_pit_state()
         assert not is_in_pit(state)
+
+
+# ── Cycle 11: Tier 2 simulation integration (T5.4) ──────────────────────────
+
+def _make_monza_track():
+    track_data = get_track("monza")
+    return interpolate_track(track_data["control_points"], resolution=500)
+
+
+def _make_cars_with_setup(n=3, strategy=None):
+    """Create test cars that have setup and setup_raw like car_loader produces."""
+    from engine.setup_model import validate_setup, apply_setup
+    strat = strategy or _default_strategy
+    cars = []
+    for i in range(n):
+        stats = {"power": 0.5, "grip": 0.5, "weight": 0.5, "aero": 0.5, "brakes": 0.5}
+        raw = validate_setup({})
+        setup = apply_setup(stats, raw)
+        cars.append({
+            "CAR_NAME": f"Car{i}", "CAR_COLOR": f"#FF000{i}",
+            "POWER": 20, "GRIP": 20, "WEIGHT": 20, "AERO": 20, "BRAKES": 20,
+            "strategy": strat,
+            "setup_raw": raw,
+            "setup": setup,
+        })
+    return cars
+
+
+class TestTier2Simulation:
+    """Tier 2 integration: tire temp, DRS, setup in simulation."""
+
+    def test_tire_temp_exposed_in_strategy_state(self):
+        """After 1 tick, strategy state has 'tire_temp' as a float."""
+        track = _make_procedural_track()
+        cars = _make_cars_with_setup(2)
+        sim = RaceSim(cars, track, laps=1, seed=42)
+        sim.step()
+        positions = _compute_positions(sim.states)
+        ss = sim.build_strategy_state(sim.states[0], positions)
+        assert "tire_temp" in ss
+        assert isinstance(ss["tire_temp"], float)
+
+    def test_tire_temp_rises_from_cold_start(self):
+        """After 300 ticks, tire_temp > 20.0 for at least one car."""
+        track = _make_procedural_track()
+        cars = _make_cars_with_setup(2)
+        sim = RaceSim(cars, track, laps=3, seed=42)
+        for _ in range(300):
+            sim.step()
+        assert any(s["tire_temp"] > 20.0 for s in sim.states)
+
+    def test_drs_state_exposed_in_strategy_state(self):
+        """Strategy state has drs_available (bool) and in_drs_zone (bool)."""
+        track = _make_procedural_track()
+        cars = _make_cars_with_setup(2)
+        sim = RaceSim(cars, track, laps=1, seed=42)
+        sim.step()
+        positions = _compute_positions(sim.states)
+        ss = sim.build_strategy_state(sim.states[0], positions)
+        assert "drs_available" in ss
+        assert isinstance(ss["drs_available"], bool)
+        assert "in_drs_zone" in ss
+        assert isinstance(ss["in_drs_zone"], bool)
+
+    def test_drs_active_on_monza(self):
+        """On monza with DRS zones, at least 1 replay frame has drs_active=True."""
+        track = _make_monza_track()
+        drs_zones = get_track("monza").get("drs_zones", [])
+
+        def drs_strategy(s):
+            return {"throttle": 1.0, "boost": False, "tire_mode": "balanced",
+                    "drs_request": True}
+
+        cars = _make_cars_with_setup(3, strategy=drs_strategy)
+        sim = RaceSim(cars, track, laps=2, seed=42, track_name="monza",
+                      drs_zones=drs_zones)
+        sim.run()
+        replay = sim.export_replay()
+        found_drs = False
+        for frame in replay["frames"]:
+            for car_frame in frame:
+                if car_frame.get("drs_active", False):
+                    found_drs = True
+                    break
+            if found_drs:
+                break
+        assert found_drs, "No frame had drs_active=True on monza"
+
+    def test_current_setup_exposed_in_strategy_state(self):
+        """Strategy state has 'current_setup' dict."""
+        track = _make_procedural_track()
+        cars = _make_cars_with_setup(2)
+        sim = RaceSim(cars, track, laps=1, seed=42)
+        sim.step()
+        positions = _compute_positions(sim.states)
+        ss = sim.build_strategy_state(sim.states[0], positions)
+        assert "current_setup" in ss
+        assert isinstance(ss["current_setup"], dict)
+
+    def test_backward_compat_no_setup_still_runs(self):
+        """Cars without setup_raw/setup attributes race cleanly."""
+        track = _make_procedural_track()
+        cars = _make_cars(2)  # No setup keys
+        sim = RaceSim(cars, track, laps=1, seed=42)
+        results = sim.run()
+        assert all(r["finished"] for r in results)
+
+    def test_backward_compat_no_drs_request_still_works(self):
+        """Strategy returning no drs_request key works fine."""
+        track = _make_monza_track()
+        drs_zones = get_track("monza").get("drs_zones", [])
+        cars = _make_cars(2)  # default strategy has no drs_request
+        sim = RaceSim(cars, track, laps=1, seed=42, drs_zones=drs_zones)
+        results = sim.run()
+        assert all(r["finished"] for r in results)
+
+    def test_tire_temp_in_replay_frames(self):
+        """All replay frames have 'tire_temp' key for each car."""
+        track = _make_procedural_track()
+        cars = _make_cars_with_setup(2)
+        sim = RaceSim(cars, track, laps=1, seed=42)
+        sim.run()
+        replay = sim.export_replay()
+        for frame in replay["frames"]:
+            for car_frame in frame:
+                assert "tire_temp" in car_frame

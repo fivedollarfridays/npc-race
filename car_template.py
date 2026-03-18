@@ -49,6 +49,16 @@ STRATEGY STATE (dict passed to strategy() each tick)
   gap_ahead_s     float   Gap to car ahead in seconds (0.0 if leading)
   gap_behind_s    float   Gap to car behind in seconds (0.0 if last)
 
+SPRINT 5: TIER 2 REALISM
+  tire_temp       float   Current tire surface temp (deg C).
+                          Cold start: 20. Optimal: soft 90, medium 80, hard 70.
+                          Below optimal -> reduced grip (cold tires slip).
+                          Above optimal -> grip degrades faster (blistering).
+  in_drs_zone     bool    Car is in a DRS activation zone.
+  drs_available   bool    DRS not yet used this lap.
+  drs_active      bool    DRS currently open.
+  current_setup   dict    Read-only view of your SETUP configuration.
+
 STRATEGY RETURNS (dict)
 -----------------------
   throttle              float   0.0 (coast) to 1.0 (full throttle). Default: 1.0
@@ -65,6 +75,8 @@ STRATEGY RETURNS (dict)
   engine_mode           str     "push" (fast, burns more fuel),
                                 "standard" (balanced),
                                 "conserve" (slow, saves fuel). Default: "standard"
+  drs_request           bool    Request DRS activation (activates when eligible:
+                                in_drs_zone AND drs_available AND gap_ahead_s < 1.0)
 
 If strategy() raises an exception or returns a non-dict, defaults are used.
 Partial returns are merged with defaults -- you only need to return fields you change.
@@ -86,6 +98,14 @@ GRIP = 20
 WEIGHT = 20
 AERO = 20
 BRAKES = 20
+
+# Optional: Pre-race setup sliders (all default to 0.0 if omitted -- backward compatible)
+# SETUP = {
+#     "wing_angle":    0.0,   # -1.0 (low drag/faster straights) to +1.0 (high downforce/better corners)
+#     "brake_bias":    0.5,   # 0.3 (rear-biased) to 0.7 (front-biased). Optimal ~0.58.
+#     "suspension":    0.0,   # -1.0 (soft, less tire heat) to +1.0 (stiff, more tire heat)
+#     "tire_pressure": 0.0,   # -1.0 (cooler tires, more rolling resistance) to +1.0 (hotter, less drag)
+# }
 
 
 def strategy(state):
@@ -132,22 +152,11 @@ def strategy(state):
 
 # --- Example 3: Pit stop strategy ---
 # def strategy(state):
-#     halfway = state["lap"] >= state["total_laps"] // 2
-#     need_pit = halfway and state["pit_stops"] == 0
-#     low_fuel = state["fuel_pct"] < 0.3
-#
-#     if low_fuel:
-#         engine_mode = "conserve"
-#     elif state["lap"] >= state["total_laps"] - 1:
-#         engine_mode = "push"
-#     else:
-#         engine_mode = "standard"
-#
+#     need_pit = state["lap"] >= state["total_laps"] // 2 and state["pit_stops"] == 0
+#     engine_mode = "conserve" if state["fuel_pct"] < 0.3 else "standard"
 #     return {
-#         "throttle": 1.0,
-#         "boost": state["lap"] >= state["total_laps"] - 1,
-#         "tire_mode": "balanced",
-#         "pit_request": need_pit,
+#         "throttle": 1.0, "boost": state["lap"] >= state["total_laps"] - 1,
+#         "tire_mode": "balanced", "pit_request": need_pit,
 #         "tire_compound_request": "medium" if need_pit else None,
 #         "engine_mode": engine_mode,
 #     }
@@ -157,24 +166,12 @@ def strategy(state):
 #     cars_ahead = [c for c in state["nearby_cars"] if c["distance_ahead"] > 0]
 #     drafting = any(5 < c["distance_ahead"] < 40 for c in cars_ahead)
 #     on_straight = state["curvature"] < 0.005
+#     lateral = 1.0 if drafting and on_straight else (-1.0 if state["curvature"] > 0.01 else 0.0)
 #     last_lap = state["lap"] >= state["total_laps"] - 1
-#
-#     lateral = 0.0
-#     if drafting and on_straight:
-#         # Move outside to overtake
-#         lateral = 1.0
-#     elif state["curvature"] > 0.01:
-#         # Take the inside line in corners
-#         lateral = -1.0
-#
-#     use_boost = last_lap and on_straight and state["boost_available"]
 #     return {
-#         "throttle": 1.0,
-#         "boost": use_boost,
-#         "tire_mode": "push" if last_lap else "balanced",
-#         "lateral_target": lateral,
+#         "throttle": 1.0, "boost": last_lap and on_straight and state["boost_available"],
+#         "tire_mode": "push" if last_lap else "balanced", "lateral_target": lateral,
 #     }
-
 
 # --- Level 2: Cross-Race Learning Helpers ---
 

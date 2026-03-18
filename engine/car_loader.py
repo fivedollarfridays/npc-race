@@ -10,6 +10,8 @@ import os
 import re
 from pathlib import Path
 
+from .setup_model import validate_setup, apply_setup
+
 try:
     from security.bot_scanner import scan_car_source as _scan_car_source
 except ImportError:
@@ -21,13 +23,37 @@ STAT_FIELDS = ["POWER", "GRIP", "WEIGHT", "AERO", "BRAKES"]
 REQUIRED_FIELDS = ["CAR_NAME", "CAR_COLOR"] + STAT_FIELDS
 
 
+def _validate_car_fields(car, filepath):
+    """Validate hex color, stat types, and budget for a loaded car dict."""
+    if not re.fullmatch(r"#[0-9a-fA-F]{6}", car["CAR_COLOR"]):
+        raise ValueError(
+            f"{filepath}: CAR_COLOR must be a valid hex color "
+            f"(e.g. #FF0000), got '{car['CAR_COLOR']}'"
+        )
+    for field in STAT_FIELDS:
+        val = car[field]
+        if not isinstance(val, (int, float)):
+            raise ValueError(
+                f"{filepath}: {field} must be numeric, got {type(val).__name__}"
+            )
+        if val < 0:
+            raise ValueError(
+                f"{filepath}: {field} must not be negative, got {val}"
+            )
+    total = sum(car[s] for s in STAT_FIELDS)
+    if total > STAT_BUDGET:
+        raise ValueError(
+            f"{car['CAR_NAME']}: budget {total} exceeds "
+            f"{STAT_BUDGET} (over by {total - STAT_BUDGET})"
+        )
+
+
 def load_car(filepath):
     """Load and validate a car module."""
     name = os.path.splitext(os.path.basename(filepath))[0]
     spec = importlib.util.spec_from_file_location(name, filepath)
     mod = importlib.util.module_from_spec(spec)
 
-    # Security scan before executing untrusted code
     if _scan_car_source is not None:
         source = Path(filepath).read_text(encoding="utf-8")
         scan_result = _scan_car_source(source)
@@ -45,31 +71,7 @@ def load_car(filepath):
             raise ValueError(f"{filepath}: missing {field}")
         car[field] = getattr(mod, field)
 
-    # Validate hex color
-    if not re.fullmatch(r"#[0-9a-fA-F]{6}", car["CAR_COLOR"]):
-        raise ValueError(
-            f"{filepath}: CAR_COLOR must be a valid hex color "
-            f"(e.g. #FF0000), got '{car['CAR_COLOR']}'"
-        )
-
-    # Validate stat types
-    for field in STAT_FIELDS:
-        val = car[field]
-        if not isinstance(val, (int, float)):
-            raise ValueError(
-                f"{filepath}: {field} must be numeric, got {type(val).__name__}"
-            )
-        if val < 0:
-            raise ValueError(
-                f"{filepath}: {field} must not be negative, got {val}"
-            )
-
-    total = sum(car[s] for s in STAT_FIELDS)
-    if total > STAT_BUDGET:
-        raise ValueError(
-            f"{car['CAR_NAME']}: budget {total} exceeds "
-            f"{STAT_BUDGET} (over by {total - STAT_BUDGET})"
-        )
+    _validate_car_fields(car, filepath)
 
     if hasattr(mod, "strategy"):
         car["strategy"] = mod.strategy
@@ -77,6 +79,11 @@ def load_car(filepath):
         car["strategy"] = lambda state: {
             "throttle": 1.0, "boost": False, "tire_mode": "balanced",
         }
+
+    raw_setup = getattr(mod, "SETUP", {})
+    car["setup_raw"] = validate_setup(raw_setup)
+    car["stats"] = {k.lower(): car[k] for k in STAT_FIELDS}
+    car["setup"] = apply_setup(car["stats"], car["setup_raw"])
 
     car["file"] = filepath
     return car
