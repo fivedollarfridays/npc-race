@@ -18,23 +18,12 @@ from .pit_lane import (create_pit_state, request_pit_stop, update_pit_state,
 from .tire_temperature import (heat_generation, heat_dissipation,
                                update_tire_temp, tire_temp_grip_factor)
 from .drs_system import is_in_drs_zone, drs_speed_multiplier, update_drs_state
+from .physics import (compute_target_speed, compute_draft_bonus,
+                      update_speed, compute_lateral_push, apply_drag,
+                      MAX_SPEED)
+from .timing import create_timing, update_timing
 
 VALID_ENGINE_MODES = {"push", "standard", "conserve"}
-
-# Physics constants (tuned for realistic lap times)
-BASE_SPEED = 155           # km/h base speed at 0 power
-POWER_SPEED_FACTOR = 90    # km/h added per unit of power
-WEIGHT_SPEED_PENALTY = 60  # km/h lost per unit of weight
-CURVATURE_FACTOR = 47.0    # Curvature-to-severity conversion
-GRIP_BASE_SPEED = 60       # km/h minimum corner speed
-GRIP_SPEED_RANGE = 300     # km/h range from grip
-ACCEL_BASE = 50
-ACCEL_POWER_FACTOR = 60
-WEIGHT_MASS_FACTOR = 1.2
-BRAKE_BASE = 80
-BRAKE_FACTOR = 100
-DRAFT_BONUS_BASE = 8
-DRAFT_MAX_DISTANCE = 40
 
 
 class RaceSim:
@@ -53,13 +42,13 @@ class RaceSim:
             track_points)
         self.headings = compute_track_headings(track_points)
         self.n_points = len(track_points)
-        # World_scale converts sim km/h to track units/s. Calibrated so that
-        # ~160 km/h average gives ~75s laps (3333 ≈ 75s * 44.44 m/s).
-        # Using real_length_m directly caused inconsistent times because sim
-        # physics can't reproduce real speed variance (160 vs 260 km/h avg).
-        self.world_scale = self.track_length / 3333.0
-        # Calibrated equivalent distance for fuel: track_length/world_scale == 3333m always
-        start_fuel = compute_starting_fuel(laps, 3333.0)
+        # World_scale: map sim units to real meters (T6.2 recalibration)
+        if real_length_m and real_length_m > 0:
+            self.world_scale = self.track_length / real_length_m
+        else:
+            self.world_scale = self.track_length / 5000.0  # fallback
+        rlm = real_length_m if real_length_m and real_length_m > 0 else 5000.0
+        start_fuel = compute_starting_fuel(laps, rlm)
         self.states = []
         for i, car in enumerate(cars):
             self.states.append({
@@ -70,7 +59,7 @@ class RaceSim:
                 "finished": False, "finish_tick": None, "lateral": 0.0,
                 "tire_compound": "medium", "tire_age_laps": 0,
                 "fuel_kg": start_fuel, "max_fuel_kg": start_fuel,
-                "fuel_base_rate": start_fuel / (laps * 2500),
+                "fuel_base_rate": start_fuel / max(laps * 94, 1),
                 "pit_state": create_pit_state(), "engine_mode": "standard",
                 "power": car["POWER"] / 40.0, "grip": car["GRIP"] / 40.0,
                 "weight": car["WEIGHT"] / 40.0, "aero": car["AERO"] / 40.0,
@@ -79,6 +68,8 @@ class RaceSim:
                 "setup": car.get("setup", {}),
                 "setup_raw": car.get("setup_raw", {}), "_prev_lap": 0,
             })
+        self.timings = create_timing([cs["name"] for cs in self.states])
+        self.sector_boundaries = (0.333, 0.666, 1.0)
         self.history, self.tick, self.race_over = [], 0, False
 
     def build_strategy_state(self, car_state, positions):
@@ -87,10 +78,8 @@ class RaceSim:
         nearby = [
             {"name": o["name"], "distance_ahead": o["distance"] - cs["distance"],
              "speed": o["speed"], "lateral": o["lateral"]}
-            for o in self.states
-            if o["car_idx"] != cs["car_idx"]
-            and abs(o["distance"] - cs["distance"]) < 100
-        ]
+            for o in self.states if o["car_idx"] != cs["car_idx"]
+            and abs(o["distance"] - cs["distance"]) < 100]
         by_dist = sorted(self.states, key=lambda s: -s["distance"])
         mi = next(i for i, s in enumerate(by_dist) if s["car_idx"] == cs["car_idx"])
         gap_a = gap_b = 0.0
@@ -101,11 +90,11 @@ class RaceSim:
             spd = cs["speed"] * (1 / 3.6) * self.world_scale
             gap_b = (cs["distance"] - by_dist[mi + 1]["distance"]) / spd if spd > 0 else 0.0
         ps = cs.get("pit_state", {})
+        data_file = os.path.join(self.car_data_dir, f"{cs['name']}.json") if self.car_data_dir else None
         return {
             "speed": cs["speed"], "position": positions[cs["car_idx"]],
-            "total_cars": len(self.cars), "lap": cs["lap"],
-            "total_laps": self.laps, "tire_wear": cs["tire_wear"],
-            "boost_available": cs["boost_available"],
+            "total_cars": len(self.cars), "lap": cs["lap"], "total_laps": self.laps,
+            "tire_wear": cs["tire_wear"], "boost_available": cs["boost_available"],
             "boost_active": cs["boost_active"] > 0,
             "curvature": get_curvature_at(
                 cs["distance"], self.distances, self.curvatures, self.track_length),
@@ -116,38 +105,29 @@ class RaceSim:
             "tire_compound": cs.get("tire_compound", "medium"),
             "tire_age_laps": cs.get("tire_age_laps", 0),
             "engine_mode": cs.get("engine_mode", "standard"),
-            "pit_status": ps.get("status", "racing"),
-            "pit_stops": ps.get("pit_stops", 0),
-            "gap_ahead_s": gap_a, "gap_behind_s": gap_b,
-            "track_name": self.track_name,
-            "data_file": (os.path.join(self.car_data_dir, f"{cs['name']}.json")
-                          if self.car_data_dir else None),
-            "race_number": self.race_number,
-            "tire_temp": cs["tire_temp"],
-            "drs_available": cs["drs_available"],
-            "drs_active": cs["drs_active"],
-            "in_drs_zone": cs.get("_in_drs_zone", False),
+            "pit_status": ps.get("status", "racing"), "pit_stops": ps.get("pit_stops", 0),
+            "gap_ahead_s": gap_a, "gap_behind_s": gap_b, "track_name": self.track_name,
+            "data_file": data_file, "race_number": self.race_number,
+            "tire_temp": cs["tire_temp"], "drs_available": cs["drs_available"],
+            "drs_active": cs["drs_active"], "in_drs_zone": cs.get("_in_drs_zone", False),
             "current_setup": cs.get("setup_raw", {}),
+            "elapsed_s": self.tick / self.TICKS_PER_SEC,
+            "last_lap_time": (self.timings[cs["name"]].lap_times[-1]
+                              if self.timings[cs["name"]].lap_times else None),
+            "best_lap_time": self.timings[cs["name"]].best_lap,
         }
 
     def step(self):
         """Advance simulation by one tick."""
         if self.race_over:
             return
-
         positions = _compute_positions(self.states)
         dt = 1.0 / self.TICKS_PER_SEC
-
-        for i, state in enumerate(self.states):
-            if state["finished"]:
-                continue
-            self._step_car(state, positions, dt)
-
-        # Record frame (reuse already-computed positions)
+        for state in self.states:
+            if not state["finished"]:
+                self._step_car(state, positions, dt)
         self._record_frame(positions)
         self.tick += 1
-
-        # Check if race is over
         if all(s["finished"] for s in self.states):
             self.race_over = True
 
@@ -201,6 +181,15 @@ class RaceSim:
 
         self._update_distance(state, dt)
 
+        # Timing update — sector/lap tracking
+        dist_in_lap = state["distance"] % self.track_length
+        dist_pct = dist_in_lap / self.track_length if self.track_length > 0 else 0.0
+        t_result = update_timing(
+            self.timings, state["name"], dist_pct, state["lap"],
+            self.tick, self.TICKS_PER_SEC, self.sector_boundaries)
+        state["_timing"] = t_result
+        state["_gap_ahead_s"] = strat_state["gap_ahead_s"]
+
     def _apply_boost(self, state, wants_boost):
         """Handle boost activation and countdown."""
         if wants_boost and state["boost_available"] and state["boost_active"] == 0:
@@ -211,16 +200,11 @@ class RaceSim:
 
     def _apply_tire_wear(self, state, tire_mode):
         """Apply tire wear using compound model. tire_mode modulates throttle."""
-        throttle_map = {"conserve": 0.4, "balanced": 0.7, "push": 1.0}
-        throttle_factor = throttle_map.get(tire_mode, 0.7)
-        compound = state.get("tire_compound", "medium")
+        throttle_factor = {"conserve": 0.4, "balanced": 0.7, "push": 1.0}.get(tire_mode, 0.7)
         curv = get_curvature_at(
-            state["distance"], self.distances,
-            self.curvatures, self.track_length,
-        )
+            state["distance"], self.distances, self.curvatures, self.track_length)
         state["tire_wear"] = compute_wear(
-            state["tire_wear"], compound, throttle_factor, curv
-        )
+            state["tire_wear"], state.get("tire_compound", "medium"), throttle_factor, curv)
 
     def _apply_tire_temp_drs(self, state, throttle, decision, strat_state, dt):
         """Update tire temperature and DRS activation state."""
@@ -244,50 +228,30 @@ class RaceSim:
     def _apply_physics(self, state, throttle, dt):
         """Calculate speed from power, grip, curvature, braking, fuel, engine."""
         setup = state.get("setup", {})
-        power = setup.get("effective_power", state["power"])
-        grip = state["grip"]
-        weight, brakes = state["weight"], setup.get("effective_brakes", state["brakes"])
-        tire_grip_mult = compute_grip_multiplier(
-            state["tire_wear"], state.get("tire_compound", "medium")
-        )
-        temp_grip = tire_temp_grip_factor(state["tire_temp"], state.get("tire_compound", "medium"))
-        tire_grip_mult *= temp_grip
+        compound = state.get("tire_compound", "medium")
+        tire_grip = compute_grip_multiplier(state["tire_wear"], compound)
+        temp_grip = tire_temp_grip_factor(state["tire_temp"], compound)
         power_mode = get_engine_mode(state.get("engine_mode", "standard"))["power_mult"]
-        base_max_speed = (BASE_SPEED + power * POWER_SPEED_FACTOR * power_mode
-                         - weight * WEIGHT_SPEED_PENALTY)
-        if state["boost_active"] > 0:
-            base_max_speed *= 1.25
         curv = get_curvature_at(
-            state["distance"], self.distances,
-            self.curvatures, self.track_length,
-        )
-        effective_grip = grip * tire_grip_mult
-        curv_severity = min(1.0, curv * CURVATURE_FACTOR)
-        grip_speed = GRIP_BASE_SPEED + effective_grip * GRIP_SPEED_RANGE
-        target_speed = (
-            base_max_speed * (1.0 - curv_severity)
-            + grip_speed * curv_severity
-        ) * throttle
-        target_speed = max(40, target_speed)
-        drs_mult = drs_speed_multiplier(state.get("_in_drs_zone", False), state["drs_active"])
-        target_speed *= drs_mult
+            state["distance"], self.distances, self.curvatures, self.track_length)
+        target = compute_target_speed(
+            power=state["power"], grip=state["grip"], weight=state["weight"],
+            curvature=curv, throttle=throttle,
+            tire_grip_mult=tire_grip * temp_grip, power_mode=power_mode,
+            boost_active=state["boost_active"] > 0, setup=setup)
+        target *= drs_speed_multiplier(state.get("_in_drs_zone", False), state["drs_active"])
         pit_st = state.get("pit_state", {})
         if pit_st and is_in_pit(pit_st):
             pit_limit = get_speed_limit(pit_st)
             if pit_limit is not None:
-                target_speed = min(target_speed, pit_limit)
+                target = min(target, pit_limit)
             elif pit_st.get("status") == "pit_stationary":
-                target_speed = 0
-        fuel_weight = compute_weight_from_fuel(
-            state.get("fuel_kg", 0), state.get("max_fuel_kg", 1.0)
-        )
-        mass_factor = 1.0 + weight * WEIGHT_MASS_FACTOR + fuel_weight
-        accel_rate = (ACCEL_BASE + power * ACCEL_POWER_FACTOR) / mass_factor * dt
-        brake_rate = (BRAKE_BASE + brakes * BRAKE_FACTOR) * dt
-        if target_speed > state["speed"]:
-            state["speed"] = min(target_speed, state["speed"] + accel_rate)
-        else:
-            state["speed"] = max(target_speed, state["speed"] - brake_rate)
+                target = 0
+        fuel_w = compute_weight_from_fuel(state.get("fuel_kg", 0), state.get("max_fuel_kg", 1.0))
+        brakes = setup.get("effective_brakes", state["brakes"])
+        state["speed"] = update_speed(
+            state["speed"], target, state["power"], state["weight"], fuel_w, brakes, dt)
+        state["speed"] = apply_drag(state["speed"], dt)
 
     def _apply_drafting(self, state, dt):
         """Apply drafting speed bonus from cars ahead."""
@@ -296,70 +260,50 @@ class RaceSim:
             if other["car_idx"] == state["car_idx"] or other["finished"]:
                 continue
             dist_ahead = other["distance"] - state["distance"]
-            if 5 < dist_ahead < DRAFT_MAX_DISTANCE:
-                draft_bonus = (aero * DRAFT_BONUS_BASE
-                               * (1 - dist_ahead / DRAFT_MAX_DISTANCE))
-                state["speed"] += draft_bonus * dt
+            bonus = compute_draft_bonus(aero, dist_ahead, dt)
+            state["speed"] += bonus
 
-        # Speed can't go negative
-        state["speed"] = max(0, state["speed"])
+        # Speed can't go negative or exceed cap
+        state["speed"] = max(0, min(MAX_SPEED, state["speed"]))
 
     def _apply_lateral(self, state, lateral_target, dt):
         """Move car laterally toward target. Faster cars are less agile."""
         lateral_target = max(-1.0, min(1.0, lateral_target))
-        base_rate = 2.0
         speed_factor = max(0.2, 1.0 - (state["speed"] / 300.0) * 0.6)
         grip_mult = tire_model.compute_grip_multiplier(
-            state["tire_wear"], state.get("tire_compound", "medium")
-        )
-
-        rate = base_rate * speed_factor * min(1.0, grip_mult) * dt
-        diff = lateral_target - state["lateral"]
-        state["lateral"] += diff * rate
+            state["tire_wear"], state.get("tire_compound", "medium"))
+        rate = 2.0 * speed_factor * min(1.0, grip_mult) * dt
+        state["lateral"] += (lateral_target - state["lateral"]) * rate
         state["lateral"] = max(-1.0, min(1.0, state["lateral"]))
-
-        for other in self.states:  # Proximity resistance
+        for other in self.states:
             if other["car_idx"] == state["car_idx"] or other["finished"]:
                 continue
             dist = abs(other["distance"] - state["distance"])
-            if dist < 10:
-                lat_diff = state["lateral"] - other["lateral"]
-                if abs(lat_diff) < 0.3:
-                    push = 0.1 * (1.0 - dist / 10) * dt
-                    if lat_diff >= 0:
-                        state["lateral"] = min(1.0, state["lateral"] + push)
-                    else:
-                        state["lateral"] = max(-1.0, state["lateral"] - push)
+            push = compute_lateral_push(
+                state["lateral"] - other["lateral"], dist, dt)
+            state["lateral"] = max(-1.0, min(1.0, state["lateral"] + push))
 
     def _update_distance(self, state, dt):
         """Update distance, check lap/finish. Pit-stationary cars don't move."""
         if state.get("pit_state", {}).get("status") == "pit_stationary":
             return
-
         state["distance"] += state["speed"] * (1.0 / 3.6) * self.world_scale * dt
-
-        total_race_dist = self.track_length * self.laps
         current_lap = int(state["distance"] / self.track_length)
         if current_lap > state["lap"]:
             state["lap"] = current_lap
             state["tire_age_laps"] = state.get("tire_age_laps", 0) + 1
-
+        total_race_dist = self.track_length * self.laps
         if state["distance"] >= total_race_dist:
-            state["finished"] = True
-            state["finish_tick"] = self.tick
+            state["finished"], state["finish_tick"] = True, self.tick
             state["distance"] = total_race_dist
 
     def _record_frame(self, positions):
         """Record one animation frame for replay."""
-        frame = record_frame(
-            states=self.states,
-            positions=positions,
-            track=self.track,
-            distances=self.distances,
-            track_length=self.track_length,
+        self.history.append(record_frame(
+            states=self.states, positions=positions, track=self.track,
+            distances=self.distances, track_length=self.track_length,
             track_width=self.TRACK_WIDTH,
-        )
-        self.history.append(frame)
+            tick=self.tick, ticks_per_sec=self.TICKS_PER_SEC))
 
     def run(self, max_ticks=36000):
         """Run the full race."""
@@ -369,19 +313,15 @@ class RaceSim:
 
     def get_results(self):
         """Get final race results."""
-        return get_results(self.states, len(self.cars))
+        return get_results(self.states, len(self.cars),
+                           self.timings, self.TICKS_PER_SEC)
 
     def export_replay(self):
         """Export replay data as JSON-compatible dict."""
         return export_replay(
-            track=self.track,
-            track_width=self.TRACK_WIDTH,
-            track_name=self.track_name,
-            laps=self.laps,
-            ticks_per_sec=self.TICKS_PER_SEC,
-            history=self.history,
-            states=self.states,
-            num_cars=len(self.cars),
-            track_curvatures=self.curvatures,
-            track_headings=self.headings,
-        )
+            track=self.track, track_width=self.TRACK_WIDTH,
+            track_name=self.track_name, laps=self.laps,
+            ticks_per_sec=self.TICKS_PER_SEC, history=self.history,
+            states=self.states, num_cars=len(self.cars),
+            track_curvatures=self.curvatures, track_headings=self.headings,
+            timings=self.timings)

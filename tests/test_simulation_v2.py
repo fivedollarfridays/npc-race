@@ -46,30 +46,32 @@ def _make_monaco_track():
 # ── Cycle 1: world_scale ────────────────────────────────────────────────────
 
 class TestWorldScale:
-    """world_scale is calibrated from track_length / 3333.0."""
+    """world_scale uses real_length_m when provided (T6.2 recalibrated)."""
 
-    def test_procedural_track_world_scale_calibrated(self):
+    def test_procedural_track_world_scale_fallback(self):
+        """Procedural track (no real_length_m) uses 5000.0 fallback."""
         track = _make_procedural_track()
         sim = RaceSim(_make_cars(), track, laps=1, seed=42)
-        expected = sim.track_length / 3333.0
+        expected = sim.track_length / 5000.0
         assert abs(sim.world_scale - expected) < 0.001
 
-    def test_world_scale_independent_of_real_length(self):
+    def test_world_scale_uses_real_length(self):
+        """When real_length_m is given, world_scale = track_length / real_length_m."""
         track = _make_procedural_track()
-        sim_none = RaceSim(_make_cars(), track, laps=1, seed=42, real_length_m=None)
-        sim_val = RaceSim(_make_cars(), track, laps=1, seed=42, real_length_m=5000)
-        assert abs(sim_none.world_scale - sim_val.world_scale) < 0.001
+        sim = RaceSim(_make_cars(), track, laps=1, seed=42, real_length_m=5000)
+        expected = sim.track_length / 5000.0
+        assert abs(sim.world_scale - expected) < 0.001
 
-    def test_zero_real_length_same_world_scale(self):
+    def test_zero_real_length_uses_fallback(self):
         track = _make_procedural_track()
         sim = RaceSim(_make_cars(), track, laps=1, seed=42, real_length_m=0)
-        expected = sim.track_length / 3333.0
+        expected = sim.track_length / 5000.0
         assert abs(sim.world_scale - expected) < 0.001
 
-    def test_monaco_world_scale_calibrated(self):
+    def test_monaco_world_scale_uses_real_length(self):
         track = _make_monaco_track()
         sim = RaceSim(_make_cars(), track, laps=3, seed=42, real_length_m=3337)
-        expected = sim.track_length / 3333.0
+        expected = sim.track_length / 3337.0
         assert abs(sim.world_scale - expected) < 0.001
 
     def test_world_scale_positive(self):

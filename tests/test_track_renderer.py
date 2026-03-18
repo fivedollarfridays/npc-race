@@ -85,20 +85,20 @@ class TestViewerShellInjectOrder:
 
     def test_has_track_renderer_inject(self):
         shell = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        assert "<!-- INJECT:js/track-renderer.js -->" in shell
+        assert '<script src="js/track-renderer.js"></script>' in shell
 
     def test_inject_order_enrichment_before_renderer(self):
         """data-enrichment.js must come before track-renderer.js."""
         shell = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        enrich_pos = shell.index("INJECT:js/data-enrichment.js")
-        renderer_pos = shell.index("INJECT:js/track-renderer.js")
+        enrich_pos = shell.index("<script src=\"js/data-enrichment.js")
+        renderer_pos = shell.index("<script src=\"js/track-renderer.js")
         assert enrich_pos < renderer_pos
 
     def test_inject_order_renderer_before_main(self):
         """track-renderer.js must come before main.js."""
         shell = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        renderer_pos = shell.index("INJECT:js/track-renderer.js")
-        main_pos = shell.index("INJECT:js/main.js")
+        renderer_pos = shell.index("<script src=\"js/track-renderer.js")
+        main_pos = shell.index("<script src=\"js/main.js")
         assert renderer_pos < main_pos
 
 

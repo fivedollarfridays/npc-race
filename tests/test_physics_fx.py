@@ -126,26 +126,26 @@ class TestDraftingWake:
         assert "ffffff" in body.lower() or "rgba(255" in body
 
 
-# ── Cycle 5: Viewer HTML INJECT marker ──────────────────────────────────────
+# ── Cycle 5: Viewer HTML script tag ──────────────────────────────────────
 
 
 class TestViewerHtmlPhysicsFxInject:
-    """viewer.html has physics-fx.js INJECT marker in correct position."""
+    """viewer.html has physics-fx.js script tag in correct position."""
 
     def test_has_physics_fx_inject(self):
         html = VIEWER_HTML.read_text()
-        assert "<!-- INJECT:js/physics-fx.js -->" in html
+        assert '<script src="js/physics-fx.js"></script>' in html
 
     def test_inject_after_car_renderer(self):
         html = VIEWER_HTML.read_text()
-        car_pos = html.index("INJECT:js/car-renderer.js")
-        fx_pos = html.index("INJECT:js/physics-fx.js")
+        car_pos = html.index("<script src=\"js/car-renderer.js")
+        fx_pos = html.index("<script src=\"js/physics-fx.js")
         assert car_pos < fx_pos
 
     def test_inject_before_main(self):
         html = VIEWER_HTML.read_text()
-        fx_pos = html.index("INJECT:js/physics-fx.js")
-        main_pos = html.index("INJECT:js/main.js")
+        fx_pos = html.index("<script src=\"js/physics-fx.js")
+        main_pos = html.index("<script src=\"js/main.js")
         assert fx_pos < main_pos
 
 

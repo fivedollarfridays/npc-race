@@ -21,13 +21,21 @@ _MIN_GRIP: float = 0.5
 def heat_generation(
     throttle: float, curvature: float, lateral: float, dt: float
 ) -> float:
-    """Heat generated this tick (degrees C)."""
-    return (throttle * 0.4 + curvature * 1.5 + abs(lateral) * 0.3) * dt
+    """Heat generated this tick (degrees C).
+
+    Calibrated so tires reach optimal temp (~80°C) after ~30s of hard driving.
+    Corners generate significantly more heat than straights.
+    """
+    return (throttle * 2.0 + curvature * 8.0 + abs(lateral) * 1.5) * dt
 
 
 def heat_dissipation(tire_temp: float, speed: float, dt: float) -> float:
-    """Passive + airflow cooling this tick (degrees C)."""
-    return ((tire_temp - AMBIENT_TEMP) * 0.015 + speed * 0.002) * dt
+    """Passive + airflow cooling this tick (degrees C).
+
+    Passive term dominates; speed adds minor airflow cooling.
+    Calibrated for equilibrium at ~80°C under typical lap conditions.
+    """
+    return ((tire_temp - AMBIENT_TEMP) * 0.036 + speed * 0.00002) * dt
 
 
 def update_tire_temp(tire_temp: float, heat_gen: float, heat_diss: float) -> float:

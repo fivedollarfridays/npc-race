@@ -16,6 +16,11 @@ from .pit_lane import create_pit_state, is_in_pit
 from .tire_temperature import heat_generation, heat_dissipation, update_tire_temp, tire_temp_grip_factor
 from .drs_system import get_drs_zones, is_in_drs_zone, drs_speed_multiplier, update_drs_state
 from .setup_model import validate_setup, apply_setup, DEFAULT_SETUP
+from .physics import (compute_target_speed, compute_acceleration,
+                      compute_braking, compute_draft_bonus, compute_mass_factor,
+                      update_speed, compute_lateral_push)
+from .timing import (create_timing, update_timing, get_sector_boundaries,
+                     get_fastest_lap, get_timing_summary, CarTiming)
 
 __all__ = [
     "get_track",
@@ -49,4 +54,17 @@ __all__ = [
     "validate_setup",
     "apply_setup",
     "DEFAULT_SETUP",
+    "compute_target_speed",
+    "compute_acceleration",
+    "compute_braking",
+    "compute_draft_bonus",
+    "compute_mass_factor",
+    "update_speed",
+    "compute_lateral_push",
+    "create_timing",
+    "update_timing",
+    "get_sector_boundaries",
+    "get_fastest_lap",
+    "get_timing_summary",
+    "CarTiming",
 ]

@@ -5,22 +5,22 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 
 class TestViewerHtmlCameraIntegration:
-    """viewer.html has camera INJECT marker and camera buttons."""
+    """viewer.html has camera script tag and camera buttons."""
 
     def test_inject_marker_exists(self):
         html = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        assert "<!-- INJECT:js/camera.js -->" in html
+        assert '<script src="js/camera.js"></script>' in html
 
     def test_inject_marker_before_main(self):
         html = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        cam_pos = html.index("INJECT:js/camera.js")
-        main_pos = html.index("INJECT:js/main.js")
+        cam_pos = html.index("<script src=\"js/camera.js")
+        main_pos = html.index("<script src=\"js/main.js")
         assert cam_pos < main_pos, "camera.js must be injected before main.js"
 
     def test_inject_marker_after_overlay(self):
         html = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        overlay_pos = html.index("INJECT:js/overlay.js")
-        cam_pos = html.index("INJECT:js/camera.js")
+        overlay_pos = html.index("<script src=\"js/overlay.js")
+        cam_pos = html.index("<script src=\"js/camera.js")
         assert cam_pos > overlay_pos, "camera.js must be injected after overlay.js"
 
     def test_camera_buttons_exist(self):

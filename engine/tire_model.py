@@ -9,19 +9,19 @@ are purely functional with no state mutation.
 COMPOUNDS: dict[str, dict[str, float]] = {
     "soft": {
         "base_grip": 1.15,
-        "wear_rate": 0.00040,
+        "wear_rate": 0.000016,
         "cliff_threshold": 0.75,
         "cliff_exponent": 3.0,
     },
     "medium": {
         "base_grip": 1.00,
-        "wear_rate": 0.00020,
+        "wear_rate": 0.000010,
         "cliff_threshold": 0.80,
         "cliff_exponent": 2.5,
     },
     "hard": {
         "base_grip": 0.85,
-        "wear_rate": 0.00015,
+        "wear_rate": 0.000007,
         "cliff_threshold": 0.80,
         "cliff_exponent": 2.5,
     },

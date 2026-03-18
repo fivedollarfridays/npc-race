@@ -7,17 +7,17 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 
 class TestViewerHtmlSoundIntegration:
-    """viewer.html has sound engine INJECT marker and volume controls."""
+    """viewer.html has sound engine script tag and volume controls."""
 
     def test_has_sound_engine_inject(self):
         shell = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        assert "<!-- INJECT:js/sound-engine.js -->" in shell
+        assert '<script src="js/sound-engine.js"></script>' in shell
 
     def test_sound_engine_before_main(self):
         """sound-engine.js must be injected before main.js."""
         shell = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        sound_pos = shell.index("INJECT:js/sound-engine.js")
-        main_pos = shell.index("INJECT:js/main.js")
+        sound_pos = shell.index("<script src=\"js/sound-engine.js")
+        main_pos = shell.index("<script src=\"js/main.js")
         assert sound_pos < main_pos
 
     def test_has_mute_button(self):

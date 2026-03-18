@@ -7,22 +7,22 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 
 class TestViewerHtmlOverlayInject:
-    """viewer.html has overlay.js INJECT marker in correct position."""
+    """viewer.html has overlay.js script tag in correct position."""
 
     def test_has_overlay_inject_marker(self):
         html = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        assert "<!-- INJECT:js/overlay.js -->" in html
+        assert '<script src="js/overlay.js"></script>' in html
 
     def test_overlay_before_main(self):
         html = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        overlay_pos = html.index("INJECT:js/overlay.js")
-        main_pos = html.index("INJECT:js/main.js")
+        overlay_pos = html.index("<script src=\"js/overlay.js")
+        main_pos = html.index("<script src=\"js/main.js")
         assert overlay_pos < main_pos
 
     def test_overlay_after_enrichment(self):
         html = (PROJECT_ROOT / "viewer" / "viewer.html").read_text()
-        enrich_pos = html.index("INJECT:js/data-enrichment.js")
-        overlay_pos = html.index("INJECT:js/overlay.js")
+        enrich_pos = html.index("<script src=\"js/data-enrichment.js")
+        overlay_pos = html.index("<script src=\"js/overlay.js")
         assert enrich_pos < overlay_pos
 
 
