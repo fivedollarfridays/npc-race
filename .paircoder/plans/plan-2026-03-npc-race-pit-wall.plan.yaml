@@ -1,0 +1,66 @@
+id: plan-2026-03-npc-race-pit-wall
+title: "Sprint 8: Pit Wall Dashboard"
+type: feature
+status: planned
+created: "2026-03-18"
+sprint: 8
+total_complexity: 155
+
+description: |
+  Transform the viewer from "watch a race" into "run a pit wall."
+  Track animation shrinks to one panel. The rest is dense scientific telemetry:
+  timing tower, car telemetry readouts, time-series strips, sector deltas.
+
+  The feedback loop: player sees their car lost 0.3s in sector 2 because of
+  dirty air → changes strategy code → runs again → sector 2 is green.
+
+  Design doc: docs/design-pit-wall-dashboard.md
+
+tasks:
+  - id: T8.1
+    title: "Replay enrichment — dashboard fields"
+    complexity: 20
+    depends_on: []
+    file: tasks/T8.1.task.md
+
+  - id: T8.2
+    title: "Dashboard HTML/CSS layout — 4-zone grid"
+    complexity: 25
+    depends_on: []
+    file: tasks/T8.2.task.md
+
+  - id: T8.3
+    title: "Timing tower JS"
+    complexity: 20
+    depends_on: [T8.2]
+    file: tasks/T8.3.task.md
+
+  - id: T8.4
+    title: "Car telemetry panel JS"
+    complexity: 25
+    depends_on: [T8.1, T8.2]
+    file: tasks/T8.4.task.md
+
+  - id: T8.5
+    title: "Telemetry strip JS — time-series charts"
+    complexity: 25
+    depends_on: [T8.1, T8.2]
+    file: tasks/T8.5.task.md
+
+  - id: T8.6
+    title: "Post-race diagnostic mode"
+    complexity: 20
+    depends_on: [T8.3, T8.4, T8.5]
+    file: tasks/T8.6.task.md
+
+  - id: T8.7
+    title: "Integration gate — full dashboard verification"
+    complexity: 20
+    depends_on: [T8.6]
+    file: tasks/T8.7.task.md
+
+wave_plan: |
+  Wave 1 (parallel):  T8.1 + T8.2              (45 Cx — data + layout)
+  Wave 2 (parallel):  T8.3 + T8.4 + T8.5       (70 Cx — 3 JS panel modules)
+  Wave 3:             T8.6                       (20 Cx — post-race diagnostic)
+  Wave 4 (GATE):      T8.7                       (20 Cx — verification)

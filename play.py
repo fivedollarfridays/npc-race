@@ -76,7 +76,7 @@ def _open_viewer(replay_path: str) -> None:
 
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", port), handler) as httpd:
-        url = f"http://localhost:{port}/viewer.html"
+        url = f"http://localhost:{port}/dashboard.html"
         print(f"\nViewer: {url}  (Ctrl-C to stop)")
         threading.Timer(0.4, lambda: webbrowser.open(url)).start()
         try:

@@ -85,9 +85,14 @@ function loadReplay(data) {
   document.getElementById('raceInfo').textContent =
     `${replay.car_count} cars \u00B7 ${replay.laps} laps \u00B7 ${replay.frames.length} frames`;
 
+  initTimingTower(replay);
+  initTelemetryPanel(replay);
+  initDiagnostic(replay, replay.frames[0][0].name);
+
   resizeAllCanvases();
   computeTransform();
   renderBackground();
+  initTelemetryStrip(replay);
   render();
 
   // Auto-start playback
@@ -246,12 +251,53 @@ function render() {
   if (!replay) return;
   renderCars();
   renderOverlay();
+  updateTimingTower(replay.frames[frame], _selectedCar);
+  updateStatusBar();
+
+  // Telemetry panel: feed selected car data each frame
+  const _panelFrameCars = replay.frames[frame];
+  if (_panelFrameCars) {
+    const selectedData = _panelFrameCars.find(c => c.name === _selectedCar);
+    const prevFrame = frame > 0 ? replay.frames[frame - 1] : null;
+    const prevData = prevFrame ? prevFrame.find(c => c.name === _selectedCar) : null;
+    updateTelemetryPanel(selectedData, prevData, _panelFrameCars);
+  }
+
+  // Telemetry strip: feed selected car data each frame
+  const _stripFrameCars = replay.frames[frame];
+  if (_stripFrameCars) {
+    const _stripSelData = _stripFrameCars.find(c => c.name === _selectedCar);
+    updateTelemetryStrip(_stripSelData, frame, replay);
+  }
+}
+
+function updateStatusBar() {
+  if (!replay) return;
+  const cars = replay.frames[frame];
+  if (!cars) return;
+  const leader = cars.find(c => c.position === 1);
+  document.getElementById('lapCounter').textContent =
+    `Lap ${leader ? leader.lap + 1 : '--'}/${replay.laps}`;
+  document.getElementById('raceClock').textContent =
+    formatTime(frame / replay.ticks_per_sec);
+  document.getElementById('trackInfo').textContent =
+    `Track: ${replay.track_name || 'Procedural'}`;
+}
+
+function formatTime(totalSec) {
+  const m = Math.floor(totalSec / 60);
+  const s = Math.floor(totalSec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 function showResults() {
   if (!replay.results) return;
   const overlay = document.getElementById('finishedOverlay');
   overlay.style.display = 'block';
+
+  // Reveal diagnostic button at race end
+  const diagnosticBtn = document.getElementById('diagnosticBtn');
+  if (diagnosticBtn) diagnosticBtn.style.display = 'inline-block';
 
   overlay.innerHTML = `<h2>🏁 <span>RACE COMPLETE</span></h2>` +
     replay.results.map(r => `

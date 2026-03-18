@@ -83,3 +83,54 @@ class TestStrategyStateTimingFields:
         # If elapsed_s is in frames, it was computed during simulation
         mid = len(replay["frames"]) // 2
         assert replay["frames"][mid][0]["elapsed_s"] > 0
+
+
+class TestDashboardFields:
+    """T8.1: New replay frame fields for pit wall dashboard."""
+
+    def test_frame_has_gap_behind_s(self, tmp_path):
+        replay = _run_short_race(tmp_path, track_name="monza", laps=2)
+        for tick in replay["frames"][:50]:
+            for car in tick:
+                assert "gap_behind_s" in car
+
+    def test_frame_has_last_lap_time(self, tmp_path):
+        replay = _run_short_race(tmp_path, track_name="monza", laps=3)
+        # After lap 1, at least some frames should have a last_lap_time
+        found = False
+        for tick in replay["frames"][3000:]:
+            for car in tick:
+                if car.get("last_lap_time") is not None:
+                    found = True
+                    break
+        assert found, "No frame with last_lap_time found after lap 1"
+
+    def test_frame_has_best_lap_s(self, tmp_path):
+        replay = _run_short_race(tmp_path, track_name="monza", laps=3)
+        found = any(
+            car.get("best_lap_s") is not None
+            for tick in replay["frames"][3000:]
+            for car in tick
+        )
+        assert found, "No frame with best_lap_s found"
+
+    def test_frame_has_tire_age_laps(self, tmp_path):
+        replay = _run_short_race(tmp_path, track_name="monza", laps=2)
+        for tick in replay["frames"][:50]:
+            for car in tick:
+                assert "tire_age_laps" in car
+                assert isinstance(car["tire_age_laps"], int)
+
+    def test_frame_has_pit_stops(self, tmp_path):
+        replay = _run_short_race(tmp_path, track_name="monza", laps=2)
+        for tick in replay["frames"][:50]:
+            for car in tick:
+                assert "pit_stops" in car
+                assert isinstance(car["pit_stops"], int)
+
+    def test_frame_has_dirty_air_factor(self, tmp_path):
+        replay = _run_short_race(tmp_path, track_name="monza", laps=2)
+        for tick in replay["frames"][:50]:
+            for car in tick:
+                assert "dirty_air_factor" in car
+                assert isinstance(car["dirty_air_factor"], (int, float))

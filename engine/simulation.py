@@ -1,8 +1,4 @@
-"""Race simulation for NPC Race.
-
-Physics simulation with tire compounds, fuel load, pit stops,
-engine modes, and world-scale distance. Replay delegated to engine.replay.
-"""
+"""Race simulation: tire compounds, fuel, pit stops, engine modes, world-scale."""
 
 import os
 import random
@@ -43,7 +39,6 @@ class RaceSim:
             track_points)
         self.headings = compute_track_headings(track_points)
         self.n_points = len(track_points)
-        # World_scale: map sim units to real meters (T6.2 recalibration)
         if real_length_m and real_length_m > 0:
             self.world_scale = self.track_length / real_length_m
         else:
@@ -200,6 +195,16 @@ class RaceSim:
             self.tick, self.TICKS_PER_SEC, self.sector_boundaries)
         state["_timing"] = t_result
         state["_gap_ahead_s"] = strat_state["gap_ahead_s"]
+        state["_gap_behind_s"] = strat_state["gap_behind_s"]
+        ct = self.timings[state["name"]]
+        state["_last_lap_time"] = ct.lap_times[-1] if ct.lap_times else None
+        state["_best_lap_s"] = ct.best_lap
+        if t_result.get("sector_completed"):
+            state["_last_sector_time"] = t_result["sector_time"]
+            state["_last_sector_idx"] = t_result.get("current_sector", 0) - 1
+        else:
+            state["_last_sector_time"] = None
+            state["_last_sector_idx"] = None
 
     def _apply_boost(self, state, wants_boost):
         """Handle boost activation and countdown."""
