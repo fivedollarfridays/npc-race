@@ -18,9 +18,10 @@ from .drs_system import get_drs_zones, is_in_drs_zone, drs_speed_multiplier, upd
 from .setup_model import validate_setup, apply_setup, DEFAULT_SETUP
 from .physics import (compute_target_speed, compute_acceleration,
                       compute_braking, compute_draft_bonus, compute_mass_factor,
-                      update_speed, compute_lateral_push)
+                      update_speed, compute_lateral_push, compute_aero_grip)
 from .timing import (create_timing, update_timing, get_sector_boundaries,
                      get_fastest_lap, get_timing_summary, CarTiming)
+from .dirty_air import compute_dirty_air_factor
 
 __all__ = [
     "get_track",
@@ -61,10 +62,12 @@ __all__ = [
     "compute_mass_factor",
     "update_speed",
     "compute_lateral_push",
+    "compute_aero_grip",
     "create_timing",
     "update_timing",
     "get_sector_boundaries",
     "get_fastest_lap",
     "get_timing_summary",
     "CarTiming",
+    "compute_dirty_air_factor",
 ]

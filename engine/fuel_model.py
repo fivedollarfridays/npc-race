@@ -6,9 +6,10 @@ computation, and weight-from-fuel calculation. Purely functional
 — no state mutation.
 """
 
-BASE_CONSUMPTION_KG_PER_M = 0.00028  # ~0.28 g/m, ~1.62 kg/lap at Monza (5793m)
+BASE_CONSUMPTION_KG_PER_M = 0.000345  # ~0.345 g/m, ~2.0 kg/lap at Monza (5793m)
 FUEL_MARGIN = 1.05  # 5% extra fuel loaded
 MAX_FUEL_WEIGHT_FACTOR = 0.6  # full tank adds 0.6 normalized weight
+FUEL_LAP_TIME_SENSITIVITY = 0.030  # seconds slower per kg of fuel per lap
 
 ENGINE_MODES: dict[str, dict[str, float]] = {
     "push": {"consumption_mult": 1.25, "power_mult": 1.03},

@@ -1,0 +1,81 @@
+id: plan-2026-03-npc-race-gt-realism
+title: 'Sprint 7: Gran Turismo Realism'
+type: feature
+status: in_progress
+created: '2026-03-17'
+sprint: 7
+total_complexity: 135
+description: 'Research-driven sprint to close the gap between NPC Race physics and
+  real F1.
+
+  Two critical missing systems (dirty air, speed-dependent downforce) plus
+
+  calibration fixes from TUMFTM academic data and Fast-F1 telemetry.
+
+
+  Research doc: docs/research-realism-calibration.md
+
+
+  Philosophy: NPC Race is a strategy sim, not a driving sim. We need physics
+
+  that creates realistic DECISION SPACE, not realistic G-forces. "GT-level"
+
+  means realistic lap times, realistic pit strategy tradeoffs, and realistic
+
+  tire management — not per-wheel slip angle simulation.
+
+  '
+tasks:
+- id: T7.1
+  title: Dirty air system
+  complexity: 25
+  depends_on: []
+  file: tasks/T7.1.task.md
+- id: T7.2
+  title: Speed-dependent downforce/grip
+  complexity: 20
+  depends_on: []
+  file: tasks/T7.2.task.md
+- id: T7.3
+  title: Tire model upgrade — quadratic curves
+  complexity: 20
+  depends_on: []
+  file: tasks/T7.3.task.md
+- id: T7.4
+  title: Fuel & pit calibration from TUMFTM data
+  complexity: 15
+  depends_on: []
+  file: tasks/T7.4.task.md
+- id: T7.5
+  title: Simulation integration + recalibration
+  complexity: 30
+  depends_on:
+  - T7.1
+  - T7.2
+  - T7.3
+  - T7.4
+  file: tasks/T7.5.task.md
+- id: T7.6
+  title: Integration gate — F1 data validation
+  complexity: 25
+  depends_on:
+  - T7.5
+  file: tasks/T7.6.task.md
+wave_plan: 'Wave 1 (parallel):  T7.1 + T7.2 + T7.3 + T7.4    (80 Cx — 4 independent
+  modules)
+
+  Wave 2:             T7.5                            (30 Cx — wire all in, recalibrate)
+
+  Wave 3 (GATE):      T7.6                            (25 Cx — validate against real
+  F1 data)
+
+  '
+critical_insight: "The two most impactful additions from research:\n\n1. DIRTY AIR\
+  \ — Following a car closely in corners REDUCES grip (dirty turbulent\n   air reduces\
+  \ downforce). This creates the F1 overtaking dilemma: you can draft\n   on straights\
+  \ but lose grip in corners. Without this, following is pure upside.\n   Source:\
+  \ f1metrics model uses 1.1x tire deg when following; FormulaGPT models\n   dirty\
+  \ air as a speed penalty.\n\n2. SPEED-DEPENDENT DOWNFORCE — Grip increases with\
+  \ speed² (aero generates\n   downforce). This makes wing angle setup meaningful:\
+  \ high wing = fast corners\n   but slow straights. Without this, all corners are\
+  \ equally easy regardless of\n   speed, which is unrealistic.\n"

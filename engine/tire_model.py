@@ -62,7 +62,7 @@ def compute_wear(
 def compute_grip_multiplier(wear: float, compound_name: str) -> float:
     """Compute grip multiplier based on wear level.
 
-    Before cliff: base_grip * (1.0 - wear * 0.3)
+    Before cliff: base_grip * (1.0 - wear ** 1.5 * 0.3)
     After cliff:  base_grip * max(0.3, 1.0 - ((wear - cliff) / (1 - cliff)) ** exponent)
     """
     compound = get_compound(compound_name)
@@ -74,7 +74,7 @@ def compute_grip_multiplier(wear: float, compound_name: str) -> float:
         return base_grip * 0.3
 
     if wear < cliff:
-        return base_grip * (1.0 - wear * 0.3)
+        return base_grip * (1.0 - wear ** 1.5 * 0.3)
 
     overshoot = (wear - cliff) / (1.0 - cliff)
     return base_grip * max(0.3, 1.0 - overshoot ** exponent)

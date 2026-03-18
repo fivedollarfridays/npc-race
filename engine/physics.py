@@ -25,6 +25,10 @@ DRAFT_MAX_DISTANCE = 40
 # Aerodynamic drag (T6.2)
 DRAG_COEFFICIENT = 0.00006  # Light drag — limits extreme speeds only
 
+# Aerodynamic downforce/grip (T7.2)
+DOWNFORCE_GRIP_FACTOR = 0.25   # Max aero grip bonus at reference speed
+DOWNFORCE_REF_SPEED = 300.0    # km/h
+
 # Hard speed cap (T6.2)
 MAX_SPEED = 370.0          # Absolute ceiling — safety net
 
@@ -109,6 +113,21 @@ def update_speed(speed: float, target_speed: float, power: float,
     else:
         new_speed = compute_braking(speed, target_speed, brakes, dt)
     return min(MAX_SPEED, new_speed)
+
+
+def compute_aero_grip(speed: float, aero: float,
+                      wing_angle: float = 0.0) -> float:
+    """Speed-dependent grip bonus from aerodynamic downforce.
+
+    Returns additional grip (0.0-0.35). Proportional to v-squared.
+    At 300 km/h, aero=1.0: ~0.25. At 60 km/h: ~0.01 (negligible).
+    """
+    if speed <= 0:
+        return 0.0
+    speed_factor = (speed / DOWNFORCE_REF_SPEED) ** 2
+    speed_factor = min(1.5, speed_factor)  # cap above ref speed
+    wing_mult = 1.0 + wing_angle * 0.15
+    return DOWNFORCE_GRIP_FACTOR * aero * speed_factor * wing_mult
 
 
 def compute_lateral_push(lat_diff: float, distance: float,

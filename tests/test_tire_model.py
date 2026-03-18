@@ -176,14 +176,47 @@ class TestComputeGripMultiplier:
                 f"{name}: expected >30% drop by wear=0.95, got {drop_pct:.1%}"
             )
 
-    def test_linear_region_mild_degradation(self):
-        """Before cliff, wear=0.5 should still have decent grip."""
+    def test_pre_cliff_mild_degradation(self):
+        """Before cliff, wear=0.5 should still have decent grip (quadratic)."""
         grip = compute_grip_multiplier(0.5, "medium")
-        assert grip == pytest.approx(0.85)
+        # Quadratic: 1.0 * (1.0 - 0.5^1.5 * 0.3) ≈ 0.894
+        assert grip == pytest.approx(0.894, abs=0.01)
 
     def test_invalid_compound_uses_medium(self):
         result = compute_grip_multiplier(0.0, "nonexistent")
         assert result == pytest.approx(1.00)
+
+    def test_quadratic_degradation_fresh_tires_better(self):
+        """At wear=0.2, quadratic gives better grip than old linear would."""
+        grip = compute_grip_multiplier(0.2, "medium")
+        # Old linear: 1.0 * (1.0 - 0.2 * 0.3) = 0.94
+        # Quadratic:  1.0 * (1.0 - 0.2^1.5 * 0.3) ≈ 0.973
+        assert grip > 0.94
+
+    def test_quadratic_degradation_accelerates(self):
+        """Grip delta between 0.6-0.7 > grip delta between 0.1-0.2."""
+        grip_01 = compute_grip_multiplier(0.1, "medium")
+        grip_02 = compute_grip_multiplier(0.2, "medium")
+        grip_06 = compute_grip_multiplier(0.6, "medium")
+        grip_07 = compute_grip_multiplier(0.7, "medium")
+        delta_early = grip_01 - grip_02
+        delta_late = grip_06 - grip_07
+        assert delta_late > delta_early
+
+    def test_quadratic_converges_near_cliff(self):
+        """At cliff threshold, quadratic ≈ linear (within 5%)."""
+        for name, compound in COMPOUNDS.items():
+            cliff = compound["cliff_threshold"]
+            base_grip = compound["base_grip"]
+            # Linear formula value at cliff
+            linear_grip = base_grip * (1.0 - cliff * 0.3)
+            # Quadratic formula value at cliff
+            quad_grip = compute_grip_multiplier(cliff - 0.001, name)
+            diff_pct = abs(quad_grip - linear_grip) / linear_grip
+            assert diff_pct < 0.05, (
+                f"{name}: quadratic ({quad_grip:.4f}) vs linear ({linear_grip:.4f})"
+                f" differ by {diff_pct:.1%}"
+            )
 
 
 # --- Cycle 4: is_past_cliff ---

@@ -82,17 +82,13 @@ def test_grip_factor_at_optimal_temp():
         assert factor == 1.0, f"{compound} at optimal should be 1.0, got {factor}"
 
 
-def test_grip_factor_inside_window():
-    """Returns 1.0 anywhere inside the optimal window."""
+def test_grip_factor_near_optimal():
+    """Near optimal temperature, grip is close to 1.0."""
     for compound in ("soft", "medium", "hard"):
         opt = OPTIMAL_TEMP[compound]
-        win = TEMP_WINDOW[compound]
-        # Test at edges of window
-        assert tire_temp_grip_factor(opt - win, compound) == 1.0
-        assert tire_temp_grip_factor(opt + win, compound) == 1.0
-        # Test at midpoint between optimal and edge
-        assert tire_temp_grip_factor(opt - win / 2, compound) == 1.0
-        assert tire_temp_grip_factor(opt + win / 2, compound) == 1.0
+        # At optimal +/- 5 degrees, grip should be > 0.95
+        assert tire_temp_grip_factor(opt - 5, compound) > 0.95
+        assert tire_temp_grip_factor(opt + 5, compound) > 0.95
 
 
 def test_grip_factor_cold_tire():
@@ -112,18 +108,16 @@ def test_grip_factor_cold_tire():
 
 
 def test_grip_factor_blistered_tire():
-    """Above the window high edge, grip is less than 1.0; at 150 deg it is ~0.5."""
+    """Above optimal, grip degrades; at 150 deg it is well below 1.0."""
     for compound in ("soft", "medium", "hard"):
         opt = OPTIMAL_TEMP[compound]
-        win = TEMP_WINDOW[compound]
-        hot_edge = opt + win
-        # Just above the window
-        factor = tire_temp_grip_factor(hot_edge + 1.0, compound)
+        # Well above optimal, grip should be reduced
+        factor = tire_temp_grip_factor(opt + 30, compound)
         assert factor < 1.0
-        # At 150 degrees
+        # At 150 degrees, grip should be at most 0.65
         blister_factor = tire_temp_grip_factor(150.0, compound)
-        assert abs(blister_factor - 0.5) < 0.05, (
-            f"{compound} at 150 should be ~0.5, got {blister_factor}"
+        assert blister_factor <= 0.65, (
+            f"{compound} at 150 should be <= 0.65, got {blister_factor}"
         )
 
 
@@ -144,3 +138,44 @@ def test_compound_specific_windows():
     assert OPTIMAL_TEMP["soft"] != OPTIMAL_TEMP["hard"]
     assert OPTIMAL_TEMP["soft"] == 90.0
     assert OPTIMAL_TEMP["hard"] == 70.0
+
+
+def test_quadratic_grip_no_flat_plateau():
+    """Quadratic parabola has no flat plateau: grip < 1.0 away from optimal."""
+    for compound in ("soft", "medium", "hard"):
+        opt = OPTIMAL_TEMP[compound]
+        # 10 degrees from optimal should NOT be exactly 1.0
+        factor_below = tire_temp_grip_factor(opt - 10, compound)
+        factor_above = tire_temp_grip_factor(opt + 10, compound)
+        assert factor_below < 1.0, (
+            f"{compound}: expected grip < 1.0 at {opt-10}C, got {factor_below}"
+        )
+        assert factor_above < 1.0, (
+            f"{compound}: expected grip < 1.0 at {opt+10}C, got {factor_above}"
+        )
+
+
+def test_quadratic_grip_smooth_transition():
+    """No sudden jump at old window edges; grip changes smoothly."""
+    for compound in ("soft", "medium", "hard"):
+        # Sample temperatures from 30 to 140 in 1-degree steps
+        temps = [float(t) for t in range(30, 141)]
+        factors = [tire_temp_grip_factor(t, compound) for t in temps]
+        for i in range(len(factors) - 1):
+            jump = abs(factors[i + 1] - factors[i])
+            assert jump < 0.05, (
+                f"{compound}: jump of {jump:.4f} between "
+                f"{temps[i]}C and {temps[i+1]}C"
+            )
+
+
+def test_quadratic_grip_symmetric_around_optimal():
+    """Grip at (optimal - 20) ≈ grip at (optimal + 20)."""
+    for compound in ("soft", "medium", "hard"):
+        opt = OPTIMAL_TEMP[compound]
+        grip_below = tire_temp_grip_factor(opt - 20, compound)
+        grip_above = tire_temp_grip_factor(opt + 20, compound)
+        assert abs(grip_below - grip_above) < 0.05, (
+            f"{compound}: asymmetric grip below={grip_below:.4f} "
+            f"above={grip_above:.4f}"
+        )

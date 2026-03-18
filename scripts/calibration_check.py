@@ -22,9 +22,13 @@ for track in tracks:
 
     speeds = [c["speed"] for tick in replay["frames"] for c in tick if not c["finished"]]
     temps = [c["tire_temp"] for tick in replay["frames"] for c in tick if not c["finished"]]
+    dirty = sum(1 for tick in replay["frames"] for c in tick if c.get("in_dirty_air"))
+    total = sum(1 for tick in replay["frames"] for c in tick if not c["finished"])
+    dirty_pct = dirty / total * 100 if total > 0 else 0
 
     print(f"\nSpeed: {min(speeds):.0f} - {max(speeds):.0f} km/h (avg {sum(speeds)/len(speeds):.0f})")
     print(f"Tire temp: {min(temps):.0f} - {max(temps):.0f} C")
+    print(f"Dirty air: {dirty_pct:.1f}% of frames ({dirty}/{total})")
     for r in replay["results"]:
         bl = f"  best: {r['best_lap_s']:.1f}s" if r.get("best_lap_s") else ""
         print(f"  P{r['position']} {r['name']:12s} total: {r.get('total_time_s', 0):.1f}s{bl}")

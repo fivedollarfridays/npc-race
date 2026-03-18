@@ -85,6 +85,7 @@ def record_frame(states, positions, track, distances, track_length,
             "gap_ahead_s": round(state.get("_gap_ahead_s", 0.0), 3),
             "current_sector": state.get("_timing", {}).get(
                 "current_sector", 0),
+            "in_dirty_air": bool(state.get("_in_dirty_air", False)),
         })
 
     return frame
