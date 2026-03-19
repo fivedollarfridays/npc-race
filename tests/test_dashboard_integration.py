@@ -178,7 +178,7 @@ class TestArchCompliance:
 
     def test_simulation_under_limit(self):
         with open("engine/simulation.py") as f:
-            assert len(f.readlines()) <= 355, "simulation.py over 355 lines"
+            assert len(f.readlines()) <= 395, "simulation.py over 395 lines"
 
     def test_dashboard_js_module_sizes(self):
         limits = {

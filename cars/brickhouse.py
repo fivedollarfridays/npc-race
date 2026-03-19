@@ -70,6 +70,8 @@ def strategy(state):
     pit_request, compound_req = _pit_decision(state["tire_wear"], state["pit_stops"])
     engine_mode = "push" if position > 1 else "conserve"
     throttle = 0.75 if curv > 0.08 else 1.0
+    if state.get("spin_risk", 0) > 0.001:
+        throttle = min(throttle, 0.8)
     lateral = 0.0
     behind = [c for c in state["nearby_cars"] if c["distance_ahead"] < 0]
     if gap_behind < 1.5 and behind:

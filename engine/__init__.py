@@ -22,6 +22,12 @@ from .physics import (compute_target_speed, compute_acceleration,
 from .timing import (create_timing, update_timing, get_sector_boundaries,
                      get_fastest_lap, get_timing_summary, CarTiming)
 from .dirty_air import compute_dirty_air_factor
+from .collision import check_collisions, is_contact
+from .damage import create_damage_state, apply_damage, compute_damage_penalties, repair_in_pit
+from .incident import (compute_spin_risk, check_spin, create_spin_event,
+                       compute_lockup_risk, create_lockup_event)
+from .safety_car import (create_sc_state, trigger_sc, update_sc, get_sc_speed_limit,
+                          get_sc_modifiers, is_sc_active, should_compress_gaps)
 
 __all__ = [
     "get_track",
@@ -70,4 +76,22 @@ __all__ = [
     "get_timing_summary",
     "CarTiming",
     "compute_dirty_air_factor",
+    "check_collisions",
+    "is_contact",
+    "create_damage_state",
+    "apply_damage",
+    "compute_damage_penalties",
+    "repair_in_pit",
+    "compute_spin_risk",
+    "check_spin",
+    "create_spin_event",
+    "compute_lockup_risk",
+    "create_lockup_event",
+    "create_sc_state",
+    "trigger_sc",
+    "update_sc",
+    "get_sc_speed_limit",
+    "get_sc_modifiers",
+    "is_sc_active",
+    "should_compress_gaps",
 ]

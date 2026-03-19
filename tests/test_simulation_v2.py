@@ -507,3 +507,85 @@ class TestTier2Simulation:
         for frame in replay["frames"]:
             for car_frame in frame:
                 assert "tire_temp" in car_frame
+
+
+# -- Cycle 12: Drama integration (T9.5) ----------------------------------------
+
+class TestDramaIntegration:
+    """Sprint 9: collision/damage/incident/safety car wiring."""
+
+    def _sim(self, n=2, laps=1):
+        return RaceSim(_make_cars(n), _make_procedural_track(), laps=laps, seed=42)
+
+    def test_damage_state_initialized(self):
+        """Every car starts with damage state dict at 0.0."""
+        for s in self._sim().states:
+            assert isinstance(s["damage"], dict) and s["damage"]["damage"] == 0.0
+
+    def test_sc_state_initialized(self):
+        """RaceSim has safety_car attribute, inactive."""
+        assert self._sim().safety_car["status"] == "inactive"
+
+    def test_spin_recovery_initialized(self):
+        """Every car starts with spin_recovery=0 and contact_cooldown=0."""
+        for s in self._sim().states:
+            assert s["spin_recovery"] == 0 and s["contact_cooldown"] == 0
+
+    def test_damage_in_strategy_state(self):
+        """Strategy state has 'damage' float."""
+        sim = self._sim()
+        sim.step()
+        ss = sim.build_strategy_state(sim.states[0], _compute_positions(sim.states))
+        assert isinstance(ss["damage"], float) and ss["damage"] == 0.0
+
+    def test_safety_car_in_strategy_state(self):
+        """Strategy state has 'safety_car' bool."""
+        sim = self._sim()
+        sim.step()
+        ss = sim.build_strategy_state(sim.states[0], _compute_positions(sim.states))
+        assert isinstance(ss["safety_car"], bool)
+
+    def test_in_spin_in_strategy_state(self):
+        """Strategy state has 'in_spin' bool."""
+        sim = self._sim()
+        sim.step()
+        ss = sim.build_strategy_state(sim.states[0], _compute_positions(sim.states))
+        assert isinstance(ss["in_spin"], bool)
+
+    def test_spin_recovery_slows_car(self):
+        """Car in spin recovery has speed <= 20."""
+        sim = self._sim(laps=3)
+        for _ in range(100):
+            sim.step()
+        sim.states[0]["spin_recovery"], sim.states[0]["speed"] = 60, 200.0
+        sim.step()
+        assert sim.states[0]["speed"] <= 20.0
+
+    def test_safety_car_limits_speed(self):
+        """Under SC, no car exceeds SC_PACE (120 km/h)."""
+        from engine.safety_car import SC_PACE, trigger_sc
+        sim = self._sim(n=3, laps=3)
+        for _ in range(300):
+            sim.step()
+        sim.safety_car = trigger_sc(sim.safety_car, "test", sim.rng, sim.tick, 0)
+        for _ in range(300):
+            sim.step()
+        for s in sim.states:
+            if not s["finished"]:
+                assert s["speed"] <= SC_PACE + 1.0, f"{s['name']} speed {s['speed']:.1f} > SC"
+
+    def test_damage_in_replay_frames(self):
+        """Replay frames have 'damage' key."""
+        sim = self._sim()
+        for _ in range(30):
+            sim.step()
+        for cf in sim.export_replay()["frames"][-1]:
+            assert "damage" in cf
+
+    def test_safety_car_in_replay_frames(self):
+        """Replay frames have 'safety_car' key."""
+        sim = self._sim()
+        for _ in range(30):
+            sim.step()
+        for cf in sim.export_replay()["frames"][-1]:
+            assert "safety_car" in cf

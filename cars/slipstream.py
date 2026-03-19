@@ -1,6 +1,4 @@
-"""SlipStream -- The drafter.
-1-stop: medium -> soft (late undercut). Sits in draft of car ahead.
-Standard while drafting, push on fresh softs. Learns draft effectiveness."""
+"""SlipStream -- 1-stop M->S drafter, damage-aware conserve mode."""
 
 import json
 
@@ -71,7 +69,12 @@ def strategy(state):
         pit_request = True
         compound_req = "soft"
     on_fresh_softs = compound == "soft" and pit_stops >= 1
-    engine_mode = "push" if on_fresh_softs and gap_ahead < 3.0 else "standard"
+    if state.get("damage", 0) > 0.3:
+        engine_mode = "conserve"
+    elif on_fresh_softs and gap_ahead < 3.0:
+        engine_mode = "push"
+    else:
+        engine_mode = "standard"
     in_corner = curv > 0.08
     throttle = 0.7 if in_corner else 1.0
     lateral = draft_lateral if drafting else 0.0
@@ -85,11 +88,8 @@ def strategy(state):
         (td["draft_positions"] if drafting else td["no_draft_positions"]).append(pos)
         _save()
         _saved = True
-    drs_req = (
-        state.get("in_drs_zone", False)
-        and state.get("gap_ahead_s", 99) < 1.0
-        and state.get("drs_available", False)
-    )
+    drs_req = (state.get("in_drs_zone", False) and state.get("gap_ahead_s", 99) < 1.0
+               and state.get("drs_available", False))
     return {
         "throttle": throttle, "boost": use_boost, "tire_mode": "balanced",
         "lateral_target": lateral, "pit_request": pit_request,

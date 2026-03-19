@@ -45,6 +45,11 @@ def _make_state(**overrides) -> dict:
         "pit_stops": 0,
         "gap_ahead_s": 1.5,
         "gap_behind_s": 2.0,
+        "damage": 0.0,
+        "safety_car": False,
+        "safety_car_laps": 0,
+        "in_spin": False,
+        "spin_risk": 0.0,
     }
     base.update(overrides)
     return base
@@ -331,6 +336,46 @@ class TestTier2SeedCars:
     def test_all_updated_cars_pass_bot_scanner(self):
         """All 3 updated cars pass scan_car_source."""
         for name in ("gooseloose", "slipstream", "silky"):
+            path = os.path.join(CARS_DIR, f"{name}.py")
+            with open(path) as f:
+                source = f.read()
+            result = scan_car_source(source)
+            assert result.passed, f"{name} failed scanner: {result.violations}"
+
+
+# --- Cycle 8: Drama engine awareness (Sprint 9) ---
+
+
+class TestDramaSeedCars:
+    """Sprint 9: seed cars react to drama engine fields."""
+
+    def test_gooseloose_pits_under_sc(self):
+        """GooseLoose pits when safety car is active and tire_wear > 0.3."""
+        mod = _load_car("gooseloose")
+        state = _make_state(
+            safety_car=True, tire_wear=0.4, pit_stops=0, lap=2, total_laps=5,
+        )
+        result = mod.strategy(state)
+        assert result.get("pit_request") is True
+
+    def test_slipstream_conserves_when_damaged(self):
+        """SlipStream switches to conserve mode when damaged."""
+        mod = _load_car("slipstream")
+        state = _make_state(damage=0.4)
+        result = mod.strategy(state)
+        assert result.get("engine_mode") == "conserve"
+
+    def test_brickhouse_backs_off_high_spin_risk(self):
+        """BrickHouse reduces aggression when spin risk is high."""
+        mod = _load_car("brickhouse")
+        state = _make_state(spin_risk=0.002)
+        result = mod.strategy(state)
+        throttle = result.get("throttle", 1.0)
+        assert throttle < 1.0 or result.get("engine_mode") == "conserve"
+
+    def test_all_drama_cars_pass_bot_scanner(self):
+        """All 3 drama-updated cars pass scan_car_source."""
+        for name in ("gooseloose", "slipstream", "brickhouse"):
             path = os.path.join(CARS_DIR, f"{name}.py")
             with open(path) as f:
                 source = f.read()

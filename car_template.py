@@ -59,6 +59,12 @@ SPRINT 5: TIER 2 REALISM
   drs_active      bool    DRS currently open.
   current_setup   dict    Read-only view of your SETUP configuration.
 
+SPRINT 9: COLLISIONS & SAFETY CAR
+  damage          float   0.0-1.0 -- accumulated damage (reduces aero/grip/speed)
+  safety_car      bool    Safety car currently active
+  safety_car_laps int     Laps of SC remaining (0 if inactive)
+  in_spin         bool    Currently recovering from a spin
+
 STRATEGY RETURNS (dict)
 -----------------------
   throttle              float   0.0 (coast) to 1.0 (full throttle). Default: 1.0
@@ -149,7 +155,6 @@ def strategy(state):
 #     use_boost = state["lap"] == 0 and state["boost_available"]
 #
 #     return {"throttle": throttle, "boost": use_boost, "tire_mode": "push"}
-
 # --- Example 3: Pit stop strategy ---
 # def strategy(state):
 #     need_pit = state["lap"] >= state["total_laps"] // 2 and state["pit_stops"] == 0

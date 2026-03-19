@@ -94,6 +94,9 @@ def record_frame(states, positions, track, distances, track_length,
             "dirty_air_factor": round(state.get("_dirty_air_grip", 1.0), 3),
             "last_sector_time": state.get("_last_sector_time"),
             "last_sector_idx": state.get("_last_sector_idx"),
+            "damage": round(state.get("damage", {}).get("damage", 0.0), 3),
+            "in_spin": state.get("spin_recovery", 0) > 0,
+            "safety_car": bool(state.get("_safety_car", False)),
         })
 
     return frame

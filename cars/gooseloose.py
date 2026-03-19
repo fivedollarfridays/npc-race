@@ -1,6 +1,4 @@
-"""GooseLoose -- The founder car.
-1-stop: medium -> hard. Position-aware engine modes.
-Inside line in corners, defends on straights. Learns opponent speed patterns."""
+"""GooseLoose -- 1-stop M->H, position-aware modes, SC-aware pitting."""
 
 import json
 
@@ -76,7 +74,11 @@ def strategy(state):
     pit_request = False
     compound_req = None
     tire_temp = state.get("tire_temp", 20.0)
-    if pit_stops == 0 and (tire_wear > 0.70 or (tire_temp > 105.0 and tire_wear > 0.55)):
+    sc_active = state.get("safety_car", False)
+    if pit_stops == 0 and sc_active and tire_wear > 0.3:
+        pit_request = True
+        compound_req = "hard"
+    elif pit_stops == 0 and (tire_wear > 0.70 or (tire_temp > 105.0 and tire_wear > 0.55)):
         pit_request = True
         compound_req = "hard"
     if position == 1 and gap_behind > 3.0:
@@ -87,10 +89,8 @@ def strategy(state):
         engine_mode = "standard"
     throttle = 0.75 if curv > 0.1 else 1.0
     lateral = _lateral_decision(curv, gap_behind, state["nearby_cars"])
-    use_boost = (
-        state["lap"] >= state["total_laps"] - 1
-        and state["boost_available"] and position > 1
-    )
+    use_boost = (state["lap"] >= state["total_laps"] - 1
+                 and state["boost_available"] and position > 1)
     return {
         "throttle": throttle, "boost": use_boost, "tire_mode": "balanced",
         "lateral_target": lateral, "pit_request": pit_request,

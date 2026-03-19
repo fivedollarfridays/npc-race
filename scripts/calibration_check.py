@@ -32,3 +32,13 @@ for track in tracks:
     for r in replay["results"]:
         bl = f"  best: {r['best_lap_s']:.1f}s" if r.get("best_lap_s") else ""
         print(f"  P{r['position']} {r['name']:12s} total: {r.get('total_time_s', 0):.1f}s{bl}")
+
+    print("\n--- Incident Stats ---")
+    spin_count = sum(1 for frame in replay["frames"] for car in frame if car.get("in_spin"))
+    damage_count = sum(1 for frame in replay["frames"] for car in frame if car.get("damage", 0) > 0)
+    sc_frames = sum(1 for frame in replay["frames"] if any(car.get("safety_car") for car in frame))
+    dnf_count = sum(1 for r in replay["results"] if not r["finished"])
+    print(f"  Spin frames: {spin_count}")
+    print(f"  Damage frames: {damage_count}")
+    print(f"  Safety car frames: {sc_frames}")
+    print(f"  DNFs: {dnf_count}")

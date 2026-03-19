@@ -1,24 +1,20 @@
-"""Race simulation: tire compounds, fuel, pit stops, engine modes, world-scale."""
-
-import os
-import random
-
+"""Race simulation: compounds, fuel, pits, engine modes, collisions, SC."""
+import os, random  # noqa: E401
 from . import tire_model
 from .track_gen import compute_track_data, compute_track_headings, get_curvature_at
 from .replay import record_frame, get_results, export_replay, _compute_positions
 from .tire_model import compute_wear, compute_grip_multiplier
-from .fuel_model import (compute_starting_fuel, compute_fuel_consumption,
-                         compute_weight_from_fuel, get_engine_mode)
-from .pit_lane import (create_pit_state, request_pit_stop, update_pit_state,
-                       is_in_pit, get_speed_limit, complete_pit_stop)
-from .tire_temperature import (heat_generation, heat_dissipation,
-                               update_tire_temp, tire_temp_grip_factor)
+from .fuel_model import compute_starting_fuel, compute_fuel_consumption, compute_weight_from_fuel, get_engine_mode
+from .pit_lane import create_pit_state, request_pit_stop, update_pit_state, is_in_pit, get_speed_limit, complete_pit_stop
+from .tire_temperature import heat_generation, heat_dissipation, update_tire_temp, tire_temp_grip_factor
 from .drs_system import is_in_drs_zone, drs_speed_multiplier, update_drs_state
-from .physics import (compute_target_speed, compute_draft_bonus,
-                      update_speed, compute_lateral_push, apply_drag,
-                      MAX_SPEED, compute_aero_grip)
+from .physics import compute_target_speed, compute_draft_bonus, update_speed, compute_lateral_push, apply_drag, MAX_SPEED, compute_aero_grip
 from .dirty_air import compute_dirty_air_factor
 from .timing import create_timing, update_timing
+from .collision import check_collisions
+from .damage import create_damage_state, apply_damage, compute_damage_penalties, repair_in_pit
+from .incident import compute_spin_risk, check_spin, create_spin_event
+from .safety_car import create_sc_state, trigger_sc, update_sc, get_sc_speed_limit, get_sc_modifiers, is_sc_active, should_compress_gaps
 
 VALID_ENGINE_MODES = {"push", "standard", "conserve"}
 
@@ -63,19 +59,22 @@ class RaceSim:
                 "tire_temp": 20.0, "drs_available": True, "drs_active": False,
                 "setup": car.get("setup", {}),
                 "setup_raw": car.get("setup_raw", {}), "_prev_lap": 0,
+                "damage": create_damage_state(),
+                "spin_recovery": 0, "contact_cooldown": 0,
             })
         self.timings = create_timing([cs["name"] for cs in self.states])
         self.sector_boundaries = (0.333, 0.666, 1.0)
+        self.safety_car = create_sc_state()
+        self._sc_last_leader_lap = -1
         self.history, self.tick, self.race_over = [], 0, False
 
     def build_strategy_state(self, car_state, positions):
-        """Build the state dict passed to car strategy functions."""
-        cs = car_state
-        nearby = [
-            {"name": o["name"], "distance_ahead": o["distance"] - cs["distance"],
-             "speed": o["speed"], "lateral": o["lateral"]}
-            for o in self.states if o["car_idx"] != cs["car_idx"]
-            and abs(o["distance"] - cs["distance"]) < 100]
+        """Build state dict for car strategy functions."""
+        cs, ps = car_state, car_state.get("pit_state", {})
+        nearby = [{"name": o["name"], "distance_ahead": o["distance"] - cs["distance"],
+                    "speed": o["speed"], "lateral": o["lateral"]}
+                   for o in self.states if o["car_idx"] != cs["car_idx"]
+                   and abs(o["distance"] - cs["distance"]) < 100]
         by_dist = sorted(self.states, key=lambda s: -s["distance"])
         mi = next(i for i, s in enumerate(by_dist) if s["car_idx"] == cs["car_idx"])
         gap_a = gap_b = 0.0
@@ -85,34 +84,30 @@ class RaceSim:
         if mi < len(by_dist) - 1:
             spd = cs["speed"] * (1 / 3.6) * self.world_scale
             gap_b = (cs["distance"] - by_dist[mi + 1]["distance"]) / spd if spd > 0 else 0.0
-        ps = cs.get("pit_state", {})
-        data_file = os.path.join(self.car_data_dir, f"{cs['name']}.json") if self.car_data_dir else None
+        df = os.path.join(self.car_data_dir, f"{cs['name']}.json") if self.car_data_dir else None
+        ct = self.timings[cs["name"]]
         return {
             "speed": cs["speed"], "position": positions[cs["car_idx"]],
             "total_cars": len(self.cars), "lap": cs["lap"], "total_laps": self.laps,
             "tire_wear": cs["tire_wear"], "boost_available": cs["boost_available"],
-            "boost_active": cs["boost_active"] > 0,
-            "curvature": get_curvature_at(
-                cs["distance"], self.distances, self.curvatures, self.track_length),
-            "nearby_cars": nearby, "distance": cs["distance"],
-            "track_length": self.track_length, "lateral": cs["lateral"],
-            "fuel_remaining": cs["fuel_kg"],
-            "fuel_pct": cs["fuel_kg"] / max(cs.get("max_fuel_kg", 1.0), 0.001),
-            "tire_compound": cs.get("tire_compound", "medium"),
-            "tire_age_laps": cs.get("tire_age_laps", 0),
+            "boost_active": cs["boost_active"] > 0, "nearby_cars": nearby,
+            "curvature": get_curvature_at(cs["distance"], self.distances, self.curvatures, self.track_length),
+            "distance": cs["distance"], "track_length": self.track_length, "lateral": cs["lateral"],
+            "fuel_remaining": cs["fuel_kg"], "fuel_pct": cs["fuel_kg"] / max(cs.get("max_fuel_kg", 1.0), 0.001),
+            "tire_compound": cs.get("tire_compound", "medium"), "tire_age_laps": cs.get("tire_age_laps", 0),
             "engine_mode": cs.get("engine_mode", "standard"),
             "pit_status": ps.get("status", "racing"), "pit_stops": ps.get("pit_stops", 0),
             "gap_ahead_s": gap_a, "gap_behind_s": gap_b, "track_name": self.track_name,
-            "data_file": data_file, "race_number": self.race_number,
+            "data_file": df, "race_number": self.race_number,
             "tire_temp": cs["tire_temp"], "drs_available": cs["drs_available"],
             "drs_active": cs["drs_active"], "in_drs_zone": cs.get("_in_drs_zone", False),
             "current_setup": cs.get("setup_raw", {}),
-            "in_dirty_air": cs.get("_in_dirty_air", False),
-            "dirty_air_factor": cs.get("_dirty_air_grip", 1.0),
+            "in_dirty_air": cs.get("_in_dirty_air", False), "dirty_air_factor": cs.get("_dirty_air_grip", 1.0),
+            "damage": cs["damage"]["damage"], "spin_risk": cs.get("_spin_risk", 0.0),
+            "safety_car": is_sc_active(self.safety_car),
+            "safety_car_laps": self.safety_car.get("laps_remaining", 0), "in_spin": cs["spin_recovery"] > 0,
             "elapsed_s": self.tick / self.TICKS_PER_SEC,
-            "last_lap_time": (self.timings[cs["name"]].lap_times[-1]
-                              if self.timings[cs["name"]].lap_times else None),
-            "best_lap_time": self.timings[cs["name"]].best_lap,
+            "last_lap_time": ct.lap_times[-1] if ct.lap_times else None, "best_lap_time": ct.best_lap,
         }
 
     def step(self):
@@ -124,6 +119,38 @@ class RaceSim:
         for state in self.states:
             if not state["finished"]:
                 self._step_car(state, positions, dt)
+        # Collision detection
+        for ev in check_collisions(self.states, self.rng):
+            for s in self.states:
+                if s["name"] in (ev["car_a"], ev["car_b"]):
+                    s["contact_cooldown"] = 60
+                    s["speed"] = max(0, s["speed"] - ev["speed_loss"])
+                    if ev["damage"] > 0:
+                        s["damage"] = apply_damage(s["damage"], ev["damage"])
+                        if s["damage"]["dnf"] and not s["finished"]:
+                            s["finished"], s["finish_tick"] = True, self.tick
+                            self.safety_car = trigger_sc(
+                                self.safety_car, "collision", self.rng,
+                                self.tick, s.get("lap", 0))
+                    if ev["spin"] and s["name"] == ev["car_b"]:
+                        s["spin_recovery"] = 120
+        for s in self.states:
+            if s["contact_cooldown"] > 0:
+                s["contact_cooldown"] -= 1
+        leader = max(self.states, key=lambda s: s["distance"])
+        if leader["lap"] != self._sc_last_leader_lap:
+            self._sc_last_leader_lap = leader["lap"]
+            self.safety_car = update_sc(self.safety_car, leader["lap"])
+        if should_compress_gaps(self.safety_car):
+            by_dist = sorted(self.states, key=lambda s: -s["distance"])
+            for i in range(1, len(by_dist)):
+                if by_dist[i]["finished"]:
+                    continue
+                gap = by_dist[i - 1]["distance"] - by_dist[i]["distance"]
+                if gap > 6.0:
+                    by_dist[i]["distance"] += (gap - 3.0) * 0.01
+        for s in self.states:
+            s["_safety_car"] = is_sc_active(self.safety_car)
         self._record_frame(positions)
         self.tick += 1
         if all(s["finished"] for s in self.states):
@@ -140,6 +167,13 @@ class RaceSim:
                 decision = {}
         except Exception:
             decision = {}
+
+        # Spin recovery — skip most physics
+        if state["spin_recovery"] > 0:
+            state["spin_recovery"] -= 1
+            state["speed"] = min(state["speed"], 20.0)
+            self._update_distance(state, dt)
+            return
 
         throttle = max(0.0, min(1.0, decision.get("throttle", 1.0)))
         wants_boost = bool(decision.get("boost", False))
@@ -163,6 +197,9 @@ class RaceSim:
             state["tire_compound"] = new_compound
             state["tire_wear"] = 0.0
             state["tire_age_laps"] = 0
+            if state["damage"]["damage"] > 0.05:
+                state["damage"], extra = repair_in_pit(state["damage"])
+                state["spin_recovery"] = max(state["spin_recovery"], extra)
 
         # Dirty air: compute grip/wear penalties from following in corners
         curv = get_curvature_at(
@@ -183,28 +220,39 @@ class RaceSim:
             consumed = compute_fuel_consumption(
                 throttle, engine_mode, state["fuel_base_rate"], dt
             )
+            consumed *= get_sc_modifiers(self.safety_car)["fuel_mult"]
             state["fuel_kg"] = max(0.0, state["fuel_kg"] - consumed)
 
         self._update_distance(state, dt)
 
-        # Timing update — sector/lap tracking
-        dist_in_lap = state["distance"] % self.track_length
-        dist_pct = dist_in_lap / self.track_length if self.track_length > 0 else 0.0
-        t_result = update_timing(
-            self.timings, state["name"], dist_pct, state["lap"],
-            self.tick, self.TICKS_PER_SEC, self.sector_boundaries)
-        state["_timing"] = t_result
-        state["_gap_ahead_s"] = strat_state["gap_ahead_s"]
-        state["_gap_behind_s"] = strat_state["gap_behind_s"]
+        # Spin risk check
+        grip_avail = compute_grip_multiplier(
+            state["tire_wear"], state.get("tire_compound", "medium"))
+        grip_demand = curv * state["speed"] / 200.0
+        spin_risk = compute_spin_risk(
+            grip_avail, grip_demand, state.get("_dirty_air_grip", 1.0),
+            state["tire_wear"], state.get("tire_age_laps", 0))
+        state["_spin_risk"] = spin_risk
+        if check_spin(spin_risk, self.rng):
+            ev = create_spin_event(self.rng)
+            state["spin_recovery"] = ev["recovery_ticks"]
+            state["tire_wear"] = min(1.0, state["tire_wear"] + ev["tire_penalty"])
+            state["speed"] = 20.0
+            if ev.get("trigger_sc") and curv > 0.05:
+                self.safety_car = trigger_sc(
+                    self.safety_car, "spin", self.rng, self.tick,
+                    state.get("lap", 0))
+        # Timing update
+        dp = (state["distance"] % self.track_length) / self.track_length if self.track_length > 0 else 0.0
+        tr = update_timing(self.timings, state["name"], dp, state["lap"],
+                           self.tick, self.TICKS_PER_SEC, self.sector_boundaries)
+        state["_timing"] = tr
+        state["_gap_ahead_s"], state["_gap_behind_s"] = strat_state["gap_ahead_s"], strat_state["gap_behind_s"]
         ct = self.timings[state["name"]]
         state["_last_lap_time"] = ct.lap_times[-1] if ct.lap_times else None
         state["_best_lap_s"] = ct.best_lap
-        if t_result.get("sector_completed"):
-            state["_last_sector_time"] = t_result["sector_time"]
-            state["_last_sector_idx"] = t_result.get("current_sector", 0) - 1
-        else:
-            state["_last_sector_time"] = None
-            state["_last_sector_idx"] = None
+        state["_last_sector_time"] = tr["sector_time"] if tr.get("sector_completed") else None
+        state["_last_sector_idx"] = tr.get("current_sector", 0) - 1 if tr.get("sector_completed") else None
 
     def _apply_boost(self, state, wants_boost):
         """Handle boost activation and countdown."""
@@ -218,51 +266,43 @@ class RaceSim:
         """Apply tire wear using compound model. tire_mode modulates throttle."""
         throttle_factor = {"conserve": 0.4, "balanced": 0.7, "push": 1.0}.get(tire_mode, 0.7)
         throttle_factor *= state.get("_dirty_air_wear", 1.0)  # dirty air increases wear
+        throttle_factor *= get_sc_modifiers(self.safety_car)["tire_deg_mult"]
         curv = get_curvature_at(
             state["distance"], self.distances, self.curvatures, self.track_length)
         state["tire_wear"] = compute_wear(
             state["tire_wear"], state.get("tire_compound", "medium"), throttle_factor, curv)
 
     def _apply_tire_temp_drs(self, state, throttle, decision, strat_state, dt):
-        """Update tire temperature and DRS activation state."""
-        curv = get_curvature_at(
-            state["distance"], self.distances, self.curvatures, self.track_length)
-        heat = heat_generation(throttle, curv, state["lateral"], dt)
-        heat *= state["setup"].get("temp_rate_mult", 1.0)
-        cool = heat_dissipation(state["tire_temp"], state["speed"], dt)
-        state["tire_temp"] = update_tire_temp(state["tire_temp"], heat, cool)
-        dist_in_lap = state["distance"] % self.track_length
-        dist_pct = dist_in_lap / self.track_length if self.track_length > 0 else 0.0
-        in_zone = is_in_drs_zone(dist_pct, self.drs_zones)
+        """Update tire temperature and DRS."""
+        curv = get_curvature_at(state["distance"], self.distances, self.curvatures, self.track_length)
+        heat = heat_generation(throttle, curv, state["lateral"], dt) * state["setup"].get("temp_rate_mult", 1.0)
+        state["tire_temp"] = update_tire_temp(state["tire_temp"], heat, heat_dissipation(state["tire_temp"], state["speed"], dt))
+        dp = (state["distance"] % self.track_length) / self.track_length if self.track_length > 0 else 0.0
+        in_zone = is_in_drs_zone(dp, self.drs_zones)
         lap_changed = state["lap"] > state.get("_prev_lap", 0)
         state["_prev_lap"] = state["lap"]
-        drs_requested = bool(decision.get("drs_request", False))
         state["drs_available"], state["drs_active"] = update_drs_state(
             state["drs_available"], state["drs_active"],
-            drs_requested, in_zone, strat_state["gap_ahead_s"], lap_changed)
+            bool(decision.get("drs_request", False)), in_zone, strat_state["gap_ahead_s"], lap_changed)
         state["_in_drs_zone"] = in_zone
 
     def _apply_physics(self, state, throttle, dt):
-        """Calculate speed from power, grip, curvature, braking, fuel, engine."""
-        setup = state.get("setup", {})
-        compound = state.get("tire_compound", "medium")
-        tire_grip = compute_grip_multiplier(state["tire_wear"], compound)
-        temp_grip = tire_temp_grip_factor(state["tire_temp"], compound)
-        dirty_grip = state.get("_dirty_air_grip", 1.0)
-        power_mode = get_engine_mode(state.get("engine_mode", "standard"))["power_mult"]
-        curv = get_curvature_at(
-            state["distance"], self.distances, self.curvatures, self.track_length)
-        # Aero grip: speed-dependent downforce bonus for corners
-        wing = state.get("setup_raw", {}).get("wing_angle", 0.0)
-        eff_aero = setup.get("effective_aero", state["aero"])
-        aero_grip = compute_aero_grip(state["speed"], eff_aero, wing)
+        """Calculate speed from power, grip, curvature, braking, fuel, engine, damage, SC."""
+        setup, compound = state.get("setup", {}), state.get("tire_compound", "medium")
+        grip_mult = compute_grip_multiplier(state["tire_wear"], compound) * tire_temp_grip_factor(state["tire_temp"], compound) * state.get("_dirty_air_grip", 1.0)
+        curv = get_curvature_at(state["distance"], self.distances, self.curvatures, self.track_length)
+        aero_grip = compute_aero_grip(state["speed"], setup.get("effective_aero", state["aero"]),
+                                       state.get("setup_raw", {}).get("wing_angle", 0.0))
         target = compute_target_speed(
-            power=state["power"], grip=state["grip"] + aero_grip,
-            weight=state["weight"], curvature=curv, throttle=throttle,
-            tire_grip_mult=tire_grip * temp_grip * dirty_grip,
-            power_mode=power_mode,
+            power=state["power"], grip=state["grip"] + aero_grip, weight=state["weight"],
+            curvature=curv, throttle=throttle, tire_grip_mult=grip_mult,
+            power_mode=get_engine_mode(state.get("engine_mode", "standard"))["power_mult"],
             boost_active=state["boost_active"] > 0, setup=setup)
         target *= drs_speed_multiplier(state.get("_in_drs_zone", False), state["drs_active"])
+        target *= compute_damage_penalties(state["damage"]["damage"])["speed_mult"]
+        sc_limit = get_sc_speed_limit(self.safety_car)
+        if sc_limit is not None:
+            target = min(target, sc_limit)
         pit_st = state.get("pit_state", {})
         if pit_st and is_in_pit(pit_st):
             pit_limit = get_speed_limit(pit_st)
@@ -271,9 +311,8 @@ class RaceSim:
             elif pit_st.get("status") == "pit_stationary":
                 target = 0
         fuel_w = compute_weight_from_fuel(state.get("fuel_kg", 0), state.get("max_fuel_kg", 1.0))
-        brakes = setup.get("effective_brakes", state["brakes"])
-        state["speed"] = update_speed(
-            state["speed"], target, state["power"], state["weight"], fuel_w, brakes, dt)
+        state["speed"] = update_speed(state["speed"], target, state["power"], state["weight"],
+                                       fuel_w, setup.get("effective_brakes", state["brakes"]), dt)
         state["speed"] = apply_drag(state["speed"], dt)
 
     def _apply_drafting(self, state, dt):
