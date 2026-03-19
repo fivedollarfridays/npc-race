@@ -68,9 +68,10 @@ def strategy(state):
     if pit_stops == 0 and tire_wear > 0.72:
         pit_request = True
         compound_req = second
-    engine_mode = "conserve" if (state.get("tire_temp", 20.0) > 100.0 or pit_stops == 0) else "standard"
+    brake_temp = state.get("brake_temp", 20.0)
+    engine_mode = "conserve" if (state.get("tire_temp", 20.0) > 100.0 or brake_temp > 750 or pit_stops == 0) else "standard"
     in_corner = curv > 0.05
-    throttle = 0.9 if in_corner else 1.0
+    throttle = 0.8 if brake_temp > 650 else (0.9 if in_corner else 1.0)
     lateral = 0.0
     if curv > 0.05:
         lateral = -1.0

@@ -86,6 +86,20 @@ def record_frame(states, positions, track, distances, track_length,
             "current_sector": state.get("_timing", {}).get(
                 "current_sector", 0),
             "in_dirty_air": bool(state.get("_in_dirty_air", False)),
+            "gap_behind_s": round(state.get("_gap_behind_s", 0.0), 3),
+            "last_lap_time": state.get("_last_lap_time"),
+            "best_lap_s": state.get("_best_lap_s"),
+            "tire_age_laps": state.get("tire_age_laps", 0),
+            "pit_stops": state.get("pit_state", {}).get("pit_stops", 0),
+            "dirty_air_factor": round(state.get("_dirty_air_grip", 1.0), 3),
+            "last_sector_time": state.get("_last_sector_time"),
+            "last_sector_idx": state.get("_last_sector_idx"),
+            "damage": round(state.get("damage", {}).get("damage", 0.0), 3),
+            "in_spin": state.get("spin_recovery", 0) > 0,
+            "safety_car": bool(state.get("_safety_car", False)),
+            "track_wetness": round(state.get("_track_wetness", 0.0), 3),
+            "ers_energy": round(state.get("ers", {}).get("energy", 4.0), 2),
+            "brake_temp": round(state.get("brake_state", {}).get("temp", 20.0), 1),
         })
 
     return frame

@@ -70,28 +70,30 @@ def strategy(state):
     pit_request, compound_req = _pit_decision(state["tire_wear"], state["pit_stops"])
     engine_mode = "push" if position > 1 else "conserve"
     throttle = 0.75 if curv > 0.08 else 1.0
+    if state.get("spin_risk", 0) > 0.001:
+        throttle = min(throttle, 0.8)
     lateral = 0.0
     behind = [c for c in state["nearby_cars"] if c["distance_ahead"] < 0]
     if gap_behind < 1.5 and behind:
         lateral = max(behind, key=lambda c: c["distance_ahead"])["lateral"]
-    use_boost = (
-        state["boost_available"] and curv < 0.08
-        and position > 2 and state["lap"] >= state["total_laps"] - 1
-    )
+    use_boost = (state["boost_available"] and curv < 0.08
+                 and position > 2 and state["lap"] >= state["total_laps"] - 1)
     if state.get("data_file") and state["lap"] >= state["total_laps"] - 1 and not _saved:
         td = _data.setdefault(track, {})
         old_best = td.get("best_position", 99)
         if position <= old_best:
-            td["best_position"] = position
-            td["best_threshold"] = _threshold_1
+            td["best_position"], td["best_threshold"] = position, _threshold_1
             td["threshold_2"] = _threshold_2
         elif td.get("races", 0) > 2:
             td["best_threshold"] = max(0.50, _threshold_1 - 0.05)
         td["races"] = td.get("races", 0) + 1
         _save()
         _saved = True
+    # Heavy car = good harvester; attack in final laps
+    ers_mode = "attack" if state["lap"] >= state["total_laps"] - 2 else "harvest"
     return {
         "throttle": throttle, "boost": use_boost, "tire_mode": "balanced",
         "lateral_target": lateral, "pit_request": pit_request,
         "tire_compound_request": compound_req, "engine_mode": engine_mode,
+        "ers_deploy_mode": ers_mode,
     }

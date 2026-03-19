@@ -1,0 +1,61 @@
+id: plan-2026-03-npc-race-weather
+title: 'Sprint 10: Weather System'
+type: feature
+status: in_progress
+created: '2026-03-19'
+sprint: 10
+total_complexity: 105
+description: 'Add dynamic weather to races. Track wetness transitions from dry to
+  wet
+
+  and back. Wrong tire compound = catastrophic grip loss. New intermediate
+
+  and wet compounds. Weather forecasts available to strategies but can be
+
+  inaccurate. Transforms pit strategy from "when to stop" to "what to put on."
+
+
+  CRITICAL CONSTRAINT: simulation.py is at 15/15 functions, 389/400 lines.
+
+  ALL new logic goes in engine/weather_model.py. simulation.py only calls it.
+
+  '
+tasks:
+- id: T10.1
+  title: Weather model — state machine + grip/wear penalties
+  complexity: 25
+  depends_on: []
+  file: tasks/T10.1.task.md
+- id: T10.2
+  title: Wet tire compounds — intermediate + full wet
+  complexity: 20
+  depends_on: []
+  file: tasks/T10.2.task.md
+- id: T10.3
+  title: Simulation integration — weather wiring
+  complexity: 30
+  depends_on:
+  - T10.1
+  - T10.2
+  file: tasks/T10.3.task.md
+- id: T10.4
+  title: Seed cars + strategy state + replay enrichment
+  complexity: 15
+  depends_on:
+  - T10.3
+  file: tasks/T10.4.task.md
+- id: T10.5
+  title: Integration gate — weather verification
+  complexity: 15
+  depends_on:
+  - T10.4
+  file: tasks/T10.5.task.md
+wave_plan: 'Wave 1 (parallel):  T10.1 + T10.2    (45 Cx — independent modules)
+
+  Wave 2:             T10.3             (30 Cx — wire into simulation)
+
+  Wave 3:             T10.4             (15 Cx — cars + replay)
+
+  Wave 4 (GATE):      T10.5             (15 Cx — weather verification)
+
+  '

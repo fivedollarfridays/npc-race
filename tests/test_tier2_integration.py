@@ -7,7 +7,11 @@ car setup loading, backward compatibility, and architecture compliance.
 import json
 import os
 
+import pytest
+
 from engine import run_race
+
+pytestmark = pytest.mark.slow
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CARS_DIR = os.path.join(PROJECT_ROOT, "cars")

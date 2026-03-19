@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NPC Race — Pit Wall Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;800&display=swap');
+
+  :root {
+    --bg-primary: #0d1117;
+    --bg-panel: #161b22;
+    --bg-panel-alt: #1c2128;
+    --border: #30363d;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-muted: #484f58;
+    --accent-purple: #a855f7;
+    --accent-green: #22c55e;
+    --accent-yellow: #eab308;
+    --accent-red: #ef4444;
+    --accent-blue: #3b82f6;
+    --accent-orange: #f97316;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: 'Outfit', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    overflow: hidden;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 36px 1fr 200px 48px;
+    grid-template-columns: 200px 1fr 340px;
+  }
+
+  /* ── Grid areas ────────────────────────────────────── */
+
+  #statusBar     { grid-column: 1 / -1; grid-row: 1; }
+  #timingTower   { grid-column: 1; grid-row: 2; }
+  #trackView     { grid-column: 2; grid-row: 2; position: relative; }
+  #carTelemetry  { grid-column: 3; grid-row: 2; }
+  #telemetryStrip { grid-column: 1 / -1; grid-row: 3; }
+  #controls      { grid-column: 1 / -1; grid-row: 4; }
+
+  /* ── Panel styling ─────────────────────────────────── */
+
+  #statusBar,
+  #timingTower,
+  #trackView,
+  #carTelemetry,
+  #telemetryStrip,
+  #controls {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  /* ── Status bar ────────────────────────────────────── */
+
+  #statusBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background: var(--bg-panel-alt);
+  }
+
+  #statusBar span { white-space: nowrap; }
+
+  .flag-green { color: var(--accent-green); }
+  .flag-yellow { color: var(--accent-yellow); }
+  .flag-red { color: var(--accent-red); }
+
+  /* ── Timing tower ──────────────────────────────────── */
+
+  #timingTower {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .panel-header {
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    background: var(--bg-panel-alt);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-footer {
+    padding: 6px 12px;
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--bg-panel-alt);
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+  }
+
+  #towerRows { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+  .tower-row {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 8px; cursor: pointer; font-size: 11px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .tower-row:hover { background: var(--bg-panel-alt); }
+  .tower-row.selected { background: var(--bg-panel-alt); border-left: 3px solid var(--accent-blue); }
+  .tower-row.in-pit { background: rgba(239, 68, 68, 0.15); }
+  .tower-row.finished { opacity: 0.5; }
+  .tower-pos { width: 32px; font-weight: bold; }
+  .tower-pos.fastest-lap { color: var(--accent-purple); }
+  .tower-color { width: 4px; height: 24px; border-radius: 1px; }
+  .tower-name { width: 36px; font-weight: 600; }
+  .tower-gap { width: 70px; text-align: right; font-size: 10px; }
+  .tower-gap.gaining { color: var(--text-primary); }
+  .tower-gap.losing { color: var(--accent-yellow); }
+  .compound-soft { color: var(--accent-red); }
+  .compound-medium { color: var(--accent-yellow); }
+  .compound-hard { color: var(--text-primary); }
+  .tower-tire-age { width: 24px; text-align: right; font-size: 10px; color: var(--text-secondary); }
+  .tower-wear-bar { width: 40px; height: 6px; background: var(--bg-primary); border-radius: 1px; }
+  .wear-fill { height: 100%; background: var(--accent-green); transition: width 0.3s; }
+  .wear-fill.wear-warning { background: var(--accent-yellow); }
+  .wear-fill.wear-critical { background: var(--accent-red); }
+
+  /* ── Track view (canvas container) ─────────────────── */
+
+  #trackView canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+
+  #noData {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  #noData code {
+    background: var(--bg-panel-alt);
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+
+  #finishedOverlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(13, 17, 23, 0.92);
+    border: 1px solid var(--border);
+    padding: 32px 40px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    z-index: 10;
+  }
+
+  .drop-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(13, 17, 23, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-orange);
+    border: 2px dashed var(--accent-orange);
+    z-index: 100;
+  }
+
+  /* ── Car telemetry ─────────────────────────────────── */
+
+  #carTelemetry {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .car-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+
+  #liveReadouts,
+  #sectorComparison,
+  #alertsPanel {
+    padding: 8px 12px;
+  }
+
+  /* ── Telemetry strip ───────────────────────────────── */
+
+  #telemetryStrip {
+    display: flex;
+    gap: 1px;
+    overflow: hidden;
+  }
+
+  #telemetryStrip canvas {
+    flex: 1;
+    height: 100%;
+  }
+
+  /* ── Controls ──────────────────────────────────────── */
+
+  #controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    background: var(--bg-panel-alt);
+  }
+
+  #controls button {
+    font-family: var(--font-mono);
+    background: var(--bg-panel);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+
+  #controls button:hover {
+    background: var(--bg-panel-alt);
+    color: var(--text-primary);
+    border-color: var(--text-muted);
+  }
+
+  #controls button.active {
+    background: var(--accent-purple);
+    color: #fff;
+    border-color: var(--accent-purple);
+  }
+
+  .speed-btns, .camera-btns { display: flex; gap: 4px; }
+
+  #scrubber {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+
+  #scrubber::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent-purple);
+    cursor: pointer;
+  }
+
+  /* ── Telemetry readouts (T8.4) ──────────────── */
+
+  .readout { display: flex; align-items: center; gap: 8px; padding: 3px 8px; font-size: 11px; }
+  .ro-label { width: 70px; color: var(--text-secondary); }
+  .ro-value { font-weight: 600; min-width: 60px; text-align: right; }
+  .ro-unit { color: var(--text-muted); font-size: 10px; }
+  .ro-tag { font-size: 10px; padding: 1px 4px; border-radius: 2px; }
+  .ro-small { font-size: 10px; color: var(--text-muted); }
+  .ro-bar { width: 60px; height: 6px; background: var(--bg-primary); border-radius: 1px; overflow: hidden; }
+  .bar-fill { height: 100%; transition: width 0.3s; }
+  .sector-header { padding: 6px 8px; font-weight: 600; font-size: 11px; color: var(--text-secondary); border-top: 1px solid var(--border); margin-top: 8px; }
+  .sector-row { display: flex; gap: 8px; padding: 2px 8px; font-size: 11px; }
+  .sector-label { width: 24px; font-weight: 600; }
+  .sector-time { width: 80px; text-align: right; }
+  .sector-delta { width: 70px; text-align: right; }
+  .sector-lap { border-top: 1px solid var(--border); padding-top: 4px; }
+  .alert { padding: 4px 8px; font-size: 10px; border-radius: 2px; margin: 2px 4px; animation: alertFade 5s forwards; }
+  .alert-warning { background: rgba(249, 115, 22, 0.2); color: var(--accent-orange); }
+  .alert-danger { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+  .alert-success { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); }
+  @keyframes alertFade { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+  /* ── Diagnostic mode (T8.6) ──────────────── */
+
+  .diag-btn {
+    background: var(--bg-panel-alt);
+    color: var(--accent-purple);
+    border: 1px solid var(--accent-purple);
+    padding: 2px 12px;
+    font: 11px var(--font-mono);
+    cursor: pointer;
+    margin-left: auto;
+  }
+  .diag-btn.active {
+    background: var(--accent-purple);
+    color: var(--bg-primary);
+  }
+  .diag-table {
+    width: 100%;
+    border-collapse: collapse;
+    font: 10px var(--font-mono);
+    color: var(--text-primary);
+  }
+  .diag-table th {
+    text-align: left;
+    color: var(--text-secondary);
+    padding: 2px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .diag-table td {
+    padding: 2px 6px;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.3);
+  }
+  .diag-table .purple { color: var(--accent-purple); font-weight: 600; }
+  .diag-best td { background: rgba(168, 85, 247, 0.08); }
+</style>
+</head>
+<body>
+
+<!-- STATUS BAR -->
+<div id="statusBar">
+  <span id="lapCounter">Lap --/--</span>
+  <span id="raceClock">0:00:00</span>
+  <span id="flagStatus" class="flag-green">GREEN</span>
+  <span id="trackInfo">Track: ---</span>
+</div>
+
+<!-- TIMING TOWER -->
+<div id="timingTower">
+  <div class="panel-header">TIMING</div>
+  <div id="towerRows"></div>
+  <div id="fastestLapInfo" class="panel-footer">Best: --:--.---</div>
+</div>
+
+<!-- TRACK VIEW (wraps existing canvases) -->
+<div id="trackView">
+  <canvas id="trackBg"></canvas>
+  <canvas id="carLayer"></canvas>
+  <canvas id="overlayLayer"></canvas>
+  <div id="noData">
+    Run <code>python play.py --track monza</code> or drop replay.json
+  </div>
+  <div id="finishedOverlay" style="display:none">RACE COMPLETE</div>
+  <div class="drop-overlay" id="dropOverlay" style="display:none">Drop replay.json</div>
+</div>
+
+<!-- CAR TELEMETRY -->
+<div id="carTelemetry">
+  <div class="panel-header">
+    <span id="selectedCarColor" class="car-dot"></span>
+    <span id="selectedCarName">Select a car</span>
+  </div>
+  <div id="liveReadouts"></div>
+  <div id="sectorComparison"></div>
+  <div id="alertsPanel"></div>
+</div>
+
+<!-- TELEMETRY STRIP -->
+<div id="telemetryStrip">
+  <canvas id="speedTrace"></canvas>
+  <canvas id="tireTrace"></canvas>
+  <canvas id="gapTrace"></canvas>
+</div>
+
+<!-- CONTROLS -->
+<div id="controls">
+  <button id="playBtn" onclick="togglePlay()">&#9654; Play</button>
+  <div class="speed-btns">
+    <button onclick="setSpeed(0.5, event)">0.5&times;</button>
+    <button class="active" onclick="setSpeed(1, event)">1&times;</button>
+    <button onclick="setSpeed(2, event)">2&times;</button>
+    <button onclick="setSpeed(4, event)">4&times;</button>
+  </div>
+  <input type="range" id="scrubber" min="0" max="100" value="0">
+  <div class="camera-btns">
+    <button onclick="setCameraMode('full')">Track [T]</button>
+    <button onclick="setCameraMode('follow')">Follow [F]</button>
+    <button onclick="setCameraMode('onboard')">Onboard [O]</button>
+  </div>
+</div>
+
+<script src="js/data-enrichment.js"></script>
+<script src="js/track-renderer.js"></script>
+<script src="js/car-renderer.js"></script>
+<script src="js/overlay.js"></script>
+<script src="js/sound-engine.js"></script>
+<script src="js/physics-fx.js"></script>
+<script src="js/camera.js"></script>
+<!-- Dashboard modules (T8.3-T8.6 will create these) -->
+<script src="js/timing-tower.js"></script>
+<script src="js/telemetry-panel.js"></script>
+<script src="js/telemetry-strip.js"></script>
+<script src="js/diagnostic.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+id: plan-2026-03-npc-race-collisions
+title: "Sprint 9: Collision + Safety Car (Drama Engine)"
+type: feature
+status: planned
+created: "2026-03-18"
+sprint: 9
+total_complexity: 160
+
+description: |
+  Transform races from "optimization puzzle" to "racing game." Add contact
+  detection, damage model, spin/lockup risk, and safety car system. Perfect
+  strategy wins 60% of the time; the agent that adapts to chaos wins the
+  other 40%.
+
+  CRITICAL CONSTRAINT: simulation.py is at 15/15 functions. ALL new logic
+  goes in extracted modules. simulation.py only calls them.
+
+tasks:
+  - id: T9.1
+    title: "Collision detection system"
+    complexity: 25
+    depends_on: []
+    file: tasks/T9.1.task.md
+
+  - id: T9.2
+    title: "Damage model"
+    complexity: 20
+    depends_on: []
+    file: tasks/T9.2.task.md
+
+  - id: T9.3
+    title: "Spin & lockup incidents"
+    complexity: 20
+    depends_on: []
+    file: tasks/T9.3.task.md
+
+  - id: T9.4
+    title: "Safety car system"
+    complexity: 30
+    depends_on: []
+    file: tasks/T9.4.task.md
+
+  - id: T9.5
+    title: "Simulation integration — drama engine"
+    complexity: 35
+    depends_on: [T9.1, T9.2, T9.3, T9.4]
+    file: tasks/T9.5.task.md
+
+  - id: T9.6
+    title: "Seed cars + strategy state + replay enrichment"
+    complexity: 15
+    depends_on: [T9.5]
+    file: tasks/T9.6.task.md
+
+  - id: T9.7
+    title: "Integration gate — chaos verification"
+    complexity: 15
+    depends_on: [T9.6]
+    file: tasks/T9.7.task.md
+
+wave_plan: |
+  Wave 1 (parallel):  T9.1 + T9.2 + T9.3 + T9.4    (95 Cx — 4 independent modules)
+  Wave 2:             T9.5                            (35 Cx — wire all into simulation)
+  Wave 3:             T9.6                            (15 Cx — car updates + replay)
+  Wave 4 (GATE):      T9.7                            (15 Cx — chaos verification)

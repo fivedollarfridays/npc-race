@@ -45,6 +45,17 @@ def _make_state(**overrides) -> dict:
         "pit_stops": 0,
         "gap_ahead_s": 1.5,
         "gap_behind_s": 2.0,
+        "damage": 0.0,
+        "safety_car": False,
+        "safety_car_laps": 0,
+        "in_spin": False,
+        "spin_risk": 0.0,
+        "track_wetness": 0.0,
+        "weather_forecast": [],
+        "weather_state": "dry",
+        "ers_energy": 4.0,
+        "ers_deploy_mode": "balanced",
+        "brake_temp": 20.0,
     }
     base.update(overrides)
     return base
@@ -336,3 +347,97 @@ class TestTier2SeedCars:
                 source = f.read()
             result = scan_car_source(source)
             assert result.passed, f"{name} failed scanner: {result.violations}"
+
+
+# --- Cycle 8: Drama engine awareness (Sprint 9) ---
+
+
+class TestDramaSeedCars:
+    """Sprint 9: seed cars react to drama engine fields."""
+
+    def test_gooseloose_pits_under_sc(self):
+        """GooseLoose pits when safety car is active and tire_wear > 0.3."""
+        mod = _load_car("gooseloose")
+        state = _make_state(
+            safety_car=True, tire_wear=0.4, pit_stops=0, lap=2, total_laps=5,
+        )
+        result = mod.strategy(state)
+        assert result.get("pit_request") is True
+
+    def test_slipstream_conserves_when_damaged(self):
+        """SlipStream switches to conserve mode when damaged."""
+        mod = _load_car("slipstream")
+        state = _make_state(damage=0.4)
+        result = mod.strategy(state)
+        assert result.get("engine_mode") == "conserve"
+
+    def test_brickhouse_backs_off_high_spin_risk(self):
+        """BrickHouse reduces aggression when spin risk is high."""
+        mod = _load_car("brickhouse")
+        state = _make_state(spin_risk=0.002)
+        result = mod.strategy(state)
+        throttle = result.get("throttle", 1.0)
+        assert throttle < 1.0 or result.get("engine_mode") == "conserve"
+
+    def test_all_drama_cars_pass_bot_scanner(self):
+        """All 3 drama-updated cars pass scan_car_source."""
+        for name in ("gooseloose", "slipstream", "brickhouse"):
+            path = os.path.join(CARS_DIR, f"{name}.py")
+            with open(path) as f:
+                source = f.read()
+            result = scan_car_source(source)
+            assert result.passed, f"{name} failed scanner: {result.violations}"
+
+
+class TestWeatherSeedCars:
+    """Sprint 10: seed cars react to weather."""
+
+    def test_gooseloose_pits_for_inters_in_rain(self):
+        from cars.gooseloose import strategy
+        state = _make_state(track_wetness=0.5, tire_compound="medium")
+        r = strategy(state)
+        assert r.get("pit_request") is True
+        assert r.get("tire_compound_request") == "intermediate"
+
+    def test_gooseloose_pits_for_wets_heavy_rain(self):
+        from cars.gooseloose import strategy
+        state = _make_state(track_wetness=0.8, tire_compound="medium")
+        r = strategy(state)
+        assert r.get("pit_request") is True
+        assert r.get("tire_compound_request") == "wet"
+
+    def test_gooseloose_pits_for_drys_when_drying(self):
+        from cars.gooseloose import strategy
+        state = _make_state(track_wetness=0.1, tire_compound="intermediate")
+        r = strategy(state)
+        assert r.get("pit_request") is True
+        assert r.get("tire_compound_request") == "medium"
+
+    def test_slipstream_early_switch_to_inters(self):
+        from cars.slipstream import strategy
+        state = _make_state(track_wetness=0.35, tire_compound="soft")
+        r = strategy(state)
+        assert r.get("pit_request") is True
+        assert r.get("tire_compound_request") == "intermediate"
+
+
+class TestERSBrakeSeedCars:
+    """Sprint 11: seed cars use ERS and react to brake temp."""
+
+    def test_gooseloose_attacks_when_close(self):
+        from cars.gooseloose import strategy
+        state = _make_state(position=3, gap_ahead_s=1.5, ers_energy=3.0)
+        r = strategy(state)
+        assert r.get("ers_deploy_mode") == "attack"
+
+    def test_silky_eases_on_hot_brakes(self):
+        from cars.silky import strategy
+        state = _make_state(brake_temp=700.0, curvature=0.1)
+        r = strategy(state)
+        assert r.get("throttle", 1.0) < 1.0
+
+    def test_brickhouse_harvests_by_default(self):
+        from cars.brickhouse import strategy
+        state = _make_state(lap=1, total_laps=5)
+        r = strategy(state)
+        assert r.get("ers_deploy_mode") == "harvest"

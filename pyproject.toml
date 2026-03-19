@@ -20,5 +20,10 @@ dev = [
 where = ["."]
 include = ["cli*", "engine*", "security*", "tracks*", "viewer*"]
 
+[tool.pytest.ini_options]
+markers = [
+    "slow: full-race integration tests (skip with -m 'not slow')",
+]
+
 [project.scripts]
 npcrace = "cli.main:main"

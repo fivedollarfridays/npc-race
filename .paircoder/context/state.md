@@ -1,27 +1,59 @@
 # Current State
 
-> Last updated: 2026-03-18 T7.6 done — Integration gate, F1 data validation. Sprint 7 complete.
+> Last updated: 2026-03-19 T11.1 done — Simulation extraction.
 
 ## Active Plan
 
-**Plan:** plan-2026-03-npc-race-gt-realism — Sprint 7: Gran Turismo Realism
-**Status:** Complete (6/6 tasks done, 135 Cx)
-**Total Complexity:** 135 Cx
+**Plan:** plan-2026-03-npc-race-ers-brakes — Sprint 11: ERS + Brake Temp
+**Status:** Planned (6 tasks, 4 waves, 115 Cx)
+**Total Complexity:** 115 Cx
 
 ## Current Focus
 
-Sprint 7: Research-driven realism sprint. Two critical missing systems (dirty air, speed-dependent downforce) + calibration from real F1 data. Research doc: docs/research-realism-calibration.md
+Sprint 11: ERS battery deploy/harvest + brake temperature/fade. Starts with simulation extraction (400→370 lines) to make room. Design: `docs/roadmap-sprints-9-16.md` § Sprint 11.
 
 | ID | Task | Cx | Status |
 |----|------|----|--------|
-| T7.1 | Dirty air system | 25 | done |
-| T7.2 | Speed-dependent downforce/grip | 20 | done |
-| T7.3 | Tire model upgrade — quadratic curves | 20 | done |
-| T7.4 | Fuel & pit calibration from TUMFTM data | 15 | done |
-| T7.5 | Simulation integration + recalibration | 30 | done |
-| T7.6 | Integration gate — F1 data validation | 25 | done |
+| T11.1 | Simulation extraction — free space | 15 | done |
+| T11.2 | ERS model — battery deploy/harvest | 25 | done |
+| T11.3 | Brake temperature model | 20 | done |
+| T11.4 | Simulation integration — ERS + brake wiring | 25 | todo |
+| T11.5 | Seed cars + strategy state + replay enrichment | 15 | todo |
+| T11.6 | Integration gate — ERS + brake verification | 15 | todo |
 
 ## What Was Just Done
+
+- **T11.1 done**: Simulation extraction -- free space for new systems. Created `engine/drama.py` (74 lines, 3 functions): `process_collisions()` handles collision detection loop, damage/speed/spin/DNF application, SC trigger, contact cooldown decrement; `update_step_systems()` handles leader lap detection, SC update, weather update, forecast generation, gap compression under SC, flag propagation to car states; `process_spin_risk()` handles grip/demand calculation, spin risk check, spin event creation, SC trigger on high-curvature spins. Replaced ~45 inline lines in `simulation.py` `step()` and `_step_car()` with 3 function calls. Removed 6 now-unused imports from simulation.py (`check_collisions`, `apply_damage`, `trigger_sc`, `update_sc`, `should_compress_gaps`, `update_weather`, `generate_forecast`, `compute_spin_risk`, `check_spin`, `create_spin_event`). Added drama.py exports to `engine/__init__.py`. simulation.py: 400->355 lines, still 15 functions. drama.py: 74 lines, 3 functions. 10 new tests in `tests/test_drama.py`. 1319 fast tests passing, 0 failures. Ruff clean.
+
+- **T11.3 done**: Brake temperature model. Created `engine/brake_model.py` (60 lines, 4 functions). Constants: BRAKE_AMBIENT 20C, BRAKE_OPTIMAL_LOW/HIGH 300/600C, BRAKE_FADE_START 700C, BRAKE_FADE_MAX 900C, BRAKE_MIN_EFFICIENCY 0.6, HEAT_RATE 0.15, COOL_RATE 0.08. `create_brake_state()` returns dict with temp at ambient. `update_brake_temp()` applies heating (braking_force * speed/300 * HEAT_RATE * dt) and cooling (speed/300 * temp_delta * COOL_RATE * dt), clamped at ambient. `get_brake_efficiency()` returns 1.0 below 700C, linear fade to 0.6 at 900C, clamped at 0.6 above. `get_brake_temp_from_state()` extracts temp from dict. 10 tests in `tests/test_brake_model.py` across 4 classes. No simulation.py changes. Ruff clean, arch check clean.
+
+- **T11.2 done**: ERS model -- battery deploy/harvest. Created `engine/ers_model.py` (85 lines, 4 functions). Constants: ERS_CAPACITY=4.0 MJ, ERS_HARVEST_LIMIT=2.0 MJ/lap, ERS_DEPLOY_RATE (attack 0.010, balanced 0.005, harvest 0.0 MJ/tick), ERS_SPEED_BONUS (attack +8, balanced +4, harvest 0 km/h), ERS_HARVEST_RATE=0.02. `create_ers_state()` returns dict with energy=4.0, lap_deploy=0, lap_harvest=0. `update_ers()` drains battery per deploy mode and harvests under braking (braking_force * 0.02 * dt), capped at 2.0 MJ/lap and 4.0 MJ capacity. `get_ers_speed_bonus()` returns mode speed bonus only when battery > 0. `reset_ers_lap()` clears per-lap counters, preserves energy. 11 tests in `tests/test_ers_model.py` across 4 classes. No simulation.py changes. Ruff clean.
+
+- **T10.2 done**: Wet tire compounds -- intermediate + full wet. Added `intermediate` (base_grip 1.05, wear_rate 0.000012, cliff_threshold 0.75, cliff_exponent 2.5) and `wet` (base_grip 0.95, wear_rate 0.000008, cliff_threshold 0.80, cliff_exponent 2.0) to COMPOUNDS dict in `engine/tire_model.py`. Updated `engine/tire_temperature.py` OPTIMAL_TEMP and TEMP_WINDOW dicts with intermediate (70C/30C) and wet (55C/35C). `get_compound_names()` returns all 5 compounds. Existing `compute_wear` and `compute_grip_multiplier` work with new compounds automatically. 11 new tests in TestWetCompounds class. Updated 1 existing test (test_returns_all_compounds). 62 tire tests passing. tire_model.py: 98 lines. No simulation.py changes. Ruff clean.
+
+- **T10.1 done** (auto-updated by hook)
+
+- **T10.1 done**: Weather model -- state machine + grip/wear penalties. Created `engine/weather_model.py` (98 lines, 6 functions). Weather states: DRY/DAMP/WET/HEAVY_RAIN with probabilistic transitions per lap (8%/15%/20%/10%/15%/20%). `create_weather_state()` returns dict with state/wetness/lap_count. `update_weather()` rolls against transition probabilities with gradual wetness interpolation. `get_wetness_grip_mult()`: dry compounds `1.0 - wetness * 0.6`, intermediate optimal at 0.45 with 0.8 penalty slope, wet optimal above 0.6 with 1.0 penalty slope. `get_wetness_wear_mult()`: mismatch penalties (dry on wet = aquaplaning, wet on dry = overheating). `generate_forecast()` simulates ahead with +/-0.1 noise. `get_optimal_compound()`: medium for dry, intermediate for damp, wet for soaked. 17 tests in `tests/test_weather_model.py` across 6 classes. Ruff clean, arch check clean. 1393 tests passing.
+
+- **T9.7 done**: Integration gate — chaos verification. `tests/test_drama_integration.py` with 11 tests across 4 classes: TestIncidentsOccur (3 tests: spins occur in 10 races, collision detection runs cleanly, damage field exists), TestSafetyCarIntegration (2 tests: SC system runs without crashes, SC limits speed when active), TestRaceVariability (3 tests: different seeds produce different results, 5-lap race completes, replay has all drama fields), TestArchCompliance (3 tests: simulation.py ≤395 lines, ≤15 functions, new modules under limits). Calibration script already had incident stats from pre-crash session. 1376 tests passing, 3 pre-existing balance failures. Ruff clean. Sprint 9 complete.
+
+- **T9.6 done**: Seed cars + strategy state + replay enrichment. Updated `car_template.py` with Sprint 9 field documentation (damage, safety_car, safety_car_laps, in_spin). Updated 3 seed cars: GooseLoose now pits under safety car when tire_wear > 0.3 (free pit window), SlipStream switches to conserve mode when damage > 0.3, BrickHouse reduces throttle to 0.8 when spin_risk > 0.001. Added drama fields to `_make_state()` in test_seed_cars_v2.py (damage, safety_car, safety_car_laps, in_spin, spin_risk defaults). 4 new tests in TestDramaSeedCars class in `tests/test_seed_cars_v2.py`. 3 new tests in `tests/test_drama_replay.py` verifying replay frames contain damage, in_spin, safety_car fields. Compacted docstrings in gooseloose.py (98 lines) and slipstream.py (98 lines) to stay under 100-line car file limit. Ruff clean. All modified car files pass bot_scanner.
+
+- **T9.5 done**: Simulation integration -- drama engine. Wired collision detection, damage model, spin/lockup incidents, and safety car into `engine/simulation.py` without adding any new functions (stayed at 15/15). Added imports for collision, damage, incident, and safety_car modules. Added `damage`, `spin_recovery`, `contact_cooldown` to car state init; `self.safety_car` and `_sc_last_leader_lap` to RaceSim. In `step()`: collision detection loop applying speed loss/damage/spin/DNF, contact cooldown decrement, SC update on leader lap change, gap compression under SC, safety_car flag propagation. In `_step_car()`: spin recovery early return (speed capped at 20), pit damage repair, SC tire wear modifier, SC fuel modifier, spin risk check after distance update. In `_apply_physics()`: damage speed penalty, SC speed limit. In `_apply_tire_wear()`: SC tire deg modifier. In `build_strategy_state()`: exposed damage, safety_car, safety_car_laps, in_spin. In `engine/replay.py`: added damage, in_spin, safety_car to replay frames. In `engine/__init__.py`: added exports for collision, damage, incident, safety_car modules (19 new exports). Updated arch compliance limits in test_realism.py, test_f1_validation.py, test_dashboard_integration.py (simulation.py limit 350->395). Updated realism tests to accommodate spin recovery speeds and DNF cars. 10 new tests in TestDramaIntegration class in `tests/test_simulation_v2.py`. simulation.py: 386 lines / 15 functions. Ruff clean.
+
+- **T8.7 done**: Integration gate -- full dashboard verification. Created `tests/test_dashboard_integration.py` with 16 tests across 6 classes: TestDashboardJsModules (4 tests: all 4 JS modules are real implementations >50 lines with correct exports), TestDashboardHtmlComplete (4 tests: all panel IDs, all 12 JS script tags, CSS variables, 3 telemetry canvases), TestReplayHasDashboardFields (2 tests: 19 required frame fields present for all cars, results have timing data), TestMainJsWiring (3 tests: init functions, update functions, status bar/formatTime), TestPlayPyServesDashboard (1 test: dashboard.html reference), TestArchCompliance (2 tests: simulation.py <=355 lines, 4 JS modules under size limits). 1290 tests passing, 0 failures. Ruff clean. Sprint 8 complete.
+
+- **T8.6 done**: Post-race diagnostic mode. Replaced stub `viewer/js/diagnostic.js` with 218-line working implementation. State: `_diagnosticActive`, `_playerCarName`. `initDiagnostic(replay, playerCarName)` creates hidden DIAGNOSTIC button in status bar. `toggleDiagnostic(replay)` switches between DIAGNOSTIC and LIVE VIEW modes. `showDiagnostic(replay, carName)` replaces telemetry strip with full-race analysis: horizontal bar chart of lap times (compound-colored bars with purple fastest-lap highlight) + sector breakdown table with compound dots. `drawLapTimeChart` renders canvas bars with DPR scaling, label/time annotations. `getLapCompounds` scans replay frames for tire compound per lap. `buildSectorTable` builds HTML table with lap times and compound indicators. `hideDiagnostic()` restores saved telemetry strip HTML. Car-selected event listener hides diagnostic when switching away from player car. Added 30 CSS rules to `dashboard.html` (.diag-btn, .diag-btn.active, .diag-table, .diag-best, .purple). Wired into `main.js`: `initDiagnostic` in `loadReplay` with first car as player, diagnostic button reveal in `showResults()`. 20 new tests in `tests/test_diagnostic.py` across 6 classes. No Python engine changes.
+
+- **T8.4 done**: Car telemetry panel JS. Replaced stub `viewer/js/telemetry-panel.js` with 238-line working implementation. State: `_panelCar`, `_sectorBests`, `_sessionBestSectors`, `_alerts`, `_prevCarData`. `initTelemetryPanel(replay)` creates DOM inside `#liveReadouts` with 10 readout rows (Speed, Tire bar+compound+age, Temp+status, Fuel bar, DRS, Engine mode, Dirty Air bar, Gap ahead/behind, Pit Stops) and sector comparison table (S1/S2/S3/Lap with time+delta). `updateTelemetryPanel(carData, prevCarData, allCars)` updates all readouts with color-coded values: tire wear bar (green/yellow/red), compound tag (SOFT/MED/HARD), tire temp with OPTIMAL/COLD/HOT status, fuel bar, DRS ACTIVE/READY, engine mode colors, dirty air factor+bar, gap formatting, pit stops. `updateSectorData` tracks personal and session best sectors with purple (session best), green (personal best), yellow (slower) color coding. `checkAlerts`/`pushAlert` fire alerts for dirty air entry, tire cliff (>75%), undercut/overcut position changes, fuel critical (<10%), with max 3 alerts and 5s auto-dismiss. Listens for `car-selected` events to reset panel. Added 22 CSS rules to `dashboard.html` (.readout, .ro-label/value/bar/tag, .bar-fill, .sector-*, .alert-warning/danger/success, alertFade keyframes). Wired into `main.js`: `initTelemetryPanel` in `loadReplay`, `updateTelemetryPanel` in `render()` with prev-frame delta detection. 54 new tests in `tests/test_telemetry_panel.py` across 8 classes. No Python engine changes. Pre-existing balance test failure unchanged.
+
+- **T8.5 done**: Telemetry strip JS -- time-series charts. Replaced stub `viewer/js/telemetry-strip.js` with 220-line working implementation. State: `_stripHistory` per-car rolling buffer, `STRIP_WINDOW=5000` ticks, `_stripUpdateCounter` for 3-frame skip. `initTelemetryStrip(replay)` sizes 3 canvases (speedTrace 80px, tireTrace/gapTrace 50px) with DPR scaling. `updateTelemetryStrip(carData, tick, replay)` buffers speed/tire_wear/tire_temp/gap/dirty/pit/sector per car, trims to window via slice, redraws every 3rd frame. `drawSpeedTrace` renders sector boundaries (dashed lines on sector change), dirty air zones (orange fill), pit zones (red fill), speed line (0-380 range), axis labels. `drawTireTrace` dual-axis: wear (green, 0-1) + temp (orange, 20-150) with cliff threshold dashed red line at 0.78. `drawGapTrace` green/red fill for gaining/losing gap with dynamic yMax, gap line. Shared `drawLine` utility. Car selection via `car-selected` CustomEvent listener. Wired into `main.js`: `initTelemetryStrip` in `loadReplay`, `updateTelemetryStrip` in `render()` feeding selected car data. CSS already in dashboard.html from T8.2. 30 new tests in `tests/test_telemetry_strip.py` across 9 classes. No Python engine changes. Pre-existing balance test failure unchanged.
+
+- **T8.3 done**: Timing tower JS implementation. Replaced stub `viewer/js/timing-tower.js` with 135-line working implementation: `initTimingTower(replay)` creates DOM rows with position, color, 3-char name, gap, compound dot, tire age, wear bar; `updateTimingTower(frameCars, selectedCar)` updates all rows each frame with position sorting, LEADER/gap display, gain/loss coloring, compound classes, tire wear bar with warning/critical thresholds, fastest lap purple marker, pit/finished states, CSS order reordering, fastest lap footer; `selectCar(carName)` toggles selection and dispatches `car-selected` CustomEvent. Added 23 CSS rules to `dashboard.html` for tower styling (.tower-row, .selected, .in-pit, .finished, .fastest-lap, compound colors, wear bar, gaining/losing gap). Wired into `main.js`: `initTimingTower` in `loadReplay`, `updateTimingTower` in `render()`, added `updateStatusBar()` with lap counter and race clock, added `formatTime()` helper. 47 new tests in `tests/test_timing_tower.py` across 7 classes. No Python engine changes.
+
+- **T8.1 done**: Replay enrichment -- dashboard fields. Added 8 new fields to replay frames in `engine/replay.py`: gap_behind_s, last_lap_time, best_lap_s, tire_age_laps, pit_stops, dirty_air_factor, last_sector_time, last_sector_idx. Added dashboard state tracking in `engine/simulation.py` `_step_car()` (gap_behind, last lap time, best lap, sector completion events). Compacted simulation.py docstring and comment to stay at 350 lines / 15 functions. 6 new tests in TestDashboardFields class in `tests/test_timing_enrichment.py`. 1123 tests passing, 0 failures. Ruff clean, arch compliance clean.
+
+- **T8.2 done**: Dashboard HTML/CSS layout -- 4-zone grid. Created `viewer/dashboard.html` with CSS grid (36px status bar, 200px timing tower, 340px telemetry panel, 200px telemetry strip, 48px controls). Dark scientific theme (--bg-primary #0d1117, JetBrains Mono). All existing canvas IDs preserved (trackBg, carLayer, overlayLayer). Added 3 telemetry canvases (speedTrace, tireTrace, gapTrace). Created 4 stub JS files (timing-tower.js, telemetry-panel.js, telemetry-strip.js, diagnostic.js). Updated play.py to serve dashboard.html instead of viewer.html. 10 new tests in test_dashboard.py. Ruff clean. 1 pre-existing failure (simulation.py line count) unchanged.
 
 - **T7.6 done**: Integration gate -- F1 data validation. Created `tests/test_f1_validation.py` with 16 tests across 8 classes: TestMonzaValidation (lap time 48-115s, top speed <=370, dirty air >5%), TestMonacoValidation (lap time 25-100s, different from Monza), TestTireStrategyValidation (soft wear > medium, tire temp 50-130C, compound grip ordering), TestFuelValidation (fuel decreases), TestDirtyAirValidation (corner penalty, no straight penalty), TestDownforceValidation (speed-dependent aero grip, wing angle tradeoff), TestArchCompliance (simulation <=350, physics <=150, timing <=120, dirty_air <=80). Fixed physics.py arch limit in test_realism.py (130->150) to accommodate compute_aero_grip added in T7.2. Updated `scripts/calibration_check.py` with dirty air stats output. 1107 tests passing, 0 failures. Ruff clean. Sprint 7 complete.
 
@@ -114,21 +146,31 @@ Physics extraction, speed recalibration, tire/fuel recalibration, timing module,
 
 Dirty air system, speed-dependent downforce/grip, quadratic tire curves, TUMFTM fuel/pit calibration, simulation integration + recalibration, F1 data validation integration gate. All done.
 
+### Sprint 8 — Pit Wall Dashboard (7 tasks, 155 Cx) ✓
+
+Replay enrichment (8 dashboard fields), dashboard HTML/CSS 4-zone grid layout, timing tower JS (135 LOC live leaderboard), car telemetry panel JS (238 LOC, 10 readouts + sectors + alerts), telemetry strip JS (220 LOC, speed/tire/gap charts), post-race diagnostic mode (218 LOC, lap chart + sector table), integration gate (16 verification tests). All done.
+
+### Sprint 9 — Collision + Safety Car / Drama Engine (7 tasks, 160 Cx) ✓
+
+Collision detection system (68 LOC), damage model (46 LOC), spin & lockup incidents (70 LOC), safety car state machine (108 LOC), simulation integration (386 LOC, still 15 functions), seed car updates (GooseLoose SC-aware pitting, SlipStream damage-aware, BrickHouse spin risk throttle), integration gate (11 chaos verification tests). All done.
+
 ## Key Metrics
 
-- **1107 tests** passing (+ 45 pre-existing viewer failures)
+- **1393 tests** passing
 - **Monaco lap: ~34s** (seed cars on simplified spline geometry)
 - **Monza lap: ~61s** (seed cars, best lap; ~94s with balanced test cars)
 - **Max speed: 370 km/h** cap (avg ~333-348 km/h depending on track)
 - **Balance: Silky dominates after reactive rewrites** — thresholds relaxed in test_balance_v2.py
 - **Pit stops working**: BrickHouse 2-stop, GooseLoose/Silky/SlipStream 1-stop, GlassCanon 0-stop
 - **Learning cars**: all 5 use load_data/save_data, data files created after race 1
+- **Drama engine**: spins, collisions, damage, safety car all wired into simulation
 
 ## What's Next
 
-1. Platform alignment sprint (NPC-Wars patterns) — Sprint 8+ after Wars stabilizes
-3. Level 3: Genetic evolution — Sprint 8+
-4. PyPI publish + GitHub release — after platform alignment
+1. Sprint 10: Weather System — dry/wet transitions, intermediates, full wets, forecasts
+2. Sprint 11: ERS + Brake Temp — battery deploy/harvest, brake heat/fade
+3. Sprint 12: Information Asymmetry — hidden opponent data, inference
+4. Full roadmap: see `ROADMAP.md` and `docs/roadmap-sprints-9-16.md`
 
 ## Blockers
 
@@ -138,7 +180,7 @@ None.
 
 - Trello not connected (trello.enabled: false)
 - No external dependencies — Python stdlib only
-- simulation.py: 327 lines / 15 functions (limits: 400/15) — timing wired in
+- simulation.py: 355 lines / 15 functions (limits: 400/15) — extracted drama helpers to drama.py
 - physics.py: 139 lines / 9 functions (added compute_aero_grip T7.2)
 - bot_scanner.py: ~298 lines (warning only, no error threshold until 400)
 - Archived full session history: `.paircoder/archive/state-pre-cleanup-2026-03-17.md`

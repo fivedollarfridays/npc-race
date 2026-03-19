@@ -1,9 +1,9 @@
 """
 Tire compound definitions and non-linear wear/grip curves.
 
-Provides three compounds (soft, medium, hard) with different
-base grip, wear rates, and cliff characteristics. All functions
-are purely functional with no state mutation.
+Provides five compounds (soft, medium, hard, intermediate, wet)
+with different base grip, wear rates, and cliff characteristics.
+All functions are purely functional with no state mutation.
 """
 
 COMPOUNDS: dict[str, dict[str, float]] = {
@@ -24,6 +24,18 @@ COMPOUNDS: dict[str, dict[str, float]] = {
         "wear_rate": 0.000007,
         "cliff_threshold": 0.80,
         "cliff_exponent": 2.5,
+    },
+    "intermediate": {
+        "base_grip": 1.05,
+        "wear_rate": 0.000012,
+        "cliff_threshold": 0.75,
+        "cliff_exponent": 2.5,
+    },
+    "wet": {
+        "base_grip": 0.95,
+        "wear_rate": 0.000008,
+        "cliff_threshold": 0.80,
+        "cliff_exponent": 2.0,
     },
 }
 

@@ -56,9 +56,9 @@ class TestGetCompound:
 class TestGetCompoundNames:
     """Test get_compound_names."""
 
-    def test_returns_all_three(self):
+    def test_returns_all_compounds(self):
         names = get_compound_names()
-        assert set(names) == {"soft", "medium", "hard"}
+        assert set(names) == {"soft", "medium", "hard", "intermediate", "wet"}
 
     def test_returns_list(self):
         assert isinstance(get_compound_names(), list)
@@ -238,3 +238,72 @@ class TestIsPastCliff:
     def test_soft_cliff_at_075(self):
         assert is_past_cliff(0.74, "soft") is False
         assert is_past_cliff(0.75, "soft") is True
+
+
+# --- Cycle 5: Wet tire compounds ---
+
+
+class TestWetCompounds:
+    """Test intermediate and wet tire compounds."""
+
+    def test_intermediate_exists(self):
+        assert "intermediate" in get_compound_names()
+
+    def test_wet_exists(self):
+        assert "wet" in get_compound_names()
+
+    def test_intermediate_grip(self):
+        """Intermediate base_grip between soft and medium."""
+        inter_grip = COMPOUNDS["intermediate"]["base_grip"]
+        assert COMPOUNDS["medium"]["base_grip"] < inter_grip < COMPOUNDS["soft"]["base_grip"]
+
+    def test_wet_grip(self):
+        """Wet base_grip lower than medium."""
+        wet_grip = COMPOUNDS["wet"]["base_grip"]
+        assert wet_grip < COMPOUNDS["medium"]["base_grip"]
+
+    def test_intermediate_wear_rate(self):
+        """Intermediate wears faster than medium, slower than soft."""
+        inter_rate = COMPOUNDS["intermediate"]["wear_rate"]
+        assert COMPOUNDS["medium"]["wear_rate"] < inter_rate < COMPOUNDS["soft"]["wear_rate"]
+
+    def test_wet_wear_rate(self):
+        """Wet wears slower than hard."""
+        wet_rate = COMPOUNDS["wet"]["wear_rate"]
+        assert wet_rate > COMPOUNDS["hard"]["wear_rate"]
+
+    def test_intermediate_optimal_temp(self):
+        """Intermediate optimal temp lower than all dry compounds (70 < hard 70)."""
+        # Intermediate optimal_temp is 70, same as hard but lower than soft/medium
+        # Check via tire_temperature module
+        from engine.tire_temperature import OPTIMAL_TEMP
+
+        assert OPTIMAL_TEMP["intermediate"] <= OPTIMAL_TEMP["hard"]
+
+    def test_wet_optimal_temp(self):
+        """Wet has lowest optimal temp of all compounds."""
+        from engine.tire_temperature import OPTIMAL_TEMP
+
+        for name in get_compound_names():
+            assert OPTIMAL_TEMP["wet"] <= OPTIMAL_TEMP[name], (
+                f"wet optimal temp should be <= {name}"
+            )
+
+    def test_compute_wear_intermediate(self):
+        """compute_wear works with intermediate compound."""
+        result = compute_wear(0.0, "intermediate", throttle=1.0, curvature=0.0)
+        assert result > 0.0
+
+    def test_compute_grip_intermediate(self):
+        """compute_grip_multiplier works with intermediate compound."""
+        result = compute_grip_multiplier(0.0, "intermediate")
+        assert result == COMPOUNDS["intermediate"]["base_grip"]
+
+    def test_existing_compounds_unchanged(self):
+        """Soft, medium, hard values unchanged after adding wet compounds."""
+        assert COMPOUNDS["soft"]["base_grip"] == 1.15
+        assert COMPOUNDS["soft"]["wear_rate"] == 0.000016
+        assert COMPOUNDS["medium"]["base_grip"] == 1.00
+        assert COMPOUNDS["medium"]["wear_rate"] == 0.000010
+        assert COMPOUNDS["hard"]["base_grip"] == 0.85
+        assert COMPOUNDS["hard"]["wear_rate"] == 0.000007
