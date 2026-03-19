@@ -53,6 +53,9 @@ def _make_state(**overrides) -> dict:
         "track_wetness": 0.0,
         "weather_forecast": [],
         "weather_state": "dry",
+        "ers_energy": 4.0,
+        "ers_deploy_mode": "balanced",
+        "brake_temp": 20.0,
     }
     base.update(overrides)
     return base
@@ -416,3 +419,25 @@ class TestWeatherSeedCars:
         r = strategy(state)
         assert r.get("pit_request") is True
         assert r.get("tire_compound_request") == "intermediate"
+
+
+class TestERSBrakeSeedCars:
+    """Sprint 11: seed cars use ERS and react to brake temp."""
+
+    def test_gooseloose_attacks_when_close(self):
+        from cars.gooseloose import strategy
+        state = _make_state(position=3, gap_ahead_s=1.5, ers_energy=3.0)
+        r = strategy(state)
+        assert r.get("ers_deploy_mode") == "attack"
+
+    def test_silky_eases_on_hot_brakes(self):
+        from cars.silky import strategy
+        state = _make_state(brake_temp=700.0, curvature=0.1)
+        r = strategy(state)
+        assert r.get("throttle", 1.0) < 1.0
+
+    def test_brickhouse_harvests_by_default(self):
+        from cars.brickhouse import strategy
+        state = _make_state(lap=1, total_laps=5)
+        r = strategy(state)
+        assert r.get("ers_deploy_mode") == "harvest"

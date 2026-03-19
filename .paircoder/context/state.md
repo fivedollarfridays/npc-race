@@ -1,26 +1,33 @@
 # Current State
 
-> Last updated: 2026-03-19 T10.5 done — Sprint 10 complete. Integration gate passed.
+> Last updated: 2026-03-19 T11.1 done — Simulation extraction.
 
 ## Active Plan
 
-**Plan:** plan-2026-03-npc-race-weather — Sprint 10: Weather System
-**Status:** Complete (5 tasks, 4 waves, 105 Cx)
-**Total Complexity:** 105 Cx
+**Plan:** plan-2026-03-npc-race-ers-brakes — Sprint 11: ERS + Brake Temp
+**Status:** Planned (6 tasks, 4 waves, 115 Cx)
+**Total Complexity:** 115 Cx
 
 ## Current Focus
 
-Sprint 10: Add dynamic weather. Track wetness transitions dry→wet→drying. Wrong tire = catastrophic grip loss. New intermediate and wet compounds. Forecasts available but inaccurate. Design: `docs/roadmap-sprints-9-16.md` § Sprint 10.
+Sprint 11: ERS battery deploy/harvest + brake temperature/fade. Starts with simulation extraction (400→370 lines) to make room. Design: `docs/roadmap-sprints-9-16.md` § Sprint 11.
 
 | ID | Task | Cx | Status |
 |----|------|----|--------|
-| T10.1 | Weather model — state machine + grip/wear penalties | 25 | done |
-| T10.2 | Wet tire compounds — intermediate + full wet | 20 | done |
-| T10.3 | Simulation integration — weather wiring | 30 | done |
-| T10.4 | Seed cars + strategy state + replay enrichment | 15 | done |
-| T10.5 | Integration gate — weather verification | 15 | done |
+| T11.1 | Simulation extraction — free space | 15 | done |
+| T11.2 | ERS model — battery deploy/harvest | 25 | done |
+| T11.3 | Brake temperature model | 20 | done |
+| T11.4 | Simulation integration — ERS + brake wiring | 25 | todo |
+| T11.5 | Seed cars + strategy state + replay enrichment | 15 | todo |
+| T11.6 | Integration gate — ERS + brake verification | 15 | todo |
 
 ## What Was Just Done
+
+- **T11.1 done**: Simulation extraction -- free space for new systems. Created `engine/drama.py` (74 lines, 3 functions): `process_collisions()` handles collision detection loop, damage/speed/spin/DNF application, SC trigger, contact cooldown decrement; `update_step_systems()` handles leader lap detection, SC update, weather update, forecast generation, gap compression under SC, flag propagation to car states; `process_spin_risk()` handles grip/demand calculation, spin risk check, spin event creation, SC trigger on high-curvature spins. Replaced ~45 inline lines in `simulation.py` `step()` and `_step_car()` with 3 function calls. Removed 6 now-unused imports from simulation.py (`check_collisions`, `apply_damage`, `trigger_sc`, `update_sc`, `should_compress_gaps`, `update_weather`, `generate_forecast`, `compute_spin_risk`, `check_spin`, `create_spin_event`). Added drama.py exports to `engine/__init__.py`. simulation.py: 400->355 lines, still 15 functions. drama.py: 74 lines, 3 functions. 10 new tests in `tests/test_drama.py`. 1319 fast tests passing, 0 failures. Ruff clean.
+
+- **T11.3 done**: Brake temperature model. Created `engine/brake_model.py` (60 lines, 4 functions). Constants: BRAKE_AMBIENT 20C, BRAKE_OPTIMAL_LOW/HIGH 300/600C, BRAKE_FADE_START 700C, BRAKE_FADE_MAX 900C, BRAKE_MIN_EFFICIENCY 0.6, HEAT_RATE 0.15, COOL_RATE 0.08. `create_brake_state()` returns dict with temp at ambient. `update_brake_temp()` applies heating (braking_force * speed/300 * HEAT_RATE * dt) and cooling (speed/300 * temp_delta * COOL_RATE * dt), clamped at ambient. `get_brake_efficiency()` returns 1.0 below 700C, linear fade to 0.6 at 900C, clamped at 0.6 above. `get_brake_temp_from_state()` extracts temp from dict. 10 tests in `tests/test_brake_model.py` across 4 classes. No simulation.py changes. Ruff clean, arch check clean.
+
+- **T11.2 done**: ERS model -- battery deploy/harvest. Created `engine/ers_model.py` (85 lines, 4 functions). Constants: ERS_CAPACITY=4.0 MJ, ERS_HARVEST_LIMIT=2.0 MJ/lap, ERS_DEPLOY_RATE (attack 0.010, balanced 0.005, harvest 0.0 MJ/tick), ERS_SPEED_BONUS (attack +8, balanced +4, harvest 0 km/h), ERS_HARVEST_RATE=0.02. `create_ers_state()` returns dict with energy=4.0, lap_deploy=0, lap_harvest=0. `update_ers()` drains battery per deploy mode and harvests under braking (braking_force * 0.02 * dt), capped at 2.0 MJ/lap and 4.0 MJ capacity. `get_ers_speed_bonus()` returns mode speed bonus only when battery > 0. `reset_ers_lap()` clears per-lap counters, preserves energy. 11 tests in `tests/test_ers_model.py` across 4 classes. No simulation.py changes. Ruff clean.
 
 - **T10.2 done**: Wet tire compounds -- intermediate + full wet. Added `intermediate` (base_grip 1.05, wear_rate 0.000012, cliff_threshold 0.75, cliff_exponent 2.5) and `wet` (base_grip 0.95, wear_rate 0.000008, cliff_threshold 0.80, cliff_exponent 2.0) to COMPOUNDS dict in `engine/tire_model.py`. Updated `engine/tire_temperature.py` OPTIMAL_TEMP and TEMP_WINDOW dicts with intermediate (70C/30C) and wet (55C/35C). `get_compound_names()` returns all 5 compounds. Existing `compute_wear` and `compute_grip_multiplier` work with new compounds automatically. 11 new tests in TestWetCompounds class. Updated 1 existing test (test_returns_all_compounds). 62 tire tests passing. tire_model.py: 98 lines. No simulation.py changes. Ruff clean.
 
@@ -173,7 +180,7 @@ None.
 
 - Trello not connected (trello.enabled: false)
 - No external dependencies — Python stdlib only
-- simulation.py: 389 lines / 15 functions (limits: 400/15) — drama engine wired in
+- simulation.py: 355 lines / 15 functions (limits: 400/15) — extracted drama helpers to drama.py
 - physics.py: 139 lines / 9 functions (added compute_aero_grip T7.2)
 - bot_scanner.py: ~298 lines (warning only, no error threshold until 400)
 - Archived full session history: `.paircoder/archive/state-pre-cleanup-2026-03-17.md`

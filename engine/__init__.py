@@ -30,6 +30,9 @@ from .safety_car import (create_sc_state, trigger_sc, update_sc, get_sc_speed_li
                           get_sc_modifiers, is_sc_active, should_compress_gaps)
 from .weather_model import (create_weather_state, update_weather, get_wetness_grip_mult,
                              get_wetness_wear_mult, generate_forecast, get_optimal_compound)
+from .drama import process_collisions, update_step_systems, process_spin_risk
+from .ers_model import create_ers_state, update_ers, get_ers_speed_bonus, reset_ers_lap
+from .brake_model import create_brake_state, update_brake_temp, get_brake_efficiency
 
 __all__ = [
     "get_track",
@@ -102,4 +105,9 @@ __all__ = [
     "get_wetness_wear_mult",
     "generate_forecast",
     "get_optimal_compound",
+    "process_collisions",
+    "update_step_systems",
+    "process_spin_risk",
+    "create_ers_state", "update_ers", "get_ers_speed_bonus", "reset_ers_lap",
+    "create_brake_state", "update_brake_temp", "get_brake_efficiency",
 ]

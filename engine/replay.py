@@ -98,6 +98,8 @@ def record_frame(states, positions, track, distances, track_length,
             "in_spin": state.get("spin_recovery", 0) > 0,
             "safety_car": bool(state.get("_safety_car", False)),
             "track_wetness": round(state.get("_track_wetness", 0.0), 3),
+            "ers_energy": round(state.get("ers", {}).get("energy", 4.0), 2),
+            "brake_temp": round(state.get("brake_state", {}).get("temp", 20.0), 1),
         })
 
     return frame

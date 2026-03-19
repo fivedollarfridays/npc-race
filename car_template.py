@@ -56,14 +56,13 @@ SPRINT 5: TIER 2 REALISM
   current_setup   dict    Read-only view of your SETUP configuration.
 
 SPRINT 9: COLLISIONS & SAFETY CAR
-  damage          float   0.0-1.0 accumulated damage (reduces aero/grip/speed)
-  safety_car      bool    Safety car active. safety_car_laps (int) = laps remaining
-  in_spin         bool    Currently recovering from a spin
-SPRINT 10: WEATHER SYSTEM
-  track_wetness     float  0.0 (bone dry) to 1.0 (standing water)
-  weather_forecast  list   [(lap, predicted_wetness), ...] next 5 laps (can be wrong)
-  weather_state     str    "dry" / "damp" / "wet" / "heavy_rain"
-  tire_compound     str    Also "intermediate" (best ~0.45) and "wet" (best 0.6+)
+  damage float 0.0-1.0 accumulated damage. safety_car bool, safety_car_laps int
+  in_spin bool — currently recovering from a spin
+SPRINT 10: WEATHER
+  track_wetness float 0-1. weather_forecast list [(lap, wetness),...]. weather_state str
+  tire_compound str — also "intermediate" (best ~0.45) and "wet" (best 0.6+)
+SPRINT 11: ERS + BRAKES
+  ers_energy float 0-4 MJ. ers_deploy_mode str. brake_temp float (fade >700C)
 
 STRATEGY RETURNS (dict)
 -----------------------
@@ -81,8 +80,8 @@ STRATEGY RETURNS (dict)
   engine_mode           str     "push" (fast, burns more fuel),
                                 "standard" (balanced),
                                 "conserve" (slow, saves fuel). Default: "standard"
-  drs_request           bool    Request DRS activation (activates when eligible:
-                                in_drs_zone AND drs_available AND gap_ahead_s < 1.0)
+  drs_request           bool    Request DRS activation (in_drs_zone + gap < 1.0)
+  ers_deploy_mode       str     "attack" (+8 km/h), "balanced" (+4), "harvest" (recharge)
 
 If strategy() raises an exception or returns a non-dict, defaults are used.
 Partial returns are merged with defaults -- you only need to return fields you change.

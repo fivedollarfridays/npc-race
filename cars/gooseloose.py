@@ -60,12 +60,9 @@ def strategy(state):
     track = state.get("track_name") or "unknown"
     if state.get("data_file") and state["lap"] >= state["total_laps"] - 1 and not _saved:
         td = _data.setdefault(track, {"opponent_speeds": {}, "races": 0})
-        for car in state["nearby_cars"]:
-            td["opponent_speeds"][car["name"]] = car["speed"]
-        td["races"] = td.get("races", 0) + 1
-        td["last_position"] = position
+        td["opponent_speeds"].update({c["name"]: c["speed"] for c in state["nearby_cars"]})
+        td["races"], td["last_position"], _saved = td.get("races", 0) + 1, position, True
         _save()
-        _saved = True
     pit_request, compound_req = False, None
     tire_temp = state.get("tire_temp", 20.0)
     sc_active, wetness = state.get("safety_car", False), state.get("track_wetness", 0.0)
@@ -91,8 +88,12 @@ def strategy(state):
     lateral = _lateral_decision(curv, gap_behind, state["nearby_cars"])
     use_boost = (state["lap"] >= state["total_laps"] - 1
                  and state["boost_available"] and position > 1)
+    # ERS management
+    ers = state.get("ers_energy", 4.0)
+    ers_mode = "attack" if position > 2 and gap_ahead < 2.0 and ers > 1.0 else ("harvest" if ers < 0.5 else "balanced")
     return {
         "throttle": throttle, "boost": use_boost, "tire_mode": "balanced",
         "lateral_target": lateral, "pit_request": pit_request,
         "tire_compound_request": compound_req, "engine_mode": engine_mode,
+        "ers_deploy_mode": ers_mode,
     }

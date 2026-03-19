@@ -1,0 +1,63 @@
+id: plan-2026-03-npc-race-ers-brakes
+title: 'Sprint 11: ERS + Brake Temp'
+type: feature
+status: in_progress
+created: '2026-03-19'
+sprint: 11
+total_complexity: 115
+description: 'Add Energy Recovery System (battery deploy/harvest) and brake temperature
+
+  model (heat/fade). More decisions per lap on three axes.
+
+
+  CRITICAL: simulation.py is at 400/400 lines, 15/15 functions. Sprint starts
+
+  with extraction to free ~30 lines. No new functions in simulation.py.
+
+  '
+tasks:
+- id: T11.1
+  title: Simulation extraction — free space for new systems
+  complexity: 15
+  depends_on: []
+  file: tasks/T11.1.task.md
+- id: T11.2
+  title: ERS model — battery deploy/harvest
+  complexity: 25
+  depends_on: []
+  file: tasks/T11.2.task.md
+- id: T11.3
+  title: Brake temperature model
+  complexity: 20
+  depends_on: []
+  file: tasks/T11.3.task.md
+- id: T11.4
+  title: Simulation integration — ERS + brake temp wiring
+  complexity: 25
+  depends_on:
+  - T11.1
+  - T11.2
+  - T11.3
+  file: tasks/T11.4.task.md
+- id: T11.5
+  title: Seed cars + strategy state + replay enrichment
+  complexity: 15
+  depends_on:
+  - T11.4
+  file: tasks/T11.5.task.md
+- id: T11.6
+  title: Integration gate — ERS + brake verification
+  complexity: 15
+  depends_on:
+  - T11.5
+  file: tasks/T11.6.task.md
+wave_plan: 'Wave 1 (parallel):  T11.1 + T11.2 + T11.3  (60 Cx — extraction + independent
+  modules)
+
+  Wave 2:             T11.4                    (25 Cx — wire into simulation)
+
+  Wave 3:             T11.5                    (15 Cx — cars + replay)
+
+  Wave 4 (GATE):      T11.6                    (15 Cx — verification)
+
+  '
