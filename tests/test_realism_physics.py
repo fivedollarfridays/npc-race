@@ -3,11 +3,15 @@
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.physics import (
     apply_drag, MAX_SPEED, compute_target_speed, update_speed,
 )
+
+pytestmark = pytest.mark.slow
 
 
 # --- Cycle 1: Aerodynamic drag ---

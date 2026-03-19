@@ -3,6 +3,10 @@
 import json
 import os
 
+import pytest
+
+pytestmark = pytest.mark.slow
+
 
 # ── Cycle 1: F1_POINTS constant ──
 

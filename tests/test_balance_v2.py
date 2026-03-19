@@ -9,7 +9,11 @@ import os
 import tempfile
 from collections import Counter
 
+import pytest
+
 from engine.race_runner import run_race
+
+pytestmark = pytest.mark.slow
 
 
 CAR_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "cars")

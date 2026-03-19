@@ -10,11 +10,15 @@ These tests run full races with real seed cars and check:
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.simulation import RaceSim
 from engine.track_gen import interpolate_track
 from tracks import get_track
+
+pytestmark = pytest.mark.slow
 
 
 def _make_balanced_cars(n=5):

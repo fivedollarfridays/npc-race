@@ -8,6 +8,10 @@ needed by the dashboard.
 import json
 import os
 
+import pytest
+
+pytestmark = pytest.mark.slow
+
 VIEWER_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "viewer"
 )

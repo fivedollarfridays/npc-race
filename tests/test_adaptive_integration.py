@@ -8,8 +8,12 @@ import json
 import os
 import textwrap
 
+import pytest
+
 from engine import run_race
 from security.bot_scanner import scan_car_source
+
+pytestmark = pytest.mark.slow
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CARS_DIR = os.path.join(PROJECT_ROOT, "cars")

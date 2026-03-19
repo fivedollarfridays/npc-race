@@ -7,7 +7,11 @@ physics, timing, and replay data.
 import json
 import os
 
+import pytest
+
 from engine import run_race
+
+pytestmark = pytest.mark.slow
 
 CARS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cars")
 

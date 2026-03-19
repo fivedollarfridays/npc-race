@@ -6,10 +6,14 @@ safety cars deploy, damage accumulates, and races have variability.
 
 import pathlib
 
+import pytest
+
 from engine.simulation import RaceSim
 from engine.car_loader import load_all_cars
 from engine.track_gen import interpolate_track
 from tracks import get_track
+
+pytestmark = pytest.mark.slow
 
 CARS_DIR = str(
     pathlib.Path(__file__).resolve().parent.parent / "cars"
