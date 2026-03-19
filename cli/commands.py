@@ -184,3 +184,16 @@ def _print_final_standings(standings):
     ):
         marker = " CHAMPION" if rank == 1 else ""
         print(f"  {rank}. {name:20s}  {pts} pts{marker}")
+
+
+def cmd_season(args) -> None:
+    """Run a championship season."""
+    from engine.season_runner import run_season
+    custom = [t.strip() for t in args.tracks.split(",")] if args.tracks else None
+    run_season(
+        car_dir=args.car_dir,
+        season_name=args.calendar,
+        custom_tracks=custom,
+        laps=args.laps,
+        output_dir=args.output_dir,
+    )

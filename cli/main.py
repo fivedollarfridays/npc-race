@@ -11,6 +11,7 @@ from .commands import (
     cmd_init,
     cmd_list_tracks,
     cmd_run,
+    cmd_season,
     cmd_tournament,
     cmd_validate,
     cmd_wizard,
@@ -57,6 +58,19 @@ def _build_parser() -> argparse.ArgumentParser:
     # tournament
     _add_tournament_parser(subs)
 
+    # season (championship)
+    season_p = subs.add_parser("season", help="Run a championship season")
+    season_p.add_argument("--calendar", default="short",
+                           help="Preset calendar: short, full, classic")
+    season_p.add_argument("--tracks", default=None,
+                           help="Custom track list (comma-separated)")
+    season_p.add_argument("--laps", type=int, default=5,
+                           help="Laps per race")
+    season_p.add_argument("--car-dir", default="cars",
+                           help="Car directory")
+    season_p.add_argument("--output-dir", default="season_output",
+                           help="Output directory for replays")
+
     return parser
 
 
@@ -88,6 +102,7 @@ _DISPATCH = {
     "list-tracks": cmd_list_tracks,
     "wizard": cmd_wizard,
     "tournament": cmd_tournament,
+    "season": cmd_season,
 }
 
 
