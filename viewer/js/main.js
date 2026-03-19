@@ -353,6 +353,14 @@ function tick() {
   }
 
   updateCamera(replay, frame);
+  // TV Director mode (Sprint 15)
+  if (cameraSystem.mode === 'director') {
+    updateDirector(replay, frame, replay.events || []);
+    var dirTarget = getDirectorTarget();
+    if (dirTarget && dirTarget !== cameraSystem.selectedCar) {
+      cameraSystem.selectedCar = dirTarget;
+    }
+  }
 
   if (cameraSystem.mode !== 'full') {
     computeTransform();

@@ -286,7 +286,7 @@ class TestBuildOutput:
     def test_build_size_reasonable(self):
         html = self._build_and_read()
         size = len(html.encode("utf-8"))
-        assert size < 70000, f"Built file too large: {size} bytes"
+        assert size < 90000, f"Built file too large: {size} bytes"
         assert size > 10000, f"Built file too small: {size} bytes"
 
     def test_build_starts_ends_correctly(self):

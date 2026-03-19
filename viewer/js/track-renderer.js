@@ -252,4 +252,58 @@ function renderTrack(ctx, replay, transform) {
   if (normals.length > 0) {
     _drawStartFinish(ctx, track, normals, halfWidth, transform);
   }
+
+  // Layer 8: sector markers + DRS zones (Sprint 15)
+  drawSectorMarkers(ctx, track, halfWidth, transform);
+  drawDRSZones(ctx, track, halfWidth, transform, replay);
+}
+
+function drawSectorMarkers(ctx, track, halfWidth, transform) {
+  if (!track || track.length < 10) return;
+  var s = transform.scale, ox = transform.ox, oy = transform.oy;
+  var sectors = [
+    { idx: Math.floor(track.length * 0.333), label: 'S1' },
+    { idx: Math.floor(track.length * 0.666), label: 'S2' },
+  ];
+  ctx.save();
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 1;
+  ctx.font = '9px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  for (var i = 0; i < sectors.length; i++) {
+    var pt = track[sectors[i].idx];
+    if (!pt) continue;
+    var px = pt.x * s + ox, py = pt.y * s + oy;
+    ctx.beginPath();
+    ctx.arc(px, py, halfWidth * s * 0.3, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillText(sectors[i].label, px + 5, py - 5);
+  }
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawDRSZones(ctx, track, halfWidth, transform, replay) {
+  if (!track || !replay || !replay.drs_zones) return;
+  var s = transform.scale, ox = transform.ox, oy = transform.oy;
+  var zones = replay.drs_zones;
+  var n = track.length;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0,120,255,0.3)';
+  ctx.lineWidth = halfWidth * s * 0.8;
+  ctx.lineCap = 'round';
+  for (var z = 0; z < zones.length; z++) {
+    var zone = zones[z];
+    var start = Math.floor((zone.start || 0) * n);
+    var end = Math.floor((zone.end || 0) * n);
+    if (start >= end || start >= n) continue;
+    ctx.beginPath();
+    ctx.moveTo(track[start].x * s + ox, track[start].y * s + oy);
+    for (var i = start + 1; i <= Math.min(end, n - 1); i++) {
+      ctx.lineTo(track[i].x * s + ox, track[i].y * s + oy);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
 }

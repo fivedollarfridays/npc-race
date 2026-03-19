@@ -1,0 +1,48 @@
+id: plan-2026-03-npc-race-viewer-polish
+title: "Sprint 15: Viewer Polish"
+type: feature
+status: planned
+created: "2026-03-19"
+sprint: 15
+total_complexity: 75
+
+description: |
+  Make the viewer look like a real broadcast. TV Director auto-camera,
+  3-letter car labels, sector markers, DRS zone overlays.
+  All JS changes — no Python engine changes.
+
+tasks:
+  - id: T15.1
+    title: "TV Director camera — auto-follow action"
+    complexity: 25
+    depends_on: []
+    file: tasks/T15.1.task.md
+
+  - id: T15.2
+    title: "3-letter labels + car color matching"
+    complexity: 15
+    depends_on: []
+    file: tasks/T15.2.task.md
+
+  - id: T15.3
+    title: "Sector markers + DRS zone overlays"
+    complexity: 15
+    depends_on: []
+    file: tasks/T15.3.task.md
+
+  - id: T15.4
+    title: "Wire Director into main.js"
+    complexity: 10
+    depends_on: [T15.1, T15.2, T15.3]
+    file: tasks/T15.4.task.md
+
+  - id: T15.5
+    title: "Integration gate — viewer polish verification"
+    complexity: 10
+    depends_on: [T15.4]
+    file: tasks/T15.5.task.md
+
+wave_plan: |
+  Wave 1 (parallel):  T15.1 + T15.2 + T15.3  (55 Cx — independent JS)
+  Wave 2:             T15.4                    (10 Cx — wire Director)
+  Wave 3 (GATE):      T15.5                    (10 Cx — verification)
