@@ -33,6 +33,7 @@ from .weather_model import (create_weather_state, update_weather, get_wetness_gr
 from .drama import process_collisions, update_step_systems, process_spin_risk
 from .ers_model import create_ers_state, update_ers, get_ers_speed_bonus, reset_ers_lap
 from .brake_model import create_brake_state, update_brake_temp, get_brake_efficiency
+from .visibility import build_opponent_info, filter_nearby_cars, OBSERVABLE_FIELDS, PRIVATE_FIELDS
 
 __all__ = [
     "get_track",
@@ -110,4 +111,5 @@ __all__ = [
     "process_spin_risk",
     "create_ers_state", "update_ers", "get_ers_speed_bonus", "reset_ers_lap",
     "create_brake_state", "update_brake_temp", "get_brake_efficiency",
+    "build_opponent_info", "filter_nearby_cars", "OBSERVABLE_FIELDS", "PRIVATE_FIELDS",
 ]

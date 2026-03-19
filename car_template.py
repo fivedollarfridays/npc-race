@@ -63,6 +63,7 @@ SPRINT 10: WEATHER
   tire_compound str — also "intermediate" (best ~0.45) and "wet" (best 0.6+)
 SPRINT 11: ERS + BRAKES
   ers_energy float 0-4 MJ. ers_deploy_mode str. brake_temp float (fade >700C)
+SPRINT 12: opponent_info list — opponents (observable only, no tire_wear/fuel/damage)
 
 STRATEGY RETURNS (dict)
 -----------------------

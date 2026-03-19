@@ -56,6 +56,7 @@ def _make_state(**overrides) -> dict:
         "ers_energy": 4.0,
         "ers_deploy_mode": "balanced",
         "brake_temp": 20.0,
+        "opponent_info": [],
     }
     base.update(overrides)
     return base
@@ -441,3 +442,22 @@ class TestERSBrakeSeedCars:
         state = _make_state(lap=1, total_laps=5)
         r = strategy(state)
         assert r.get("ers_deploy_mode") == "harvest"
+
+
+class TestInfoAsymmetrySeedCars:
+    """Sprint 12: seed cars work with opponent_info."""
+
+    def test_gooseloose_works_with_opponent_info(self):
+        from cars.gooseloose import strategy
+        opps = [{"name": "Rival", "position": 1, "speed": 250, "tire_age_laps": 20}]
+        state = _make_state(opponent_info=opps, position=2, gap_ahead_s=1.5)
+        r = strategy(state)
+        assert isinstance(r, dict)
+
+    def test_all_cars_handle_opponent_info(self):
+        """All seed cars work when opponent_info is in state."""
+        for name in ("gooseloose", "slipstream", "silky", "brickhouse", "glasscanon"):
+            mod = __import__(f"cars.{name}", fromlist=["strategy"])
+            state = _make_state(opponent_info=[{"name": "X", "position": 2}])
+            r = mod.strategy(state)
+            assert isinstance(r, dict), f"{name} failed with opponent_info"

@@ -1,0 +1,47 @@
+id: plan-2026-03-npc-race-info-asymmetry
+title: "Sprint 12: Information Asymmetry"
+type: feature
+status: planned
+created: "2026-03-19"
+sprint: 12
+total_complexity: 70
+
+description: |
+  Transform strategy from perfect-information optimization to decision-making
+  under uncertainty. Your car gets full telemetry; opponents show only what
+  you could see from the cockpit (position, speed, gap, compound, tire age).
+  Hidden: tire_wear, fuel, damage, tire_temp, engine_mode, ers_energy, brake_temp.
+
+  simulation.py at 372/400 lines, 15/15 functions. This sprint adds ~5 lines
+  (mostly filtering logic in a new module). No new functions in simulation.py.
+
+tasks:
+  - id: T12.1
+    title: "Opponent visibility model"
+    complexity: 20
+    depends_on: []
+    file: tasks/T12.1.task.md
+
+  - id: T12.2
+    title: "Simulation integration — filtered strategy state"
+    complexity: 25
+    depends_on: [T12.1]
+    file: tasks/T12.2.task.md
+
+  - id: T12.3
+    title: "Seed cars + template docs"
+    complexity: 15
+    depends_on: [T12.2]
+    file: tasks/T12.3.task.md
+
+  - id: T12.4
+    title: "Integration gate — asymmetry verification"
+    complexity: 10
+    depends_on: [T12.3]
+    file: tasks/T12.4.task.md
+
+wave_plan: |
+  Wave 1:        T12.1              (20 Cx — visibility model)
+  Wave 2:        T12.2              (25 Cx — wire into simulation)
+  Wave 3:        T12.3              (15 Cx — seed cars + docs)
+  Wave 4 (GATE): T12.4              (10 Cx — verification)

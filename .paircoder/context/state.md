@@ -1,25 +1,23 @@
 # Current State
 
-> Last updated: 2026-03-19 T11.1 done — Simulation extraction.
+> Last updated: 2026-03-19 Sprint 12 planned — Information Asymmetry.
 
 ## Active Plan
 
-**Plan:** plan-2026-03-npc-race-ers-brakes — Sprint 11: ERS + Brake Temp
-**Status:** Planned (6 tasks, 4 waves, 115 Cx)
-**Total Complexity:** 115 Cx
+**Plan:** plan-2026-03-npc-race-info-asymmetry — Sprint 12: Information Asymmetry
+**Status:** Planned (4 tasks, 4 waves, 70 Cx)
+**Total Complexity:** 70 Cx
 
 ## Current Focus
 
-Sprint 11: ERS battery deploy/harvest + brake temperature/fade. Starts with simulation extraction (400→370 lines) to make room. Design: `docs/roadmap-sprints-9-16.md` § Sprint 11.
+Sprint 12: Strategy under uncertainty. Your car: full telemetry. Opponents: observable-only (position, speed, compound, tire_age). Hidden: tire_wear, fuel, damage, tire_temp, engine_mode, ers_energy, brake_temp. Design: `docs/roadmap-sprints-9-16.md` § Sprint 12.
 
 | ID | Task | Cx | Status |
 |----|------|----|--------|
-| T11.1 | Simulation extraction — free space | 15 | done |
-| T11.2 | ERS model — battery deploy/harvest | 25 | done |
-| T11.3 | Brake temperature model | 20 | done |
-| T11.4 | Simulation integration — ERS + brake wiring | 25 | todo |
-| T11.5 | Seed cars + strategy state + replay enrichment | 15 | todo |
-| T11.6 | Integration gate — ERS + brake verification | 15 | todo |
+| T12.1 | Opponent visibility model | 20 | todo |
+| T12.2 | Simulation integration — filtered strategy state | 25 | todo |
+| T12.3 | Seed cars + template docs | 15 | todo |
+| T12.4 | Integration gate — asymmetry verification | 10 | todo |
 
 ## What Was Just Done
 
