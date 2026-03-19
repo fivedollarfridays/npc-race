@@ -50,6 +50,9 @@ def _make_state(**overrides) -> dict:
         "safety_car_laps": 0,
         "in_spin": False,
         "spin_risk": 0.0,
+        "track_wetness": 0.0,
+        "weather_forecast": [],
+        "weather_state": "dry",
     }
     base.update(overrides)
     return base
@@ -381,3 +384,35 @@ class TestDramaSeedCars:
                 source = f.read()
             result = scan_car_source(source)
             assert result.passed, f"{name} failed scanner: {result.violations}"
+
+
+class TestWeatherSeedCars:
+    """Sprint 10: seed cars react to weather."""
+
+    def test_gooseloose_pits_for_inters_in_rain(self):
+        from cars.gooseloose import strategy
+        state = _make_state(track_wetness=0.5, tire_compound="medium")
+        r = strategy(state)
+        assert r.get("pit_request") is True
+        assert r.get("tire_compound_request") == "intermediate"
+
+    def test_gooseloose_pits_for_wets_heavy_rain(self):
+        from cars.gooseloose import strategy
+        state = _make_state(track_wetness=0.8, tire_compound="medium")
+        r = strategy(state)
+        assert r.get("pit_request") is True
+        assert r.get("tire_compound_request") == "wet"
+
+    def test_gooseloose_pits_for_drys_when_drying(self):
+        from cars.gooseloose import strategy
+        state = _make_state(track_wetness=0.1, tire_compound="intermediate")
+        r = strategy(state)
+        assert r.get("pit_request") is True
+        assert r.get("tire_compound_request") == "medium"
+
+    def test_slipstream_early_switch_to_inters(self):
+        from cars.slipstream import strategy
+        state = _make_state(track_wetness=0.35, tire_compound="soft")
+        r = strategy(state)
+        assert r.get("pit_request") is True
+        assert r.get("tire_compound_request") == "intermediate"

@@ -15,6 +15,7 @@ from .collision import check_collisions
 from .damage import create_damage_state, apply_damage, compute_damage_penalties, repair_in_pit
 from .incident import compute_spin_risk, check_spin, create_spin_event
 from .safety_car import create_sc_state, trigger_sc, update_sc, get_sc_speed_limit, get_sc_modifiers, is_sc_active, should_compress_gaps
+from .weather_model import create_weather_state, update_weather, get_wetness_grip_mult, get_wetness_wear_mult, generate_forecast
 
 VALID_ENGINE_MODES = {"push", "standard", "conserve"}
 
@@ -66,6 +67,8 @@ class RaceSim:
         self.sector_boundaries = (0.333, 0.666, 1.0)
         self.safety_car = create_sc_state()
         self._sc_last_leader_lap = -1
+        self.weather = create_weather_state()
+        self._weather_forecast = []
         self.history, self.tick, self.race_over = [], 0, False
 
     def build_strategy_state(self, car_state, positions):
@@ -108,6 +111,9 @@ class RaceSim:
             "safety_car_laps": self.safety_car.get("laps_remaining", 0), "in_spin": cs["spin_recovery"] > 0,
             "elapsed_s": self.tick / self.TICKS_PER_SEC,
             "last_lap_time": ct.lap_times[-1] if ct.lap_times else None, "best_lap_time": ct.best_lap,
+            "track_wetness": self.weather.get("wetness", 0.0),
+            "weather_forecast": list(self._weather_forecast),
+            "weather_state": self.weather.get("state", "dry"),
         }
 
     def step(self):
@@ -141,6 +147,8 @@ class RaceSim:
         if leader["lap"] != self._sc_last_leader_lap:
             self._sc_last_leader_lap = leader["lap"]
             self.safety_car = update_sc(self.safety_car, leader["lap"])
+            self.weather = update_weather(self.weather, self.rng)
+            self._weather_forecast = generate_forecast(self.weather, 5, self.rng)
         if should_compress_gaps(self.safety_car):
             by_dist = sorted(self.states, key=lambda s: -s["distance"])
             for i in range(1, len(by_dist)):
@@ -151,6 +159,7 @@ class RaceSim:
                     by_dist[i]["distance"] += (gap - 3.0) * 0.01
         for s in self.states:
             s["_safety_car"] = is_sc_active(self.safety_car)
+            s["_track_wetness"] = self.weather.get("wetness", 0.0)
         self._record_frame(positions)
         self.tick += 1
         if all(s["finished"] for s in self.states):
@@ -267,6 +276,7 @@ class RaceSim:
         throttle_factor = {"conserve": 0.4, "balanced": 0.7, "push": 1.0}.get(tire_mode, 0.7)
         throttle_factor *= state.get("_dirty_air_wear", 1.0)  # dirty air increases wear
         throttle_factor *= get_sc_modifiers(self.safety_car)["tire_deg_mult"]
+        throttle_factor *= get_wetness_wear_mult(self.weather.get("wetness", 0.0), state.get("tire_compound", "medium"))
         curv = get_curvature_at(
             state["distance"], self.distances, self.curvatures, self.track_length)
         state["tire_wear"] = compute_wear(
@@ -289,7 +299,8 @@ class RaceSim:
     def _apply_physics(self, state, throttle, dt):
         """Calculate speed from power, grip, curvature, braking, fuel, engine, damage, SC."""
         setup, compound = state.get("setup", {}), state.get("tire_compound", "medium")
-        grip_mult = compute_grip_multiplier(state["tire_wear"], compound) * tire_temp_grip_factor(state["tire_temp"], compound) * state.get("_dirty_air_grip", 1.0)
+        grip_mult = (compute_grip_multiplier(state["tire_wear"], compound) * tire_temp_grip_factor(state["tire_temp"], compound)
+                     * state.get("_dirty_air_grip", 1.0) * get_wetness_grip_mult(self.weather.get("wetness", 0.0), compound))
         curv = get_curvature_at(state["distance"], self.distances, self.curvatures, self.track_length)
         aero_grip = compute_aero_grip(state["speed"], setup.get("effective_aero", state["aero"]),
                                        state.get("setup_raw", {}).get("wing_angle", 0.0))

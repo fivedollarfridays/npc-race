@@ -29,8 +29,7 @@ STRATEGY STATE (dict passed to strategy() each tick)
   tire_wear       float   0.0 (fresh) to 1.0 (destroyed). Affects grip.
   boost_available bool    True if you have not used your boost yet
   boost_active    bool    True if your boost is currently firing
-  curvature       float   Track curvature at your position.
-                          0.0 = straight, higher = tighter corner.
+  curvature       float   Track curvature (0.0 = straight, higher = tighter corner)
   nearby_cars     list    Cars within 100 units of you. Each entry is a dict:
                             name           str    Car name
                             distance_ahead float  Positive = ahead, negative = behind
@@ -50,20 +49,21 @@ STRATEGY STATE (dict passed to strategy() each tick)
   gap_behind_s    float   Gap to car behind in seconds (0.0 if last)
 
 SPRINT 5: TIER 2 REALISM
-  tire_temp       float   Current tire surface temp (deg C).
-                          Cold start: 20. Optimal: soft 90, medium 80, hard 70.
-                          Below optimal -> reduced grip (cold tires slip).
-                          Above optimal -> grip degrades faster (blistering).
+  tire_temp       float   Tire surface temp (C). Optimal: soft 90, medium 80, hard 70.
   in_drs_zone     bool    Car is in a DRS activation zone.
   drs_available   bool    DRS not yet used this lap.
   drs_active      bool    DRS currently open.
   current_setup   dict    Read-only view of your SETUP configuration.
 
 SPRINT 9: COLLISIONS & SAFETY CAR
-  damage          float   0.0-1.0 -- accumulated damage (reduces aero/grip/speed)
-  safety_car      bool    Safety car currently active
-  safety_car_laps int     Laps of SC remaining (0 if inactive)
+  damage          float   0.0-1.0 accumulated damage (reduces aero/grip/speed)
+  safety_car      bool    Safety car active. safety_car_laps (int) = laps remaining
   in_spin         bool    Currently recovering from a spin
+SPRINT 10: WEATHER SYSTEM
+  track_wetness     float  0.0 (bone dry) to 1.0 (standing water)
+  weather_forecast  list   [(lap, predicted_wetness), ...] next 5 laps (can be wrong)
+  weather_state     str    "dry" / "damp" / "wet" / "heavy_rain"
+  tire_compound     str    Also "intermediate" (best ~0.45) and "wet" (best 0.6+)
 
 STRATEGY RETURNS (dict)
 -----------------------

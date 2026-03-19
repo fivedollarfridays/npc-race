@@ -28,6 +28,8 @@ from .incident import (compute_spin_risk, check_spin, create_spin_event,
                        compute_lockup_risk, create_lockup_event)
 from .safety_car import (create_sc_state, trigger_sc, update_sc, get_sc_speed_limit,
                           get_sc_modifiers, is_sc_active, should_compress_gaps)
+from .weather_model import (create_weather_state, update_weather, get_wetness_grip_mult,
+                             get_wetness_wear_mult, generate_forecast, get_optimal_compound)
 
 __all__ = [
     "get_track",
@@ -94,4 +96,10 @@ __all__ = [
     "get_sc_modifiers",
     "is_sc_active",
     "should_compress_gaps",
+    "create_weather_state",
+    "update_weather",
+    "get_wetness_grip_mult",
+    "get_wetness_wear_mult",
+    "generate_forecast",
+    "get_optimal_compound",
 ]

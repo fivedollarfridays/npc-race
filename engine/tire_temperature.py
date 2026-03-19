@@ -7,8 +7,14 @@ give less grip; overheated tires blister and lose grip faster.
 
 # --- Constants ---
 
-OPTIMAL_TEMP: dict[str, float] = {"soft": 90.0, "medium": 80.0, "hard": 70.0}
-TEMP_WINDOW: dict[str, float] = {"soft": 20.0, "medium": 25.0, "hard": 30.0}
+OPTIMAL_TEMP: dict[str, float] = {
+    "soft": 90.0, "medium": 80.0, "hard": 70.0,
+    "intermediate": 70.0, "wet": 55.0,
+}
+TEMP_WINDOW: dict[str, float] = {
+    "soft": 20.0, "medium": 25.0, "hard": 30.0,
+    "intermediate": 30.0, "wet": 35.0,
+}
 AMBIENT_TEMP: float = 20.0
 
 _MAX_TEMP: float = 150.0

@@ -1,28 +1,32 @@
 # Current State
 
-> Last updated: 2026-03-18 T9.7 done — Sprint 9 complete. Integration gate passed.
+> Last updated: 2026-03-19 T10.5 done — Sprint 10 complete. Integration gate passed.
 
 ## Active Plan
 
-**Plan:** plan-2026-03-npc-race-collisions — Sprint 9: Collision + Safety Car (Drama Engine)
-**Status:** Complete (7 tasks, 4 waves, 160 Cx)
-**Total Complexity:** 160 Cx
+**Plan:** plan-2026-03-npc-race-weather — Sprint 10: Weather System
+**Status:** Complete (5 tasks, 4 waves, 105 Cx)
+**Total Complexity:** 105 Cx
 
 ## Current Focus
 
-Sprint 9: Transform races from "optimization puzzle" to "racing game." Contact detection, damage model, spin/lockup risk, and safety car system. Perfect strategy wins 60% of the time; the agent that adapts to chaos wins the other 40%.
+Sprint 10: Add dynamic weather. Track wetness transitions dry→wet→drying. Wrong tire = catastrophic grip loss. New intermediate and wet compounds. Forecasts available but inaccurate. Design: `docs/roadmap-sprints-9-16.md` § Sprint 10.
 
 | ID | Task | Cx | Status |
 |----|------|----|--------|
-| T9.1 | Collision detection system | 25 | done |
-| T9.2 | Damage model | 20 | done |
-| T9.3 | Spin & lockup incidents | 20 | done |
-| T9.4 | Safety car system | 30 | done |
-| T9.5 | Simulation integration — drama engine | 35 | done |
-| T9.6 | Seed cars + strategy state + replay enrichment | 15 | done |
-| T9.7 | Integration gate — chaos verification | 15 | done |
+| T10.1 | Weather model — state machine + grip/wear penalties | 25 | done |
+| T10.2 | Wet tire compounds — intermediate + full wet | 20 | done |
+| T10.3 | Simulation integration — weather wiring | 30 | done |
+| T10.4 | Seed cars + strategy state + replay enrichment | 15 | done |
+| T10.5 | Integration gate — weather verification | 15 | done |
 
 ## What Was Just Done
+
+- **T10.2 done**: Wet tire compounds -- intermediate + full wet. Added `intermediate` (base_grip 1.05, wear_rate 0.000012, cliff_threshold 0.75, cliff_exponent 2.5) and `wet` (base_grip 0.95, wear_rate 0.000008, cliff_threshold 0.80, cliff_exponent 2.0) to COMPOUNDS dict in `engine/tire_model.py`. Updated `engine/tire_temperature.py` OPTIMAL_TEMP and TEMP_WINDOW dicts with intermediate (70C/30C) and wet (55C/35C). `get_compound_names()` returns all 5 compounds. Existing `compute_wear` and `compute_grip_multiplier` work with new compounds automatically. 11 new tests in TestWetCompounds class. Updated 1 existing test (test_returns_all_compounds). 62 tire tests passing. tire_model.py: 98 lines. No simulation.py changes. Ruff clean.
+
+- **T10.1 done** (auto-updated by hook)
+
+- **T10.1 done**: Weather model -- state machine + grip/wear penalties. Created `engine/weather_model.py` (98 lines, 6 functions). Weather states: DRY/DAMP/WET/HEAVY_RAIN with probabilistic transitions per lap (8%/15%/20%/10%/15%/20%). `create_weather_state()` returns dict with state/wetness/lap_count. `update_weather()` rolls against transition probabilities with gradual wetness interpolation. `get_wetness_grip_mult()`: dry compounds `1.0 - wetness * 0.6`, intermediate optimal at 0.45 with 0.8 penalty slope, wet optimal above 0.6 with 1.0 penalty slope. `get_wetness_wear_mult()`: mismatch penalties (dry on wet = aquaplaning, wet on dry = overheating). `generate_forecast()` simulates ahead with +/-0.1 noise. `get_optimal_compound()`: medium for dry, intermediate for damp, wet for soaked. 17 tests in `tests/test_weather_model.py` across 6 classes. Ruff clean, arch check clean. 1393 tests passing.
 
 - **T9.7 done**: Integration gate — chaos verification. `tests/test_drama_integration.py` with 11 tests across 4 classes: TestIncidentsOccur (3 tests: spins occur in 10 races, collision detection runs cleanly, damage field exists), TestSafetyCarIntegration (2 tests: SC system runs without crashes, SC limits speed when active), TestRaceVariability (3 tests: different seeds produce different results, 5-lap race completes, replay has all drama fields), TestArchCompliance (3 tests: simulation.py ≤395 lines, ≤15 functions, new modules under limits). Calibration script already had incident stats from pre-crash session. 1376 tests passing, 3 pre-existing balance failures. Ruff clean. Sprint 9 complete.
 
@@ -145,7 +149,7 @@ Collision detection system (68 LOC), damage model (46 LOC), spin & lockup incide
 
 ## Key Metrics
 
-- **1376 tests** passing
+- **1393 tests** passing
 - **Monaco lap: ~34s** (seed cars on simplified spline geometry)
 - **Monza lap: ~61s** (seed cars, best lap; ~94s with balanced test cars)
 - **Max speed: 370 km/h** cap (avg ~333-348 km/h depending on track)
@@ -156,9 +160,10 @@ Collision detection system (68 LOC), damage model (46 LOC), spin & lockup incide
 
 ## What's Next
 
-1. Platform alignment sprint (NPC-Wars patterns) — Sprint 10+
-2. Level 3: Genetic evolution — Sprint 10+
-3. PyPI publish + GitHub release — after platform alignment
+1. Sprint 10: Weather System — dry/wet transitions, intermediates, full wets, forecasts
+2. Sprint 11: ERS + Brake Temp — battery deploy/harvest, brake heat/fade
+3. Sprint 12: Information Asymmetry — hidden opponent data, inference
+4. Full roadmap: see `ROADMAP.md` and `docs/roadmap-sprints-9-16.md`
 
 ## Blockers
 
@@ -168,7 +173,7 @@ None.
 
 - Trello not connected (trello.enabled: false)
 - No external dependencies — Python stdlib only
-- simulation.py: 386 lines / 15 functions (limits: 400/15) — drama engine wired in
+- simulation.py: 389 lines / 15 functions (limits: 400/15) — drama engine wired in
 - physics.py: 139 lines / 9 functions (added compute_aero_grip T7.2)
 - bot_scanner.py: ~298 lines (warning only, no error threshold until 400)
 - Archived full session history: `.paircoder/archive/state-pre-cleanup-2026-03-17.md`

@@ -1,16 +1,12 @@
-"""SlipStream -- 1-stop M->S drafter, damage-aware conserve mode."""
-
+"""SlipStream -- drafter, damage-aware, weather-aggressive."""
 import json
-
 CAR_NAME = "SlipStream"
 CAR_COLOR = "#00aaff"
-
 POWER = 20
 GRIP = 15
 WEIGHT = 15
 AERO = 35
 BRAKES = 15
-
 SETUP = {"wing_angle": -0.4, "brake_bias": 0.5, "suspension": -0.1, "tire_pressure": 0.0}
 
 _data = None
@@ -65,9 +61,14 @@ def strategy(state):
     drafting = gap_ahead < 5.0 and len(cars_ahead) > 0
     pit_request = False
     compound_req = None
-    if pit_stops == 0 and tire_wear > 0.68 and gap_ahead > 18:
-        pit_request = True
-        compound_req = "soft"
+    wetness = state.get("track_wetness", 0.0)
+    # Aggressive early switch to inters
+    if wetness > 0.3 and compound in ("soft", "medium", "hard"):
+        pit_request, compound_req = True, "intermediate"
+    elif wetness < 0.1 and compound in ("intermediate", "wet"):
+        pit_request, compound_req = True, "soft"
+    elif pit_stops == 0 and tire_wear > 0.68 and gap_ahead > 18:
+        pit_request, compound_req = True, "soft"
     on_fresh_softs = compound == "soft" and pit_stops >= 1
     if state.get("damage", 0) > 0.3:
         engine_mode = "conserve"

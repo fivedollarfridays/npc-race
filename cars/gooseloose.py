@@ -1,18 +1,13 @@
-"""GooseLoose -- 1-stop M->H, position-aware modes, SC-aware pitting."""
-
+"""GooseLoose -- 1-stop, weather-aware, SC-aware pitting."""
 import json
-
 CAR_NAME = "GooseLoose"
 CAR_COLOR = "#ff6600"
-
 POWER = 25
 GRIP = 25
 WEIGHT = 15
 AERO = 20
 BRAKES = 15
-
 SETUP = {"wing_angle": -0.2, "brake_bias": 0.55, "suspension": 0.1, "tire_pressure": 0.0}
-
 _data = None
 _last_race = -1
 _saved = False
@@ -71,16 +66,21 @@ def strategy(state):
         td["last_position"] = position
         _save()
         _saved = True
-    pit_request = False
-    compound_req = None
+    pit_request, compound_req = False, None
     tire_temp = state.get("tire_temp", 20.0)
-    sc_active = state.get("safety_car", False)
-    if pit_stops == 0 and sc_active and tire_wear > 0.3:
-        pit_request = True
-        compound_req = "hard"
+    sc_active, wetness = state.get("safety_car", False), state.get("track_wetness", 0.0)
+    compound = state.get("tire_compound", "medium")
+    # Weather-aware compound switching
+    if wetness > 0.7 and compound != "wet":
+        pit_request, compound_req = True, "wet"
+    elif wetness > 0.4 and compound in ("soft", "medium", "hard"):
+        pit_request, compound_req = True, "intermediate"
+    elif wetness < 0.15 and compound in ("intermediate", "wet"):
+        pit_request, compound_req = True, "medium"
+    elif pit_stops == 0 and sc_active and tire_wear > 0.3:
+        pit_request, compound_req = True, "hard"
     elif pit_stops == 0 and (tire_wear > 0.70 or (tire_temp > 105.0 and tire_wear > 0.55)):
-        pit_request = True
-        compound_req = "hard"
+        pit_request, compound_req = True, "hard"
     if position == 1 and gap_behind > 3.0:
         engine_mode = "conserve"
     elif gap_ahead < 2.0:

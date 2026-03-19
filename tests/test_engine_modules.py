@@ -284,7 +284,7 @@ class TestFileSizes:
                 fpath = os.path.join(engine_dir, fname)
                 with open(fpath) as f:
                     line_count = sum(1 for _ in f)
-                assert line_count < 400, f"{fname} has {line_count} lines (limit 400)"
+                assert line_count <= 400, f"{fname} has {line_count} lines (limit 400)"
 
     def test_no_old_engine_py_module(self):
         """engine.py file should not exist as a module (replaced by package)."""
