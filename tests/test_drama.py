@@ -2,7 +2,7 @@
 import random
 from engine.drama import process_collisions, update_step_systems, process_spin_risk
 from engine.damage import create_damage_state
-from engine.safety_car import create_sc_state, is_sc_active
+from engine.safety_car import create_sc_state
 from engine.weather_model import create_weather_state
 
 
