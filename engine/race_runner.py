@@ -12,6 +12,9 @@ from tracks import get_track
 from .car_loader import load_all_cars
 from .track_gen import generate_track, interpolate_track
 from .simulation import RaceSim
+from .narrative import detect_events
+from .commentary import format_events
+from .race_report import generate_report
 
 
 def _resolve_track(track_name, track_seed, laps):
@@ -113,9 +116,20 @@ def run_race(
     _print_results(results)
 
     replay = sim.export_replay()
+
+    # Narrative engine — detect events, generate commentary and report
+    events = detect_events(replay["frames"], replay.get("ticks_per_sec", 30), results)
+    commentary = format_events(events)
+    report = generate_report(results, events, commentary, track_name=track_name or "Unknown")
+    replay["events"] = [{"type": e.type, "tick": e.tick, "cars": e.cars, "data": e.data}
+                         for e in events]
+    replay["commentary"] = commentary
+    replay["race_report"] = report
+
     with open(output, "w", encoding="utf-8") as f:
         json.dump(replay, f)
     print(f"\nReplay saved: {output}")
     print(f"Total frames: {len(replay['frames'])}")
+    print(f"\n{report}")
 
     return results

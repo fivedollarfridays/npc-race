@@ -34,6 +34,9 @@ from .drama import process_collisions, update_step_systems, process_spin_risk
 from .ers_model import create_ers_state, update_ers, get_ers_speed_bonus, reset_ers_lap
 from .brake_model import create_brake_state, update_brake_temp, get_brake_efficiency
 from .visibility import build_opponent_info, filter_nearby_cars, OBSERVABLE_FIELDS, PRIVATE_FIELDS
+from .narrative import detect_events, RaceEvent
+from .commentary import format_events, format_event, format_time
+from .race_report import generate_report
 
 __all__ = [
     "get_track",
@@ -112,4 +115,6 @@ __all__ = [
     "create_ers_state", "update_ers", "get_ers_speed_bonus", "reset_ers_lap",
     "create_brake_state", "update_brake_temp", "get_brake_efficiency",
     "build_opponent_info", "filter_nearby_cars", "OBSERVABLE_FIELDS", "PRIVATE_FIELDS",
+    "detect_events", "RaceEvent", "format_events", "format_event", "format_time",
+    "generate_report",
 ]

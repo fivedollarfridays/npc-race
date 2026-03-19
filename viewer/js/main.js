@@ -361,6 +361,17 @@ function tick() {
 
   render();
   updateSound(replay, frame);
+  // Sprint 14: spatial audio + drama crowd
+  if (replay.frames[frame]) {
+    var _eventsByTick = replay.events || [];
+    updateDramaScore(_eventsByTick, frame);
+    if (_dramaScore > 0.3) triggerCrowdSwell(_dramaScore);
+    if (typeof updateSpatialAudio === 'function') {
+      var camX = cameraSystem.x || 0, camY = cameraSystem.y || 0;
+      updateSpatialAudio(replay.frames[frame], camX, camY);
+    }
+    if (typeof setCameraMix === 'function') setCameraMix(cameraSystem.mode || 'full');
+  }
   if (playing) animId = requestAnimationFrame(tick);
 }
 

@@ -1,23 +1,24 @@
 # Current State
 
-> Last updated: 2026-03-19 Sprint 12 planned — Information Asymmetry.
+> Last updated: 2026-03-19 Sprint 14 planned — Sound Overhaul.
 
 ## Active Plan
 
-**Plan:** plan-2026-03-npc-race-info-asymmetry — Sprint 12: Information Asymmetry
-**Status:** Planned (4 tasks, 4 waves, 70 Cx)
-**Total Complexity:** 70 Cx
+**Plan:** plan-2026-03-npc-race-sound — Sprint 14: Sound Overhaul
+**Status:** Planned (5 tasks, 4 waves, 85 Cx)
+**Total Complexity:** 85 Cx
 
 ## Current Focus
 
-Sprint 12: Strategy under uncertainty. Your car: full telemetry. Opponents: observable-only (position, speed, compound, tire_age). Hidden: tire_wear, fuel, damage, tire_temp, engine_mode, ers_energy, brake_temp. Design: `docs/roadmap-sprints-9-16.md` § Sprint 12.
+Sprint 14: Upgrade sound engine from leader-only to multi-car spatial audio. Camera-aware mix, turbo whistle, drama-driven crowd reactions. All JS — no Python changes. Design: `docs/roadmap-sprints-9-16.md` § Sprint 14.
 
 | ID | Task | Cx | Status |
 |----|------|----|--------|
-| T12.1 | Opponent visibility model | 20 | todo |
-| T12.2 | Simulation integration — filtered strategy state | 25 | todo |
-| T12.3 | Seed cars + template docs | 15 | todo |
-| T12.4 | Integration gate — asymmetry verification | 10 | todo |
+| T14.1 | Spatial audio — per-car distance-based volume | 25 | todo |
+| T14.2 | Turbo whistle synthesis | 15 | todo |
+| T14.3 | Drama-driven crowd + event wiring | 20 | todo |
+| T14.4 | Camera-aware mix + pit wall audio | 15 | todo |
+| T14.5 | Integration gate — sound verification | 10 | todo |
 
 ## What Was Just Done
 
