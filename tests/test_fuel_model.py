@@ -8,6 +8,7 @@ from engine.fuel_model import (
     compute_weight_from_fuel,
     BASE_CONSUMPTION_KG_PER_M,
     FUEL_MARGIN,
+    FUEL_LAP_TIME_SENSITIVITY,
     MAX_FUEL_WEIGHT_FACTOR,
     ENGINE_MODES,
 )
@@ -205,3 +206,21 @@ class TestConstants:
 
     def test_engine_modes_has_three_entries(self):
         assert len(ENGINE_MODES) == 3
+
+
+# --- Cycle 5: TUMFTM calibration (Monza 2017 data) ---
+
+
+class TestTUMFTMCalibration:
+    def test_monza_fuel_near_2kg_per_lap(self):
+        """Monza 5793m * BASE_CONSUMPTION_KG_PER_M should be ~2.0 kg/lap."""
+        kg_per_lap = 5793 * BASE_CONSUMPTION_KG_PER_M
+        assert 1.8 <= kg_per_lap <= 2.2
+
+    def test_fuel_sensitivity_constant_exists(self):
+        """FUEL_LAP_TIME_SENSITIVITY is importable and positive."""
+        assert FUEL_LAP_TIME_SENSITIVITY > 0
+
+    def test_fuel_sensitivity_value(self):
+        """FUEL_LAP_TIME_SENSITIVITY should be 0.030 s/kg/lap."""
+        assert FUEL_LAP_TIME_SENSITIVITY == 0.030

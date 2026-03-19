@@ -20,7 +20,8 @@ from .tire_temperature import (heat_generation, heat_dissipation,
 from .drs_system import is_in_drs_zone, drs_speed_multiplier, update_drs_state
 from .physics import (compute_target_speed, compute_draft_bonus,
                       update_speed, compute_lateral_push, apply_drag,
-                      MAX_SPEED)
+                      MAX_SPEED, compute_aero_grip)
+from .dirty_air import compute_dirty_air_factor
 from .timing import create_timing, update_timing
 
 VALID_ENGINE_MODES = {"push", "standard", "conserve"}
@@ -111,6 +112,8 @@ class RaceSim:
             "tire_temp": cs["tire_temp"], "drs_available": cs["drs_available"],
             "drs_active": cs["drs_active"], "in_drs_zone": cs.get("_in_drs_zone", False),
             "current_setup": cs.get("setup_raw", {}),
+            "in_dirty_air": cs.get("_in_dirty_air", False),
+            "dirty_air_factor": cs.get("_dirty_air_grip", 1.0),
             "elapsed_s": self.tick / self.TICKS_PER_SEC,
             "last_lap_time": (self.timings[cs["name"]].lap_times[-1]
                               if self.timings[cs["name"]].lap_times else None),
@@ -166,6 +169,14 @@ class RaceSim:
             state["tire_wear"] = 0.0
             state["tire_age_laps"] = 0
 
+        # Dirty air: compute grip/wear penalties from following in corners
+        curv = get_curvature_at(
+            state["distance"], self.distances, self.curvatures, self.track_length)
+        da_grip, da_wear = compute_dirty_air_factor(strat_state["gap_ahead_s"], curv)
+        state["_in_dirty_air"] = da_grip < 1.0
+        state["_dirty_air_grip"] = da_grip
+        state["_dirty_air_wear"] = da_wear
+
         self._apply_boost(state, wants_boost)
         self._apply_tire_wear(state, tire_mode)
         self._apply_tire_temp_drs(state, throttle, decision, strat_state, dt)
@@ -201,6 +212,7 @@ class RaceSim:
     def _apply_tire_wear(self, state, tire_mode):
         """Apply tire wear using compound model. tire_mode modulates throttle."""
         throttle_factor = {"conserve": 0.4, "balanced": 0.7, "push": 1.0}.get(tire_mode, 0.7)
+        throttle_factor *= state.get("_dirty_air_wear", 1.0)  # dirty air increases wear
         curv = get_curvature_at(
             state["distance"], self.distances, self.curvatures, self.track_length)
         state["tire_wear"] = compute_wear(
@@ -231,13 +243,19 @@ class RaceSim:
         compound = state.get("tire_compound", "medium")
         tire_grip = compute_grip_multiplier(state["tire_wear"], compound)
         temp_grip = tire_temp_grip_factor(state["tire_temp"], compound)
+        dirty_grip = state.get("_dirty_air_grip", 1.0)
         power_mode = get_engine_mode(state.get("engine_mode", "standard"))["power_mult"]
         curv = get_curvature_at(
             state["distance"], self.distances, self.curvatures, self.track_length)
+        # Aero grip: speed-dependent downforce bonus for corners
+        wing = state.get("setup_raw", {}).get("wing_angle", 0.0)
+        eff_aero = setup.get("effective_aero", state["aero"])
+        aero_grip = compute_aero_grip(state["speed"], eff_aero, wing)
         target = compute_target_speed(
-            power=state["power"], grip=state["grip"], weight=state["weight"],
-            curvature=curv, throttle=throttle,
-            tire_grip_mult=tire_grip * temp_grip, power_mode=power_mode,
+            power=state["power"], grip=state["grip"] + aero_grip,
+            weight=state["weight"], curvature=curv, throttle=throttle,
+            tire_grip_mult=tire_grip * temp_grip * dirty_grip,
+            power_mode=power_mode,
             boost_active=state["boost_active"] > 0, setup=setup)
         target *= drs_speed_multiplier(state.get("_in_drs_zone", False), state["drs_active"])
         pit_st = state.get("pit_state", {})

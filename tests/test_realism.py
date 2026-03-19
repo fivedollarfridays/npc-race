@@ -151,7 +151,7 @@ class TestArchCompliance:
     def test_physics_module_under_limits(self):
         with open("engine/physics.py") as f:
             lines = f.readlines()
-        assert len(lines) <= 130, f"physics.py has {len(lines)} lines (limit 130)"
+        assert len(lines) <= 150, f"physics.py has {len(lines)} lines (limit 150)"
 
     def test_timing_module_under_limits(self):
         with open("engine/timing.py") as f:

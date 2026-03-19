@@ -47,32 +47,11 @@ def update_tire_temp(tire_temp: float, heat_gen: float, heat_diss: float) -> flo
 def tire_temp_grip_factor(tire_temp: float, compound: str) -> float:
     """Return grip multiplier (0.5-1.0) based on temperature and compound.
 
-    - Below window low edge: linear from 0.5 (at AMBIENT_TEMP) to 1.0 (at low edge)
-    - Inside window: 1.0
-    - Above window high edge: linear from 1.0 (at high edge) to 0.5 (at 150 C)
+    Smooth quadratic parabola centered on optimal temperature.
+    Grip peaks at 1.0 at optimal and falls off symmetrically.
     """
     optimal = OPTIMAL_TEMP[compound]
-    window = TEMP_WINDOW[compound]
-    low_edge = optimal - window
-    high_edge = optimal + window
-
-    if tire_temp < low_edge:
-        # Linear from 0.5 at AMBIENT_TEMP to 1.0 at low_edge
-        span = low_edge - AMBIENT_TEMP
-        if span <= 0:
-            return 1.0
-        t = (tire_temp - AMBIENT_TEMP) / span
-        t = max(0.0, min(1.0, t))
-        return _MIN_GRIP + (_MIN_GRIP * t)  # 0.5 + 0.5*t => 0.5..1.0
-
-    if tire_temp > high_edge:
-        # Linear from 1.0 at high_edge to 0.5 at 150
-        span = _MAX_TEMP - high_edge
-        if span <= 0:
-            return 1.0
-        t = (tire_temp - high_edge) / span
-        t = max(0.0, min(1.0, t))
-        return 1.0 - (_MIN_GRIP * t)  # 1.0..0.5
-
-    # Inside the window
-    return 1.0
+    # k calibrated so grip ≈ 0.5 at ambient temp (20°C)
+    k = _MIN_GRIP / max(1.0, (optimal - AMBIENT_TEMP)) ** 2
+    factor = 1.0 - k * (tire_temp - optimal) ** 2
+    return max(_MIN_GRIP, min(1.0, factor))

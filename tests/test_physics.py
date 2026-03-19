@@ -11,7 +11,7 @@ from engine.physics import (
     WEIGHT_MASS_FACTOR, BRAKE_BASE, BRAKE_FACTOR, DRAFT_BONUS_BASE,
     DRAFT_MAX_DISTANCE,
     compute_target_speed, compute_acceleration, compute_braking,
-    compute_draft_bonus, compute_mass_factor,
+    compute_draft_bonus, compute_mass_factor, compute_aero_grip,
 )
 
 
@@ -103,3 +103,40 @@ def test_compute_draft_bonus_out_of_range():
     """Distance=50 (beyond DRAFT_MAX_DISTANCE=40) gives zero bonus."""
     bonus = compute_draft_bonus(aero=0.5, distance_ahead=50.0, dt=1 / 30)
     assert bonus == 0.0
+
+
+class TestAeroGrip:
+    def test_aero_grip_zero_at_zero_speed(self):
+        assert compute_aero_grip(0.0, 1.0) == 0.0
+
+    def test_aero_grip_increases_with_speed(self):
+        low = compute_aero_grip(100.0, 1.0)
+        high = compute_aero_grip(250.0, 1.0)
+        assert high > low
+
+    def test_aero_grip_proportional_to_v_squared(self):
+        g100 = compute_aero_grip(100.0, 1.0)
+        g200 = compute_aero_grip(200.0, 1.0)
+        # Should be roughly 4x (200²/100² = 4)
+        ratio = g200 / g100 if g100 > 0 else 0
+        assert 3.5 <= ratio <= 4.5
+
+    def test_aero_grip_increases_with_aero_stat(self):
+        low_aero = compute_aero_grip(200.0, 0.5)
+        high_aero = compute_aero_grip(200.0, 1.0)
+        assert high_aero > low_aero
+
+    def test_aero_grip_wing_positive_increases(self):
+        neutral = compute_aero_grip(200.0, 1.0, wing_angle=0.0)
+        high_wing = compute_aero_grip(200.0, 1.0, wing_angle=1.0)
+        assert high_wing > neutral
+
+    def test_aero_grip_wing_negative_decreases(self):
+        neutral = compute_aero_grip(200.0, 1.0, wing_angle=0.0)
+        low_wing = compute_aero_grip(200.0, 1.0, wing_angle=-1.0)
+        assert low_wing < neutral
+
+    def test_aero_grip_reasonable_magnitude(self):
+        # At 300 km/h with aero=1.0, should be meaningful but not overwhelming
+        grip = compute_aero_grip(300.0, 1.0)
+        assert 0.1 <= grip <= 0.5

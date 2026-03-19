@@ -5,7 +5,7 @@ State machine: racing -> pit_entry -> pit_stationary -> pit_exit -> racing
 
 PIT_SPEED_LIMIT = 80.0    # km/h speed limit in pit lane
 PIT_ENTRY_TICKS = 60      # ~2 seconds to enter pit (at 30 tps)
-PIT_STOP_TICKS = 660      # ~22 seconds stationary for tire change
+PIT_STOP_TICKS = 540      # ~18 seconds stationary (total: 2s entry + 18s + 2s exit = 22s)
 PIT_EXIT_TICKS = 60       # ~2 seconds to exit pit
 
 
