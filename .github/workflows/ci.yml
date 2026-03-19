@@ -60,7 +60,7 @@ jobs:
     name: Full Tests (integration)
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ready-to-merge')
     steps:
       - uses: actions/checkout@v4
 

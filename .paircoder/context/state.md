@@ -1,24 +1,24 @@
 # Current State
 
-> Last updated: 2026-03-19 Sprint 14 planned — Sound Overhaul.
+> Last updated: 2026-03-19 Sprint 15 planned — Viewer Polish.
 
 ## Active Plan
 
-**Plan:** plan-2026-03-npc-race-sound — Sprint 14: Sound Overhaul
-**Status:** Planned (5 tasks, 4 waves, 85 Cx)
-**Total Complexity:** 85 Cx
+**Plan:** plan-2026-03-npc-race-viewer-polish — Sprint 15: Viewer Polish
+**Status:** Planned (5 tasks, 3 waves, 75 Cx)
+**Total Complexity:** 75 Cx
 
 ## Current Focus
 
-Sprint 14: Upgrade sound engine from leader-only to multi-car spatial audio. Camera-aware mix, turbo whistle, drama-driven crowd reactions. All JS — no Python changes. Design: `docs/roadmap-sprints-9-16.md` § Sprint 14.
+Sprint 15: TV Director auto-camera, 3-letter car labels, sector markers, DRS zone overlays. All JS — no Python changes. Design: `docs/roadmap-sprints-9-16.md` § Sprint 15.
 
 | ID | Task | Cx | Status |
 |----|------|----|--------|
-| T14.1 | Spatial audio — per-car distance-based volume | 25 | todo |
-| T14.2 | Turbo whistle synthesis | 15 | todo |
-| T14.3 | Drama-driven crowd + event wiring | 20 | todo |
-| T14.4 | Camera-aware mix + pit wall audio | 15 | todo |
-| T14.5 | Integration gate — sound verification | 10 | todo |
+| T15.1 | TV Director camera — auto-follow action | 25 | todo |
+| T15.2 | 3-letter labels + car color matching | 15 | todo |
+| T15.3 | Sector markers + DRS zone overlays | 15 | todo |
+| T15.4 | Wire Director into main.js | 10 | todo |
+| T15.5 | Integration gate — viewer polish verification | 10 | todo |
 
 ## What Was Just Done
 

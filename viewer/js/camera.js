@@ -55,7 +55,7 @@ function updateCamera(replayData, frameIdx) {
 
   if (cameraSystem.mode === 'full') {
     _updateCameraFull();
-  } else if (cameraSystem.mode === 'follow') {
+  } else if (cameraSystem.mode === 'follow' || cameraSystem.mode === 'director') {
     _updateCameraFollow(cars, replayData);
   } else if (cameraSystem.mode === 'onboard') {
     _updateCameraOnboard(cars, replayData);
@@ -124,6 +124,57 @@ function _lerpCamera() {
   cameraSystem.currentZoom += (cameraSystem.targetZoom - cameraSystem.currentZoom) * s;
   cameraSystem.currentRotation +=
     (cameraSystem.targetRotation - cameraSystem.currentRotation) * s;
+}
+
+// ── TV Director (Sprint 15) ──────────────────────────────────────────────────
+var _directorTarget = null;
+var _directorHoldUntil = 0;
+var _directorMode = 'leader';
+
+function updateDirector(replay, frameIdx, events) {
+  if (frameIdx < _directorHoldUntil && _directorTarget) return;
+  var cars = replay.frames[frameIdx];
+  if (!cars) return;
+  _directorMode = 'leader';
+  _directorTarget = null;
+  // Priority 1: Overtake — snap to overtaking car
+  if (events) {
+    for (var i = 0; i < events.length; i++) {
+      var e = events[i];
+      var tick = e.tick || 0;
+      if (e.type === 'OVERTAKE' && Math.abs(tick - frameIdx) < 90) {
+        _directorTarget = e.cars[0];
+        _directorHoldUntil = frameIdx + 90;
+        _directorMode = 'overtake';
+        return;
+      }
+    }
+    // Priority 2: Battle
+    for (var j = 0; j < events.length; j++) {
+      var ev = events[j];
+      if (ev.type === 'BATTLE' && Math.abs((ev.tick || 0) - frameIdx) < 150) {
+        _directorTarget = ev.cars[0];
+        _directorHoldUntil = frameIdx + 90;
+        _directorMode = 'battle';
+        return;
+      }
+    }
+    // Priority 3: Safety car — wide view
+    for (var k = 0; k < events.length; k++) {
+      if (events[k].type === 'SAFETY_CAR' && Math.abs((events[k].tick || 0) - frameIdx) < 150) {
+        _directorMode = 'safety_car';
+        _directorTarget = null;
+        return;
+      }
+    }
+  }
+  // Default: follow leader
+  var leader = cars.find(function(c) { return c.position === 1; });
+  if (leader) _directorTarget = leader.name;
+}
+
+function getDirectorTarget() {
+  return _directorTarget;
 }
 
 /**

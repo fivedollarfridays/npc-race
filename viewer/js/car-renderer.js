@@ -262,10 +262,14 @@ function renderCar(ctx, car, prevCar, replay, transform) {
 
   ctx.restore();
 
-  // 9. Name label (drawn without rotation for readability)
-  ctx.fillStyle = '#ddd';
-  ctx.font = '10px sans-serif';
+  // 9. Name label — 3-letter abbreviation in car color (Sprint 15)
+  ctx.fillStyle = car.color || '#ddd';
+  ctx.font = 'bold 10px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
-  ctx.fillText(car.name, sx, sy - bodyWid / 2 - 4);
+  ctx.fillText(getCarAbbrev(car.name), sx, sy - bodyWid / 2 - 4);
+}
+
+function getCarAbbrev(name) {
+  return (name || '???').substring(0, 3).toUpperCase();
 }
