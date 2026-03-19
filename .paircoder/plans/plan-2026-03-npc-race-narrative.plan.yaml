@@ -1,0 +1,49 @@
+id: plan-2026-03-npc-race-narrative
+title: "Sprint 13: Narrative Engine"
+type: feature
+status: planned
+created: "2026-03-19"
+sprint: 13
+total_complexity: 90
+
+description: |
+  Make races tell stories. Detect battles, overtakes, pit stops, incidents.
+  Generate auto-commentary and post-race reports. Processes replay data —
+  no simulation.py changes needed.
+
+tasks:
+  - id: T13.1
+    title: "Event detection — battles, overtakes, incidents"
+    complexity: 25
+    depends_on: []
+    file: tasks/T13.1.task.md
+
+  - id: T13.2
+    title: "Commentary generator — event to text"
+    complexity: 20
+    depends_on: []
+    file: tasks/T13.2.task.md
+
+  - id: T13.3
+    title: "Race report — post-race summary"
+    complexity: 20
+    depends_on: [T13.1, T13.2]
+    file: tasks/T13.3.task.md
+
+  - id: T13.4
+    title: "Wire into race_runner + replay export"
+    complexity: 15
+    depends_on: [T13.3]
+    file: tasks/T13.4.task.md
+
+  - id: T13.5
+    title: "Integration gate — narrative verification"
+    complexity: 10
+    depends_on: [T13.4]
+    file: tasks/T13.5.task.md
+
+wave_plan: |
+  Wave 1 (parallel):  T13.1 + T13.2    (45 Cx — event detection + commentary)
+  Wave 2:             T13.3             (20 Cx — race report from events)
+  Wave 3:             T13.4             (15 Cx — wire into race output)
+  Wave 4 (GATE):      T13.5             (10 Cx — verification)

@@ -89,6 +89,7 @@ function initAudio() {
   sound.crowdGain.connect(sound.master);
   sound.crowd.start();
 
+  initTurbo();
   sound.initialized = true;
 }
 
@@ -155,8 +156,10 @@ function updateSound(replay, frameIdx) {
     var prevLeader = prevCars
       ? prevCars.find(function(c) { return c.name === leader.name; })
       : null;
-    if (prevLeader && prevLeader.speed - leader.speed > 20) {
-      triggerDownshiftPop();
+    if (prevLeader) {
+      var drop = prevLeader.speed - leader.speed;
+      if (drop > 20) triggerDownshiftPop();
+      if (drop > 30) triggerTurboWhistle(drop);
     }
   }
 }
@@ -175,11 +178,116 @@ function triggerDownshiftPop() {
   src.stop(sound.ctx.currentTime + 0.05);
 }
 
-function triggerCrowdSwell() {
+// ─── Spatial Audio (Sprint 14) ──────────────────────────────────────────────
+var _carAudioSlots = [];
+
+function initSpatialAudio(numCars) {
+  if (!sound.initialized) return;
+  _carAudioSlots = [];
+  var maxSlots = Math.min(numCars || 5, 5);
+  for (var i = 0; i < maxSlots; i++) {
+    var osc = sound.ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.value = 80;
+    var gain = sound.ctx.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(sound.master);
+    osc.start();
+    _carAudioSlots.push({ osc: osc, gain: gain, name: null });
+  }
+}
+
+function updateSpatialAudio(cars, cameraX, cameraY) {
+  if (!sound.initialized || _carAudioSlots.length === 0) return;
+  var t = sound.ctx.currentTime;
+  var sorted = cars.slice().sort(function(a, b) {
+    var da = Math.hypot((a.x || 0) - (cameraX || 0), (a.y || 0) - (cameraY || 0));
+    var db = Math.hypot((b.x || 0) - (cameraX || 0), (b.y || 0) - (cameraY || 0));
+    return da - db;
+  });
+  for (var i = 0; i < _carAudioSlots.length; i++) {
+    var slot = _carAudioSlots[i];
+    var car = sorted[i];
+    if (!car) { slot.gain.gain.setTargetAtTime(0, t, 0.05); continue; }
+    var dist = Math.hypot((car.x || 0) - (cameraX || 0), (car.y || 0) - (cameraY || 0));
+    var vol = Math.min(0.12, 1.0 / (1.0 + dist * 0.01) * 0.12);
+    var freq = 80 + ((car.speed || 0) / 300) * 320;
+    slot.osc.frequency.setTargetAtTime(freq, t, 0.05);
+    slot.gain.gain.setTargetAtTime(vol, t, 0.05);
+    slot.name = car.name;
+  }
+}
+
+// ─── Turbo Whistle (Sprint 14) ──────────────────────────────────────────────
+var _turboOsc = null;
+var _turboGain = null;
+
+function initTurbo() {
+  if (!sound.ctx) return;
+  _turboOsc = sound.ctx.createOscillator();
+  _turboOsc.type = 'sine';
+  _turboOsc.frequency.value = 2000;
+  _turboGain = sound.ctx.createGain();
+  _turboGain.gain.value = 0;
+  _turboOsc.connect(_turboGain);
+  _turboGain.connect(sound.master);
+  _turboOsc.start();
+}
+
+function triggerTurboWhistle(speedDrop) {
+  if (!sound.initialized || !_turboOsc) return;
+  var t = sound.ctx.currentTime;
+  var mag = Math.min(1.0, (speedDrop || 30) / 100);
+  _turboOsc.frequency.setValueAtTime(4000, t);
+  _turboOsc.frequency.linearRampToValueAtTime(2000, t + 0.3);
+  _turboGain.gain.setValueAtTime(mag * 0.06, t);
+  _turboGain.gain.linearRampToValueAtTime(0, t + 0.3);
+}
+
+// ─── Drama-Driven Crowd (Sprint 14) ────────────────────────────────────────
+var _dramaScore = 0.1;
+
+function updateDramaScore(events, currentTick) {
+  _dramaScore = 0.1;
+  if (!events) return;
+  for (var i = 0; i < events.length; i++) {
+    var e = events[i];
+    var age = currentTick - (e.tick || 0);
+    if (age < 0 || age > 150) continue; // within 5 seconds
+    if (e.type === 'OVERTAKE') _dramaScore += 0.4 * Math.max(0, 1 - age / 90);
+    else if (e.type === 'BATTLE') _dramaScore += 0.2;
+    else if (e.type === 'SAFETY_CAR') _dramaScore += 0.3 * Math.max(0, 1 - age / 150);
+    else if (e.type === 'SPIN') _dramaScore += 0.5 * Math.max(0, 1 - age / 60);
+    else if (e.type === 'FASTEST_LAP') _dramaScore += 0.2 * Math.max(0, 1 - age / 60);
+  }
+  _dramaScore = Math.min(1.0, _dramaScore);
+}
+
+function triggerCrowdSwell(magnitude) {
   if (!sound.initialized || !sound.crowdGain) return;
   var t = sound.ctx.currentTime;
-  sound.crowdGain.gain.setTargetAtTime(0.2, t, 0.1);
+  var mag = magnitude || _dramaScore;
+  sound.crowdGain.gain.setTargetAtTime(0.05 + mag * 0.25, t, 0.1);
   sound.crowdGain.gain.setTargetAtTime(0.05, t + 0.5, 0.3);
+}
+
+// ─── Camera-Aware Mix (Sprint 14) ──────────────────────────────────────────
+var _mixProfiles = {
+  full:    { engine: 0.2, crowd: 0.8, aero: 0.1, tire: 0.1, turbo: 0.1 },
+  follow:  { engine: 0.6, crowd: 0.4, aero: 0.3, tire: 0.2, turbo: 0.3 },
+  onboard: { engine: 1.0, crowd: 0.1, aero: 0.5, tire: 0.4, turbo: 0.5 },
+};
+
+function setCameraMix(mode) {
+  if (!sound.initialized) return;
+  var p = _mixProfiles[mode] || _mixProfiles.follow;
+  var t = sound.ctx.currentTime;
+  if (sound.engineGain) sound.engineGain.gain.setTargetAtTime(0.15 * p.engine, t, 0.2);
+  if (sound.crowdGain) sound.crowdGain.gain.setTargetAtTime(0.1 * p.crowd, t, 0.2);
+  if (sound.aeroGain) sound.aeroGain.gain.setTargetAtTime(0.08 * p.aero, t, 0.2);
+  if (sound.tireGain) sound.tireGain.gain.setTargetAtTime(0.12 * p.tire, t, 0.2);
+  if (_turboGain) _turboGain.gain.setTargetAtTime(0.06 * p.turbo, t, 0.2);
 }
 
 function pauseSound() {

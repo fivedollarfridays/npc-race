@@ -15,6 +15,7 @@ from .damage import create_damage_state, compute_damage_penalties, repair_in_pit
 from .safety_car import create_sc_state, get_sc_speed_limit, get_sc_modifiers, is_sc_active
 from .weather_model import create_weather_state, get_wetness_grip_mult, get_wetness_wear_mult
 from .drama import process_collisions, update_step_systems, process_spin_risk
+from .visibility import build_opponent_info, filter_nearby_cars
 from .ers_model import create_ers_state, update_ers, get_ers_speed_bonus, reset_ers_lap
 from .brake_model import create_brake_state, update_brake_temp, get_brake_efficiency
 
@@ -77,10 +78,13 @@ class RaceSim:
     def build_strategy_state(self, car_state, positions):
         """Build state dict for car strategy functions."""
         cs, ps = car_state, car_state.get("pit_state", {})
-        nearby = [{"name": o["name"], "distance_ahead": o["distance"] - cs["distance"],
-                    "speed": o["speed"], "lateral": o["lateral"]}
-                   for o in self.states if o["car_idx"] != cs["car_idx"]
-                   and abs(o["distance"] - cs["distance"]) < 100]
+        nearby = filter_nearby_cars([
+            {"name": o["name"], "distance_ahead": o["distance"] - cs["distance"],
+             "speed": o["speed"], "lateral": o["lateral"],
+             "tire_compound": o.get("tire_compound", "medium"),
+             "tire_age_laps": o.get("tire_age_laps", 0)}
+            for o in self.states if o["car_idx"] != cs["car_idx"]
+            and abs(o["distance"] - cs["distance"]) < 100])
         by_dist = sorted(self.states, key=lambda s: -s["distance"])
         mi = next(i for i, s in enumerate(by_dist) if s["car_idx"] == cs["car_idx"])
         gap_a = gap_b = 0.0
@@ -119,6 +123,9 @@ class RaceSim:
             "track_wetness": self.weather.get("wetness", 0.0),
             "weather_forecast": list(self._weather_forecast),
             "weather_state": self.weather.get("state", "dry"),
+            "opponent_info": build_opponent_info(
+                self.states, cs["car_idx"], positions, self.timings,
+                self.TICKS_PER_SEC, self.tick),
         }
 
     def step(self):

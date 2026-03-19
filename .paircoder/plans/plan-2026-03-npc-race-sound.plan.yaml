@@ -1,0 +1,49 @@
+id: plan-2026-03-npc-race-sound
+title: "Sprint 14: Sound Overhaul"
+type: feature
+status: planned
+created: "2026-03-19"
+sprint: 14
+total_complexity: 85
+
+description: |
+  Upgrade the existing sound engine from single-car leader-focused audio
+  to multi-car spatial audio with camera awareness, turbo effects, and
+  drama-driven crowd reactions. All JS changes — no Python engine changes.
+
+tasks:
+  - id: T14.1
+    title: "Spatial audio — per-car distance-based volume"
+    complexity: 25
+    depends_on: []
+    file: tasks/T14.1.task.md
+
+  - id: T14.2
+    title: "Turbo whistle synthesis"
+    complexity: 15
+    depends_on: []
+    file: tasks/T14.2.task.md
+
+  - id: T14.3
+    title: "Drama-driven crowd + event wiring"
+    complexity: 20
+    depends_on: [T14.1]
+    file: tasks/T14.3.task.md
+
+  - id: T14.4
+    title: "Camera-aware mix + pit wall audio"
+    complexity: 15
+    depends_on: [T14.1, T14.3]
+    file: tasks/T14.4.task.md
+
+  - id: T14.5
+    title: "Integration gate — sound verification"
+    complexity: 10
+    depends_on: [T14.4]
+    file: tasks/T14.5.task.md
+
+wave_plan: |
+  Wave 1 (parallel):  T14.1 + T14.2    (40 Cx — spatial audio + turbo)
+  Wave 2:             T14.3             (20 Cx — crowd + events)
+  Wave 3:             T14.4             (15 Cx — camera mix)
+  Wave 4 (GATE):      T14.5             (10 Cx — verification)

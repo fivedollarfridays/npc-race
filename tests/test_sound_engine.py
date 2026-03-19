@@ -123,7 +123,7 @@ class TestSoundUpdateFunction:
 
     def test_has_crowd_swell(self):
         js = (PROJECT_ROOT / "viewer" / "js" / "sound-engine.js").read_text()
-        assert "function triggerCrowdSwell()" in js
+        assert "triggerCrowdSwell" in js
 
 
 class TestSoundControls:

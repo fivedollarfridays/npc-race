@@ -1,25 +1,24 @@
 # Current State
 
-> Last updated: 2026-03-19 T11.1 done — Simulation extraction.
+> Last updated: 2026-03-19 Sprint 14 planned — Sound Overhaul.
 
 ## Active Plan
 
-**Plan:** plan-2026-03-npc-race-ers-brakes — Sprint 11: ERS + Brake Temp
-**Status:** Planned (6 tasks, 4 waves, 115 Cx)
-**Total Complexity:** 115 Cx
+**Plan:** plan-2026-03-npc-race-sound — Sprint 14: Sound Overhaul
+**Status:** Planned (5 tasks, 4 waves, 85 Cx)
+**Total Complexity:** 85 Cx
 
 ## Current Focus
 
-Sprint 11: ERS battery deploy/harvest + brake temperature/fade. Starts with simulation extraction (400→370 lines) to make room. Design: `docs/roadmap-sprints-9-16.md` § Sprint 11.
+Sprint 14: Upgrade sound engine from leader-only to multi-car spatial audio. Camera-aware mix, turbo whistle, drama-driven crowd reactions. All JS — no Python changes. Design: `docs/roadmap-sprints-9-16.md` § Sprint 14.
 
 | ID | Task | Cx | Status |
 |----|------|----|--------|
-| T11.1 | Simulation extraction — free space | 15 | done |
-| T11.2 | ERS model — battery deploy/harvest | 25 | done |
-| T11.3 | Brake temperature model | 20 | done |
-| T11.4 | Simulation integration — ERS + brake wiring | 25 | todo |
-| T11.5 | Seed cars + strategy state + replay enrichment | 15 | todo |
-| T11.6 | Integration gate — ERS + brake verification | 15 | todo |
+| T14.1 | Spatial audio — per-car distance-based volume | 25 | todo |
+| T14.2 | Turbo whistle synthesis | 15 | todo |
+| T14.3 | Drama-driven crowd + event wiring | 20 | todo |
+| T14.4 | Camera-aware mix + pit wall audio | 15 | todo |
+| T14.5 | Integration gate — sound verification | 10 | todo |
 
 ## What Was Just Done
 
