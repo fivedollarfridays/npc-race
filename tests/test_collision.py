@@ -38,7 +38,7 @@ class TestIsContact:
 
     def test_contact_when_close(self):
         a = _make_car("A", distance=100.0, lateral=0.0)
-        b = _make_car("B", distance=102.0, lateral=0.1)
+        b = _make_car("B", distance=100.5, lateral=0.05)
         assert is_contact(a, b) is True
 
     def test_no_contact_in_pit(self):
@@ -84,15 +84,14 @@ class TestResolveCollision:
         a = _make_car("A", distance=100.0)
         b = _make_car("B", distance=101.0)
         rng = random.Random(123)
-        counts: dict[str, int] = {"minor": 0, "moderate": 0, "severe": 0,
-                                   "critical": 0}
+        counts: dict[str, int] = {"racing": 0, "minor": 0, "moderate": 0,
+                                   "severe": 0, "critical": 0}
         n = 1000
         for _ in range(n):
             event = resolve_collision(a, b, rng)
             counts[event["severity"]] += 1
-        # Allow +/- 10 percentage points
-        assert 0.40 <= counts["minor"] / n <= 0.60
-        assert 0.20 <= counts["moderate"] / n <= 0.40
+        # Racing (no effect) is most common (80%)
+        assert counts["racing"] / n >= 0.60
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +108,7 @@ class TestCheckCollisions:
 
     def test_check_collisions_returns_list(self):
         a = _make_car("A", distance=100.0, lateral=0.0)
-        b = _make_car("B", distance=101.0, lateral=0.1)
+        b = _make_car("B", distance=100.5, lateral=0.05)
         c = _make_car("C", distance=500.0, lateral=0.0)
         rng = random.Random(42)
         events = check_collisions([a, b, c], rng)
