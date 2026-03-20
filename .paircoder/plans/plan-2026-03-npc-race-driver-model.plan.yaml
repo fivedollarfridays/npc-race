@@ -1,0 +1,57 @@
+id: plan-2026-03-npc-race-driver-model
+title: "Sprint 19: Two-Mode F1 Driver Model"
+type: feature
+status: planned
+created: "2026-03-20"
+sprint: 19
+total_complexity: 125
+
+description: |
+  Add a built-in F1 driver that handles all driving (braking, throttle,
+  racing line). Player strategy becomes strategic-only (pit calls, modes,
+  compounds). Driver has two modes: deterministic (physics-optimal) and
+  reactive (learned recovery from disruptions). Calibrate on Monza first.
+
+tasks:
+  - id: T19.1
+    title: "Track speed profile — optimal speed at every point"
+    complexity: 20
+    depends_on: []
+    file: tasks/T19.1.task.md
+
+  - id: T19.2
+    title: "Racing line model — apex, entry, exit"
+    complexity: 20
+    depends_on: []
+    file: tasks/T19.2.task.md
+
+  - id: T19.3
+    title: "Deterministic driver — optimal throttle/braking"
+    complexity: 25
+    depends_on: [T19.1, T19.2]
+    file: tasks/T19.3.task.md
+
+  - id: T19.4
+    title: "Reactive driver — learned recovery behavior"
+    complexity: 20
+    depends_on: [T19.3]
+    file: tasks/T19.4.task.md
+
+  - id: T19.5
+    title: "Simulation integration + strategy API refactor"
+    complexity: 25
+    depends_on: [T19.3, T19.4]
+    file: tasks/T19.5.task.md
+
+  - id: T19.6
+    title: "Integration gate — Monza calibration"
+    complexity: 15
+    depends_on: [T19.5]
+    file: tasks/T19.6.task.md
+
+wave_plan: |
+  Wave 1 (parallel):  T19.1 + T19.2    (40 Cx — speed profile + racing line)
+  Wave 2:             T19.3             (25 Cx — deterministic driver)
+  Wave 3:             T19.4             (20 Cx — reactive driver)
+  Wave 4:             T19.5             (25 Cx — wire into sim)
+  Wave 5 (GATE):      T19.6             (15 Cx — Monza calibration)

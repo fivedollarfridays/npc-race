@@ -1,0 +1,21 @@
+id: plan-2026-03-npc-race-viewer-bugfix
+title: "Sprint 18: Viewer Bugfix"
+type: bugfix
+status: planned
+created: "2026-03-19"
+sprint: 18
+total_complexity: 30
+
+description: |
+  Fix viewer rendering issues in WebSocket streaming mode. Track not visible,
+  cars off-screen, speed chart topped out, timing tower missing speed.
+
+tasks:
+  - id: T18.1
+    title: "Fix WS render pipeline + speed chart + timing tower + overlay"
+    complexity: 30
+    depends_on: []
+    file: tasks/T18.1.task.md
+
+wave_plan: |
+  Wave 1: T18.1 (30 Cx — all JS fixes in one task, different files)

@@ -1,0 +1,74 @@
+id: plan-2026-03-npc-race-component-engine
+title: 'Sprint 20: Parts Physics Engine — Build a Car Out of Code'
+type: feature
+status: in_progress
+created: '2026-03-20'
+sprint: 20
+total_complexity: 140
+description: 'Build the physics engine that calls 10 player-written part functions
+  per tick.
+
+  Each part (engine_map, gearbox, ers_deploy, brake_bias, etc.) is a real car
+
+  part controlled by code. The player writes the code that makes each part work.
+
+  The physics engine applies all part decisions to produce car behavior.
+
+
+  Mantra: You''re building a car out of code. Each function IS a part.
+
+
+  Phase 1 of 3: Parts API + physics.
+
+  Phase 2: Car loader + seed car migration.
+
+  Phase 3: Live code terminal + TRON car diagnostic UI.
+
+  '
+tasks:
+- id: T20.1
+  title: Parts API — 10 car part signatures + defaults
+  complexity: 25
+  depends_on: []
+  file: tasks/T20.1.task.md
+- id: T20.2
+  title: Powertrain physics — engine/gearbox/fuel parts
+  complexity: 30
+  depends_on:
+  - T20.1
+  file: tasks/T20.2.task.md
+- id: T20.3
+  title: Chassis physics — aero/suspension/brakes/cooling parts
+  complexity: 25
+  depends_on:
+  - T20.1
+  file: tasks/T20.3.task.md
+- id: T20.4
+  title: Hybrid physics — ERS/differential/tire parts
+  complexity: 25
+  depends_on:
+  - T20.1
+  file: tasks/T20.4.task.md
+- id: T20.5
+  title: Parts runner — sandbox that runs your car's code
+  complexity: 20
+  depends_on:
+  - T20.2
+  - T20.3
+  - T20.4
+  file: tasks/T20.5.task.md
+- id: T20.6
+  title: Integration gate — your code drives a car on Monza
+  complexity: 15
+  depends_on:
+  - T20.5
+  file: tasks/T20.6.task.md
+wave_plan: 'Wave 1:             T20.1           (25 Cx — Parts API)
+
+  Wave 2 (parallel):  T20.2+T20.3+T20.4 (80 Cx — 3 physics groups)
+
+  Wave 3:             T20.5           (20 Cx — parts runner sandbox)
+
+  Wave 4 (GATE):      T20.6           (15 Cx — your code races on Monza)
+
+  '

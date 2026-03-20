@@ -131,8 +131,8 @@ class TestSpeedTraceFeatures:
 
     def test_speed_y_range(self) -> None:
         js = _read_js()
-        # Speed trace should use 0-380 range
-        assert "380" in js, "Speed trace yMax should be 380"
+        # Speed trace should use dynamic Y range
+        assert "maxSpeed" in js or "Math.max" in js, "Speed trace should use dynamic yMax"
 
     def test_pit_zone_shading(self) -> None:
         js = _read_js()

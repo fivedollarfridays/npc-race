@@ -41,6 +41,9 @@ from .season_runner import run_season
 from .narrative import detect_events, RaceEvent
 from .commentary import format_events, format_event, format_time
 from .race_report import generate_report
+from .chassis_physics import (compute_downforce, compute_drag, compute_braking_force,
+                               apply_brake_bias, compute_brake_temp_change,
+                               compute_ride_height_effect, compute_cooling_effect)
 
 __all__ = [
     "get_track",
@@ -125,4 +128,7 @@ __all__ = [
     "create_standings", "award_points", "get_sorted_standings", "format_standings",
     "create_dev_state", "award_dev_points", "apply_upgrades", "apply_dev_to_car",
     "run_season",
+    "compute_downforce", "compute_drag", "compute_braking_force",
+    "apply_brake_bias", "compute_brake_temp_change",
+    "compute_ride_height_effect", "compute_cooling_effect",
 ]

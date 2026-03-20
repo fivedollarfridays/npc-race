@@ -142,8 +142,12 @@ function renderRaceStatus(ctx, replay, frame, w, h) {
 function renderSpeedReadout(ctx, cars, w, h) {
   if (!cars || cars.length === 0) return;
 
-  const leader = cars.reduce((a, b) => a.position < b.position ? a : b);
-  const text = `${Math.round(leader.speed)} km/h`;
+  var target = null;
+  if (overlayState.selectedCar) {
+    target = cars.find(function(c) { return c.name === overlayState.selectedCar; });
+  }
+  if (!target) target = cars.reduce((a, b) => a.position < b.position ? a : b);
+  const text = `${Math.round(target.speed)} km/h`;
 
   const cx = w / 2 + 120;
   const y = 24;

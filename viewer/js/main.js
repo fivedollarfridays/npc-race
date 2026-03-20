@@ -62,11 +62,109 @@ document.addEventListener('drop', e => {
   }
 });
 
-// Try loading replay.json from same directory
-fetch('replay.json')
-  .then(r => r.ok ? r.json() : null)
-  .then(data => { if (data) loadReplay(data); })
-  .catch(() => {});
+// ─── WebSocket Streaming (Sprint 17) ──────────────────────────────────────
+var _ws = null;
+var _wsMode = false;
+var _wsInitData = null;
+
+function _loadFromFile() {
+  fetch('replay.json')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) { if (data && !_wsMode) loadReplay(data); })
+    .catch(function() {});
+}
+
+function connectWebSocket() {
+  try {
+    _ws = new WebSocket('ws://localhost:8766');
+    _ws.onopen = function() {
+      _wsMode = true;
+      document.getElementById('noData').textContent = 'Connected — streaming live...';
+    };
+    _ws.onmessage = function(event) {
+      var msg = JSON.parse(event.data);
+      if (msg.type === 'init') handleWsInit(msg);
+      else if (msg.type === 'frame') handleWsFrame(msg);
+      else if (msg.type === 'results') handleWsResults(msg);
+    };
+    _ws.onclose = function() {
+      _wsMode = false;
+    };
+    _ws.onerror = function() { /* will trigger onclose */ };
+    // If WS doesn't connect within 2s, fall back to file
+    setTimeout(function() { if (!_wsMode) _loadFromFile(); }, 2000);
+  } catch(e) {
+    _loadFromFile();
+  }
+}
+
+function handleWsInit(msg) {
+  // Build a minimal replay object from init data
+  _wsInitData = msg;
+  replay = {
+    track: msg.track,
+    track_width: msg.track_width,
+    track_name: msg.track_name,
+    laps: msg.laps,
+    car_count: msg.car_count,
+    ticks_per_sec: msg.ticks_per_sec,
+    track_curvatures: msg.track_curvatures || [],
+    track_headings: msg.track_headings || [],
+    frames: [],
+    results: [],
+    events: [],
+  };
+  frame = 0;
+  document.getElementById('noData').style.display = 'none';
+  document.getElementById('finishedOverlay').style.display = 'none';
+  var trackLabel = replay.track_name || 'Procedural Track';
+  document.getElementById('trackName').innerHTML =
+    '<span class="track-label">\u25B6</span> ' + esc(trackLabel);
+  document.getElementById('raceInfo').textContent =
+    replay.car_count + ' cars \u00B7 ' + replay.laps + ' laps \u00B7 LIVE';
+  resizeAllCanvases();
+}
+
+function handleWsFrame(msg) {
+  if (!replay) return;
+  replay.frames.push(msg.cars);
+  frame = replay.frames.length - 1;
+  document.getElementById('scrubber').max = frame;
+  document.getElementById('scrubber').value = frame;
+
+  // Init panels + enrichment on first frame (now that we have data)
+  if (frame === 0) {
+    enrichReplayData(replay);
+    computeTransform();
+    renderBackground();
+    initTimingTower(replay);
+    initTelemetryPanel(replay);
+    initTelemetryStrip(replay);
+    initDiagnostic(replay, msg.cars[0].name);
+  }
+
+  // Render every frame — always compute transform + background
+  updateCamera(replay, frame);
+  computeTransform();
+  renderBackground();
+  render();
+  updateSound(replay, frame);
+}
+
+function handleWsResults(msg) {
+  if (!replay) return;
+  replay.results = msg.results || [];
+  replay.events = msg.events || [];
+  replay.commentary = msg.commentary || [];
+  replay.race_report = msg.race_report || '';
+  playing = false;
+  document.getElementById('playBtn').textContent = '\u25B6 Play';
+  showResults();
+}
+
+// Try WebSocket first, then fall back to file
+connectWebSocket();
+// Also try file in case WS not available (connectWebSocket handles fallback on close);
 
 function loadReplay(data) {
   replay = data;
@@ -293,7 +391,7 @@ function formatTime(totalSec) {
 function showResults() {
   if (!replay.results) return;
   const overlay = document.getElementById('finishedOverlay');
-  overlay.style.display = 'block';
+  overlay.style.display = 'none';
 
   // Reveal diagnostic button at race end
   const diagnosticBtn = document.getElementById('diagnosticBtn');
