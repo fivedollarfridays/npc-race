@@ -1,0 +1,55 @@
+id: plan-2026-03-npc-race-championship
+title: "Sprint 16: Championship Mode"
+type: feature
+status: planned
+created: "2026-03-19"
+sprint: 16
+total_complexity: 105
+
+description: |
+  The metagame capstone. Multi-race championship seasons with F1 points,
+  championship standings, and car development between races. One strategy
+  must work across all conditions. No simulation.py changes.
+
+tasks:
+  - id: T16.1
+    title: "Season calendar — curated track sequences"
+    complexity: 15
+    depends_on: []
+    file: tasks/T16.1.task.md
+
+  - id: T16.2
+    title: "Championship points system"
+    complexity: 15
+    depends_on: []
+    file: tasks/T16.2.task.md
+
+  - id: T16.3
+    title: "Car development — upgrade stats between races"
+    complexity: 25
+    depends_on: []
+    file: tasks/T16.3.task.md
+
+  - id: T16.4
+    title: "Season runner — orchestrate full championship"
+    complexity: 25
+    depends_on: [T16.1, T16.2, T16.3]
+    file: tasks/T16.4.task.md
+
+  - id: T16.5
+    title: "CLI command + season output"
+    complexity: 15
+    depends_on: [T16.4]
+    file: tasks/T16.5.task.md
+
+  - id: T16.6
+    title: "Integration gate — championship verification"
+    complexity: 10
+    depends_on: [T16.5]
+    file: tasks/T16.6.task.md
+
+wave_plan: |
+  Wave 1 (parallel):  T16.1 + T16.2 + T16.3  (55 Cx — independent modules)
+  Wave 2:             T16.4                    (25 Cx — season orchestrator)
+  Wave 3:             T16.5                    (15 Cx — CLI wiring)
+  Wave 4 (GATE):      T16.6                    (10 Cx — end-to-end season)

@@ -1,24 +1,25 @@
 # Current State
 
-> Last updated: 2026-03-19 Sprint 15 planned — Viewer Polish.
+> Last updated: 2026-03-19 Sprint 16 planned — Championship Mode (FINAL SPRINT).
 
 ## Active Plan
 
-**Plan:** plan-2026-03-npc-race-viewer-polish — Sprint 15: Viewer Polish
-**Status:** Planned (5 tasks, 3 waves, 75 Cx)
-**Total Complexity:** 75 Cx
+**Plan:** plan-2026-03-npc-race-championship — Sprint 16: Championship Mode
+**Status:** Planned (6 tasks, 4 waves, 105 Cx)
+**Total Complexity:** 105 Cx
 
 ## Current Focus
 
-Sprint 15: TV Director auto-camera, 3-letter car labels, sector markers, DRS zone overlays. All JS — no Python changes. Design: `docs/roadmap-sprints-9-16.md` § Sprint 15.
+Sprint 16: The metagame capstone. Multi-race seasons, F1 points, championship standings, car development between races. One strategy must work across all conditions. No simulation.py changes.
 
 | ID | Task | Cx | Status |
 |----|------|----|--------|
-| T15.1 | TV Director camera — auto-follow action | 25 | todo |
-| T15.2 | 3-letter labels + car color matching | 15 | todo |
-| T15.3 | Sector markers + DRS zone overlays | 15 | todo |
-| T15.4 | Wire Director into main.js | 10 | todo |
-| T15.5 | Integration gate — viewer polish verification | 10 | todo |
+| T16.1 | Season calendar — curated track sequences | 15 | todo |
+| T16.2 | Championship points system | 15 | todo |
+| T16.3 | Car development — upgrade stats between races | 25 | todo |
+| T16.4 | Season runner — orchestrate full championship | 25 | todo |
+| T16.5 | CLI command + season output | 15 | todo |
+| T16.6 | Integration gate — championship verification | 10 | todo |
 
 ## What Was Just Done
 
