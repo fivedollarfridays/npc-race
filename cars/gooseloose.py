@@ -1,4 +1,4 @@
-"""GooseLoose -- 1-stop, weather-aware, SC-aware pitting."""
+"""GooseLoose -- balanced, smart fuel, SC-aware. All-rounder."""
 import json
 CAR_NAME = "GooseLoose"
 CAR_COLOR = "#ff6600"
@@ -7,6 +7,9 @@ GRIP = 25
 WEIGHT = 15
 AERO = 20
 BRAKES = 15
+ENGINE_SPEC = "v6_1000hp"
+AERO_SPEC = "medium_downforce"
+CHASSIS_SPEC = "standard"
 SETUP = {"wing_angle": -0.2, "brake_bias": 0.55, "suspension": 0.1, "tire_pressure": 0.0}
 _data = None
 _last_race = -1

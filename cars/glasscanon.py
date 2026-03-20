@@ -12,6 +12,9 @@ GRIP = 15
 WEIGHT = 10
 AERO = 20
 BRAKES = 15
+ENGINE_SPEC = "v6_1000hp"
+AERO_SPEC = "low_drag"
+CHASSIS_SPEC = "lightweight"
 
 _data = None
 _last_race = -1

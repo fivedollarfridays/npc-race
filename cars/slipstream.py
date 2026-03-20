@@ -7,6 +7,9 @@ GRIP = 15
 WEIGHT = 15
 AERO = 35
 BRAKES = 15
+ENGINE_SPEC = "v6_1000hp"
+AERO_SPEC = "low_drag"
+CHASSIS_SPEC = "standard"
 SETUP = {"wing_angle": -0.4, "brake_bias": 0.5, "suspension": -0.1, "tire_pressure": 0.0}
 
 _data = None

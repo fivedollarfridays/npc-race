@@ -129,7 +129,7 @@ HARDWARE_SPECS: dict[str, dict[str, dict]] = {
     "ENGINE_SPEC": {
         "v6_1000hp": {
             "max_hp": 1000, "peak_torque_rpm": 10800, "peak_power_rpm": 12500,
-            "torque_nm": 300, "max_fuel_flow_kghr": 100,
+            "torque_nm": 400, "max_fuel_flow_kghr": 100,
         },
     },
     "AERO_SPEC": {

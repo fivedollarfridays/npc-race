@@ -1,0 +1,52 @@
+id: plan-2026-03-npc-race-physics-calibration
+title: "Sprint 22: Physics Calibration — Make the Numbers Real"
+type: refactor
+status: planned
+created: "2026-03-20"
+sprint: 22
+total_complexity: 100
+
+description: |
+  Get the physics right, measure sensitivity, calibrate for a 3-second spread.
+  Phase 1: Correct absolute numbers (top speed, corner speed, braking G).
+  Phase 2: Measure per-part sensitivity (change one thing, measure lap time).
+  Phase 3: Calibrate interactions (parts affect each other realistically).
+  Phase 4: Verify 3-second spread from worst to best code.
+
+tasks:
+  - id: T22.1
+    title: "Power-based speed model — correct absolute numbers"
+    complexity: 30
+    depends_on: []
+    file: tasks/T22.1.task.md
+
+  - id: T22.2
+    title: "Traction limits — grip caps acceleration and braking"
+    complexity: 20
+    depends_on: [T22.1]
+    file: tasks/T22.2.task.md
+
+  - id: T22.3
+    title: "Sensitivity measurement — per-part lap time impact"
+    complexity: 25
+    depends_on: [T22.2]
+    file: tasks/T22.3.task.md
+
+  - id: T22.4
+    title: "Interaction calibration — parts affect each other"
+    complexity: 15
+    depends_on: [T22.3]
+    file: tasks/T22.4.task.md
+
+  - id: T22.5
+    title: "Integration gate — 3-second spread verification"
+    complexity: 10
+    depends_on: [T22.4]
+    file: tasks/T22.5.task.md
+
+wave_plan: |
+  Wave 1:        T22.1           (30 Cx — power model)
+  Wave 2:        T22.2           (20 Cx — traction limits)
+  Wave 3:        T22.3           (25 Cx — sensitivity measurement)
+  Wave 4:        T22.4           (15 Cx — interaction calibration)
+  Wave 5 (GATE): T22.5           (10 Cx — spread verification)

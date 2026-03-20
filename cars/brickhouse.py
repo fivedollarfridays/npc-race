@@ -12,6 +12,9 @@ GRIP = 10
 WEIGHT = 25
 AERO = 15
 BRAKES = 15
+ENGINE_SPEC = "v6_1000hp"
+AERO_SPEC = "high_downforce"
+CHASSIS_SPEC = "standard"
 
 _data = None
 _last_race = -1

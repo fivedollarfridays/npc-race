@@ -152,6 +152,25 @@ def load_car(filepath):
         car["components"] = _legacy_to_components(mod)
     car["derived"] = compute_attributes(car["components"])
 
+    # Extract part functions (parts-based car) or use defaults
+    from .parts_api import CAR_PARTS, get_defaults
+    part_defaults = get_defaults()
+    car["parts"] = {}
+    for part_name in CAR_PARTS:
+        func = getattr(mod, part_name, None)
+        if callable(func) and part_name != "strategy":
+            car["parts"][part_name] = func
+        else:
+            car["parts"][part_name] = part_defaults[part_name]
+    # Strategy is special — keep the existing one if present
+    if hasattr(mod, "strategy") and callable(mod.strategy):
+        car["parts"]["strategy"] = mod.strategy
+
+    # Hardware specs
+    car["engine_spec"] = getattr(mod, "ENGINE_SPEC", "v6_1000hp")
+    car["aero_spec"] = getattr(mod, "AERO_SPEC", "medium_downforce")
+    car["chassis_spec"] = getattr(mod, "CHASSIS_SPEC", "standard")
+
     car["file"] = filepath
     return car
 

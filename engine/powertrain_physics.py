@@ -8,8 +8,9 @@ import math
 
 # --- Constants ---
 
-GEAR_RATIOS = [0, 3.50, 2.80, 2.30, 1.90, 1.60, 1.30, 1.05, 0.85]  # index 1-8
-FINAL_DRIVE = 3.0
+# Real F1-like ratios: keep engine in 10000-13000 RPM at race speeds
+GEAR_RATIOS = [0, 4.40, 3.50, 2.85, 2.40, 2.05, 1.75, 1.50, 1.30]  # index 1-8
+FINAL_DRIVE = 2.8
 TIRE_RADIUS_M = 0.33
 MAX_RPM = 15000
 IDLE_RPM = 4000
@@ -44,7 +45,7 @@ def compute_wheel_torque(
     torque_pct: float, rpm: float, gear: int, engine_spec: dict
 ) -> float:
     """Compute torque at wheels from player's engine_map output."""
-    max_torque = engine_spec.get("torque_nm", 300)
+    max_torque = engine_spec.get("torque_nm", 400)  # ICE 300 + MGU-K ~100 Nm
     actual_torque = max_torque * torque_curve(rpm) * torque_pct
     if gear < 1 or gear > 8:
         return 0
@@ -89,3 +90,23 @@ def compute_mixture_torque_mult(lambda_value: float) -> float:
     if lambda_value > 1.0:
         return 1.0 - (lambda_value - 1.0) * 0.35  # up to -5%
     return 1.0
+
+
+def compute_power_force(
+    hp: float, torque_pct: float, rpm: float, speed_kmh: float,
+    ers_deploy_kw: float, mixture_mult: float,
+) -> float:
+    """Compute force at wheels from power. F = P / v.
+
+    This naturally produces correct top speed (where power = drag).
+    At low speed, force is high (good acceleration).
+    At high speed, force drops off (drag-limited).
+    """
+    speed_ms = max(3.0, speed_kmh / 3.6)  # floor at ~10 km/h to avoid infinity
+    # ICE power: HP × torque_curve(rpm) × player's torque_pct × mixture
+    ice_watts = hp * 745.7 * torque_curve(rpm) * torque_pct * mixture_mult
+    # ERS adds power directly
+    ers_watts = ers_deploy_kw * 1000
+    total_watts = ice_watts + ers_watts
+    # Force = Power / velocity
+    return total_watts / speed_ms

@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from .parts_api import CAR_PARTS, clamp_output, get_defaults
 from .powertrain_physics import (
-    compute_rpm, compute_wheel_torque, compute_fuel_consumption,
-    compute_engine_temp, compute_mixture_torque_mult,
+    compute_rpm, compute_fuel_consumption,
+    compute_engine_temp, compute_mixture_torque_mult, compute_power_force,
 )
 from .chassis_physics import (
     compute_downforce, compute_drag, compute_braking_force,
@@ -149,13 +149,25 @@ def run_parts_tick(
     log.append(entry)
     lambda_val = entry["output"]
 
-    # 5. Apply powertrain physics
+    # 5. Apply powertrain physics — power-based model (F = P/v)
     mixture_mult = compute_mixture_torque_mult(lambda_val)
-    wheel_torque = compute_wheel_torque(
-        torque_pct * mixture_mult, s["rpm"], s["gear"], engine_spec,
-    )
-    drag = compute_drag(s["speed_kmh"], aero_spec.get("base_cd", 0.88), 0.4)
-    accel = wheel_torque / max(1, mass_kg) - drag / max(1, mass_kg)
+    hp = engine_spec.get("max_hp", 1000)
+    drive_force = compute_power_force(
+        hp, torque_pct, s["rpm"], s["speed_kmh"], 0, mixture_mult)
+    cooling_eff = s.get("_cooling_effort", 0.4)
+    drag = compute_drag(s["speed_kmh"], aero_spec.get("base_cd", 0.88), cooling_eff)
+    rolling_r = mass_kg * 9.81 * 0.008  # rolling resistance ~0.8%
+    if physics_state.get("braking"):
+        target_spd = physics_state.get("target_speed", s["speed_kmh"])
+        excess = s["speed_kmh"] - target_spd
+        if excess > 0:
+            brake_g = min(5.5, 0.5 + excess / 40)  # proportional 0.5-5.5G
+            net_force = -mass_kg * brake_g * 9.81
+        else:
+            net_force = drive_force - drag - rolling_r
+    else:
+        net_force = drive_force - drag - rolling_r
+    accel = net_force / max(1, mass_kg)
     s["speed_kmh"] = max(0, s["speed_kmh"] + accel * dt * 3.6)
 
     fuel_consumed = compute_fuel_consumption(

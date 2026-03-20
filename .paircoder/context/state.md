@@ -1,25 +1,24 @@
 # Current State
 
-> Last updated: 2026-03-20 Sprint 20 planned — Parts Physics Engine (Build a Car Out of Code).
+> Last updated: 2026-03-20 Sprint 22 planned — Physics Calibration.
 
 ## Active Plan
 
-**Plan:** Sprint 20: Parts Physics Engine — Build a Car Out of Code
-**Status:** Planned (6 tasks, 4 waves, 140 Cx)
-**Total Complexity:** 140 Cx
+**Plan:** Sprint 22: Physics Calibration — Make the Numbers Real
+**Status:** Planned (5 tasks, 5 waves, 100 Cx)
+**Total Complexity:** 100 Cx
 
 ## Current Focus
 
-Sprint 20: Build a car out of code. 10 part functions — each IS a real car part. Your code controls the engine map, gearbox, ERS, brakes, suspension, cooling, fuel mixture, differential. Physics makes your decisions real. Phase 1 of 3.
+Sprint 22: Get the physics right. Power-based speed model for correct absolute numbers. Traction limits for realistic grip. Measure per-part sensitivity. Calibrate interactions. Verify 3-second spread from worst to best code.
 
 | ID | Task | Cx | Status |
 |----|------|----|--------|
-| T20.1 | Parts API — 10 car part signatures + defaults | 25 | done |
-| T20.2 | Powertrain physics — engine/gearbox/fuel parts | 30 | done |
-| T20.3 | Chassis physics — aero/suspension/brakes/cooling parts | 25 | done |
-| T20.4 | Hybrid physics — ERS/differential/tire parts | 25 | done |
-| T20.5 | Parts runner — sandbox that runs your car's code | 20 | done |
-| T20.6 | Integration gate — your code drives a car on Monza | 15 | todo |
+| T22.1 | Power-based speed model — correct absolute numbers | 30 | todo |
+| T22.2 | Traction limits — grip caps acceleration/braking | 20 | todo |
+| T22.3 | Sensitivity measurement — per-part lap time impact | 25 | todo |
+| T22.4 | Interaction calibration — parts affect each other | 15 | todo |
+| T22.5 | Integration gate — 3-second spread verification | 10 | todo |
 
 ## What Was Just Done
 
