@@ -85,6 +85,56 @@ def _open_viewer(replay_path: str) -> None:
             print("\nViewer stopped.")
 
 
+def _open_live_viewer(car_dir, track_name, laps, seed):
+    """Launch HTTP + WebSocket servers for live streaming viewer."""
+    import asyncio
+    import functools
+    from engine.live_server import stream_race, DEFAULT_PORT as WS_PORT
+
+    viewer_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "viewer"))
+    if not os.path.isdir(viewer_dir):
+        print("\nviewer/ directory not found")
+        return
+    # Remove stale replay.json so file fallback doesn't show old results
+    stale = os.path.join(viewer_dir, "replay.json")
+    if os.path.exists(stale):
+        os.remove(stale)
+
+    http_port = 8765
+
+    # Start HTTP server in background thread
+    http_handler = functools.partial(
+        http.server.SimpleHTTPRequestHandler, directory=viewer_dir)
+    socketserver.TCPServer.allow_reuse_address = True
+    httpd = socketserver.TCPServer(("", http_port), http_handler)
+    http_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    http_thread.start()
+
+    url = f"http://localhost:{http_port}/dashboard.html"
+    print(f"\nViewer: {url}")
+    print(f"WebSocket: ws://localhost:{WS_PORT}")
+    print("Ctrl-C to stop\n")
+    threading.Timer(0.5, lambda: webbrowser.open(url)).start()
+
+    # Run WebSocket server with auto-start race
+    import websockets
+
+    async def auto_handler(ws):
+        await stream_race(ws, car_dir=car_dir, track_name=track_name,
+                          laps=laps, seed=seed)
+
+    async def serve():
+        async with websockets.serve(auto_handler, "localhost", WS_PORT):
+            await asyncio.Future()
+
+    try:
+        asyncio.run(serve())
+    except KeyboardInterrupt:
+        print("\nViewer stopped.")
+    finally:
+        httpd.shutdown()
+
+
 def _build_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
@@ -106,6 +156,8 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="Print available tracks and exit")
     parser.add_argument("--data-dir", default=None,
                         help="Directory for car persistent data (cross-race learning)")
+    parser.add_argument("--live", action="store_true",
+                        help="Stream race live via WebSocket (no replay file needed)")
     return parser
 
 
@@ -124,6 +176,15 @@ def main():
 
     if track_name is not None and args.seed != 42:
         print("Note: --seed is ignored when --track is specified")
+
+    if args.live:
+        _open_live_viewer(
+            car_dir=args.car_dir,
+            track_name=track_name or "monza",
+            laps=args.laps or 3,
+            seed=args.seed,
+        )
+        return
 
     run_race(
         car_dir=args.car_dir,

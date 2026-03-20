@@ -1,0 +1,36 @@
+id: plan-2026-03-npc-race-streaming
+title: "Sprint 17: WebSocket Streaming Viewer"
+type: feature
+status: planned
+created: "2026-03-19"
+sprint: 17
+total_complexity: 60
+
+description: |
+  Replace 20MB JSON dump with real-time WebSocket streaming. Viewer connects
+  and receives frames as they're simulated. Instant start, constant memory,
+  no file size limits. Replay mode streams saved files at playback speed.
+
+tasks:
+  - id: T17.1
+    title: "WebSocket server — stream frames from simulation"
+    complexity: 25
+    depends_on: []
+    file: tasks/T17.1.task.md
+
+  - id: T17.2
+    title: "Viewer WebSocket client — receive and render frames"
+    complexity: 20
+    depends_on: [T17.1]
+    file: tasks/T17.2.task.md
+
+  - id: T17.3
+    title: "Integration — play.py wiring + verification"
+    complexity: 15
+    depends_on: [T17.2]
+    file: tasks/T17.3.task.md
+
+wave_plan: |
+  Wave 1:        T17.1              (25 Cx — WS server)
+  Wave 2:        T17.2              (20 Cx — viewer client)
+  Wave 3 (GATE): T17.3              (15 Cx — wire + verify)

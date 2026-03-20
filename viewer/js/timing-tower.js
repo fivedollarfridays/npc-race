@@ -19,6 +19,7 @@ function initTimingTower(replay) {
       <span class="tower-color" style="background:${car.color}"></span>
       <span class="tower-name">${car.name.substring(0, 3).toUpperCase()}</span>
       <span class="tower-gap">---</span>
+      <span class="tower-speed">---</span>
       <span class="tower-compound">●</span>
       <span class="tower-tire-age">--</span>
       <span class="tower-wear-bar"><span class="wear-fill"></span></span>
@@ -77,6 +78,10 @@ function updateTimingTower(frameCars, selectedCar) {
       }
       _prevGaps[car.name] = gap;
     }
+
+    // Speed
+    const speedEl = row.querySelector('.tower-speed');
+    if (speedEl) speedEl.textContent = Math.round(car.speed || 0) + '';
 
     // Tire compound dot
     const compEl = row.querySelector('.tower-compound');

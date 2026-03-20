@@ -7,13 +7,14 @@ Recalibrated (T6.2) for realistic F1 speeds (260-350 km/h)
 and lap times (Monza ~80s, Monaco ~75s).
 """
 
-# Speed constants (recalibrated T6.2)
-BASE_SPEED = 250           # km/h floor speed
+# Speed constants (recalibrated for real F1 lap times)
+# Track curvatures range 0.001 (straight) to ~0.16 (tight chicane)
+BASE_SPEED = 250           # km/h straight-line base
 POWER_SPEED_FACTOR = 90    # km/h added per unit of power
 WEIGHT_SPEED_PENALTY = 20  # km/h lost per unit of weight
-CURVATURE_FACTOR = 18.0    # Curvature-to-severity conversion (T6.2)
-GRIP_BASE_SPEED = 80       # km/h minimum corner speed
-GRIP_SPEED_RANGE = 160     # km/h range from grip
+CURVATURE_FACTOR = 16.0    # Curvature scaling — sev=1.0 at curv=0.0625 (more braking)
+GRIP_BASE_SPEED = 55       # km/h minimum corner speed (real chicane ~68 km/h)
+GRIP_SPEED_RANGE = 80      # km/h range from grip (tight corners 55-135 depending on grip)
 ACCEL_BASE = 40            # F1 realistic acceleration
 ACCEL_POWER_FACTOR = 45    # Power advantage in acceleration
 WEIGHT_MASS_FACTOR = 1.2
@@ -22,15 +23,15 @@ BRAKE_FACTOR = 120
 DRAFT_BONUS_BASE = 5       # Reduced draft bonus
 DRAFT_MAX_DISTANCE = 40
 
-# Aerodynamic drag (T6.2)
-DRAG_COEFFICIENT = 0.00006  # Light drag — limits extreme speeds only
+# Aerodynamic drag — creates natural speed limit ~330-345
+DRAG_COEFFICIENT = 0.00015
 
-# Aerodynamic downforce/grip (T7.2)
+# Aerodynamic downforce/grip
 DOWNFORCE_GRIP_FACTOR = 0.25   # Max aero grip bonus at reference speed
 DOWNFORCE_REF_SPEED = 300.0    # km/h
 
-# Hard speed cap (T6.2)
-MAX_SPEED = 370.0          # Absolute ceiling — safety net
+# Hard speed cap — safety net only, drag should limit before this
+MAX_SPEED = 355.0
 
 
 def compute_target_speed(power: float, grip: float, weight: float,

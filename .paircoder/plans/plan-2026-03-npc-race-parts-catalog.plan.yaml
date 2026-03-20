@@ -1,0 +1,59 @@
+id: plan-2026-03-npc-race-parts-catalog
+title: "Sprint 20: Parts Catalog + Derived Attributes"
+type: feature
+status: planned
+created: "2026-03-20"
+sprint: 20
+total_complexity: 120
+
+description: |
+  Replace abstract 100-point stat budget with component-based car building.
+  Players select engine, aero package, suspension, brakes, weight reduction,
+  cooling package, and gearbox. Each component has real-ish specs that combine
+  into 8 derived performance attributes. Budget cap ($140M) replaces point budget.
+
+  Sprint 20 builds the data layer. Sprint 21 wires it into simulation.
+  Sprint 22 migrates seed cars and validates.
+
+tasks:
+  - id: T20.1
+    title: "Parts catalog — all components with specs"
+    complexity: 30
+    depends_on: []
+    file: tasks/T20.1.task.md
+
+  - id: T20.2
+    title: "Derived attributes calculator"
+    complexity: 25
+    depends_on: [T20.1]
+    file: tasks/T20.2.task.md
+
+  - id: T20.3
+    title: "Budget cap validator"
+    complexity: 15
+    depends_on: [T20.1]
+    file: tasks/T20.3.task.md
+
+  - id: T20.4
+    title: "Track performance weights"
+    complexity: 15
+    depends_on: [T20.2]
+    file: tasks/T20.4.task.md
+
+  - id: T20.5
+    title: "New car loader — component-based"
+    complexity: 20
+    depends_on: [T20.1, T20.2, T20.3]
+    file: tasks/T20.5.task.md
+
+  - id: T20.6
+    title: "Integration gate — parts system validation"
+    complexity: 15
+    depends_on: [T20.5]
+    file: tasks/T20.6.task.md
+
+wave_plan: |
+  Wave 1:        T20.1              (30 Cx — parts catalog data)
+  Wave 2 (par):  T20.2 + T20.3     (40 Cx — derived attrs + budget)
+  Wave 3:        T20.4 + T20.5     (35 Cx — track weights + loader)
+  Wave 4 (GATE): T20.6             (15 Cx — validation)

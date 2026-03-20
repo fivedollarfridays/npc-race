@@ -20,9 +20,9 @@ def test_physics_constants_exist():
     assert BASE_SPEED == 250
     assert POWER_SPEED_FACTOR == 90
     assert WEIGHT_SPEED_PENALTY == 20
-    assert CURVATURE_FACTOR == 18.0
-    assert GRIP_BASE_SPEED == 80
-    assert GRIP_SPEED_RANGE == 160
+    assert CURVATURE_FACTOR == 16.0
+    assert GRIP_BASE_SPEED == 55
+    assert GRIP_SPEED_RANGE == 80
     assert ACCEL_BASE == 40
     assert ACCEL_POWER_FACTOR == 45
     assert WEIGHT_MASS_FACTOR == 1.2

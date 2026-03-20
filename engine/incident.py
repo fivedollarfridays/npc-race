@@ -1,9 +1,9 @@
 """Spin and lockup incident model."""
 import random
 
-BASE_SPIN_RISK = 0.00005
-SPIN_RECOVERY_TICKS_MIN = 90   # 3 seconds at 30 tps
-SPIN_RECOVERY_TICKS_MAX = 150  # 5 seconds
+BASE_SPIN_RISK = 0.0000005  # ~1 spin per race across all cars
+SPIN_RECOVERY_TICKS_MIN = 30   # 1 second at 30 tps
+SPIN_RECOVERY_TICKS_MAX = 60   # 2 seconds
 SPIN_TIRE_WEAR_PENALTY = 0.05
 SPIN_SC_PROBABILITY = 0.20
 LOCKUP_FLAT_SPOT_WEAR = 0.02

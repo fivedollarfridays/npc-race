@@ -18,6 +18,7 @@ from .drama import process_collisions, update_step_systems, process_spin_risk
 from .visibility import build_opponent_info, filter_nearby_cars
 from .ers_model import create_ers_state, update_ers, get_ers_speed_bonus, reset_ers_lap
 from .brake_model import create_brake_state, update_brake_temp, get_brake_efficiency
+from .driver_model import create_driver, compute_driver_inputs
 
 VALID_ENGINE_MODES = {"push", "standard", "conserve"}
 
@@ -54,7 +55,7 @@ class RaceSim:
                 "finished": False, "finish_tick": None, "lateral": 0.0,
                 "tire_compound": "medium", "tire_age_laps": 0,
                 "fuel_kg": start_fuel, "max_fuel_kg": start_fuel,
-                "fuel_base_rate": start_fuel / max(laps * 94, 1),
+                "fuel_base_rate": start_fuel / max(laps * 2100, 1),
                 "pit_state": create_pit_state(), "engine_mode": "standard",
                 "power": car["POWER"] / 40.0, "grip": car["GRIP"] / 40.0,
                 "weight": car["WEIGHT"] / 40.0, "aero": car["AERO"] / 40.0,
@@ -73,6 +74,13 @@ class RaceSim:
         self._sc_last_leader_lap = -1
         self.weather = create_weather_state()
         self._weather_forecast = []
+        # Create F1 driver for each car
+        self.drivers = {}
+        for cs in self.states:
+            self.drivers[cs["name"]] = create_driver(
+                track_points, self.curvatures, self.distances, self.headings,
+                self.track_length, {"power": cs["power"], "grip": cs["grip"],
+                                     "weight": cs["weight"]})
         self.history, self.tick, self.race_over = [], 0, False
 
     def build_strategy_state(self, car_state, positions):
@@ -167,10 +175,19 @@ class RaceSim:
             self._update_distance(state, dt)
             return
 
-        throttle = max(0.0, min(1.0, decision.get("throttle", 1.0)))
+        # F1 driver computes optimal driving inputs
+        driver = self.drivers.get(state["name"])
+        if driver:
+            driver_inputs = compute_driver_inputs(
+                driver, state, state["tire_wear"],
+                self.weather.get("wetness", 0.0), state["damage"]["damage"])
+        else:
+            driver_inputs = {"throttle": 1.0, "lateral_target": 0.0}
+        # Strategy can override driver inputs (optional, advanced)
+        throttle = max(0.0, min(1.0, decision.get("throttle", driver_inputs["throttle"])))
         wants_boost = bool(decision.get("boost", False))
         tire_mode = decision.get("tire_mode", "balanced")
-        lateral_target = float(decision.get("lateral_target", 0.0))
+        lateral_target = float(decision.get("lateral_target", driver_inputs["lateral_target"]))
         engine_mode = decision.get("engine_mode", "standard")
         if engine_mode not in VALID_ENGINE_MODES:
             engine_mode = "standard"
@@ -279,7 +296,8 @@ class RaceSim:
         grip_mult = (compute_grip_multiplier(state["tire_wear"], compound) * tire_temp_grip_factor(state["tire_temp"], compound)
                      * state.get("_dirty_air_grip", 1.0) * get_wetness_grip_mult(self.weather.get("wetness", 0.0), compound))
         curv = get_curvature_at(state["distance"], self.distances, self.curvatures, self.track_length)
-        aero_grip = compute_aero_grip(state["speed"], setup.get("effective_aero", state["aero"]),
+        eff_aero = setup.get("effective_aero", state["aero"] * 40.0) / 40.0
+        aero_grip = compute_aero_grip(state["speed"], eff_aero,
                                        state.get("setup_raw", {}).get("wing_angle", 0.0))
         target = compute_target_speed(
             power=state["power"], grip=state["grip"] + aero_grip, weight=state["weight"],
@@ -306,7 +324,7 @@ class RaceSim:
 
     def _apply_drafting(self, state, dt):
         """Apply drafting speed bonus from cars ahead."""
-        aero = state.get("setup", {}).get("effective_aero", state["aero"])
+        aero = state.get("setup", {}).get("effective_aero", state["aero"] * 40.0) / 40.0
         for other in self.states:
             if other["car_idx"] == state["car_idx"] or other["finished"]:
                 continue

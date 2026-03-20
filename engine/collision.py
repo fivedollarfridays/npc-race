@@ -1,16 +1,17 @@
 """Collision detection and resolution between cars."""
 import random
 
-CONTACT_DISTANCE = 3.0
-CONTACT_LATERAL = 0.25
-CONTACT_COOLDOWN = 60  # ticks
+CONTACT_DISTANCE = 1.0     # sim units — must be overlapping
+CONTACT_LATERAL = 0.10     # nearly identical lane position
+CONTACT_COOLDOWN = 900     # 30 seconds between contacts for same pair
 
-# Severity weights: minor=50%, moderate=30%, severe=15%, critical=5%
+# Most contacts are wheel-to-wheel racing (no effect). Actual collisions are rare.
 SEVERITY_WEIGHTS = [
-    ("minor", 0.50, {"speed_loss": (5, 15), "damage": 0.0}),
-    ("moderate", 0.30, {"speed_loss": (10, 20), "damage": 0.05, "spin": True}),
-    ("severe", 0.15, {"speed_loss": (15, 30), "damage": 0.15, "spin": True}),
-    ("critical", 0.05, {"speed_loss": (0, 0), "damage": 1.0, "dnf": True}),
+    ("racing", 0.80, {"speed_loss": (0, 0), "damage": 0.0}),          # normal proximity
+    ("minor", 0.12, {"speed_loss": (2, 5), "damage": 0.0}),           # light brush
+    ("moderate", 0.05, {"speed_loss": (5, 10), "damage": 0.02}),      # real contact
+    ("severe", 0.02, {"speed_loss": (10, 20), "damage": 0.05, "spin": True}),
+    ("critical", 0.01, {"speed_loss": (0, 0), "damage": 0.5, "dnf": True}),
 ]
 
 

@@ -91,7 +91,12 @@ function drawSpeedTrace(history, replay) {
   const data = history.speed;
   if (data.length < 2) return;
 
-  const yMin = 0, yMax = 380;
+  const yMin = 0;
+  var maxSpeed = 100;
+  for (var si = 0; si < data.length; si++) {
+    if (data[si] > maxSpeed) maxSpeed = data[si];
+  }
+  const yMax = Math.max(maxSpeed * 1.1, 100);
 
   // Sector boundary lines
   const sectorData = history.sector;

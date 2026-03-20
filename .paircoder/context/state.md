@@ -1,27 +1,41 @@
 # Current State
 
-> Last updated: 2026-03-19 Sprint 16 planned — Championship Mode (FINAL SPRINT).
+> Last updated: 2026-03-20 Sprint 20 planned — Parts Physics Engine (Build a Car Out of Code).
 
 ## Active Plan
 
-**Plan:** plan-2026-03-npc-race-championship — Sprint 16: Championship Mode
-**Status:** Planned (6 tasks, 4 waves, 105 Cx)
-**Total Complexity:** 105 Cx
+**Plan:** Sprint 20: Parts Physics Engine — Build a Car Out of Code
+**Status:** Planned (6 tasks, 4 waves, 140 Cx)
+**Total Complexity:** 140 Cx
 
 ## Current Focus
 
-Sprint 16: The metagame capstone. Multi-race seasons, F1 points, championship standings, car development between races. One strategy must work across all conditions. No simulation.py changes.
+Sprint 20: Build a car out of code. 10 part functions — each IS a real car part. Your code controls the engine map, gearbox, ERS, brakes, suspension, cooling, fuel mixture, differential. Physics makes your decisions real. Phase 1 of 3.
 
 | ID | Task | Cx | Status |
 |----|------|----|--------|
-| T16.1 | Season calendar — curated track sequences | 15 | todo |
-| T16.2 | Championship points system | 15 | todo |
-| T16.3 | Car development — upgrade stats between races | 25 | todo |
-| T16.4 | Season runner — orchestrate full championship | 25 | todo |
-| T16.5 | CLI command + season output | 15 | todo |
-| T16.6 | Integration gate — championship verification | 10 | todo |
+| T20.1 | Parts API — 10 car part signatures + defaults | 25 | done |
+| T20.2 | Powertrain physics — engine/gearbox/fuel parts | 30 | done |
+| T20.3 | Chassis physics — aero/suspension/brakes/cooling parts | 25 | done |
+| T20.4 | Hybrid physics — ERS/differential/tire parts | 25 | done |
+| T20.5 | Parts runner — sandbox that runs your car's code | 20 | done |
+| T20.6 | Integration gate — your code drives a car on Monza | 15 | todo |
 
 ## What Was Just Done
+
+- **T20.5 done**: Parts runner -- sandbox that runs car's code. Created `engine/parts_runner.py` (269 lines, 4 functions). `create_initial_state(hardware_specs)` returns full car state dict with all 21 fields (speed, rpm, gear, temps, fuel, ERS, ride height, etc.) initialized from hardware specs. `_safe_call(part_name, func, args, default_func, tick)` wraps every player part call with try/except -- if player code crashes, default takes over; if output is out of range, it gets clamped; status logged as "ok"/"clamped"/"error". `get_part_functions(car_module, defaults)` extracts part functions from a car module, falling back to defaults for missing parts. `run_parts_tick(car_parts, car_state, physics_state, hardware_specs, dt, tick)` is the main orchestrator -- runs all 10 parts in dependency order: engine_map -> gearbox -> fuel_mix -> powertrain physics -> suspension -> cooling -> chassis physics -> brake_bias (if braking) -> ers_deploy -> ers_harvest (if braking) -> differential -> hybrid physics -> strategy. Each part call produces a log entry with part name, tick, inputs, output, and status. Physics engines (powertrain_physics, chassis_physics, hybrid_physics) transform player decisions into physical consequences: torque, acceleration, fuel consumption, temps, downforce, ERS state, diff traction. 11 tests in `tests/test_parts_runner.py` (240 lines) across 5 classes: TestCreateInitialState (3 tests), TestRunPartsTickReturns (2 tests), TestCallLog (2 tests), TestErrorHandling (2 tests), TestPhysicsIntegration (2 tests). Ruff clean.
+
+- **T20.4 done**: Hybrid physics -- ERS/differential/tire parts. Created `engine/hybrid_physics.py` (118 lines, 7 functions). Constants: ERS_CAPACITY_MJ 4.0, ERS_MAX_DEPLOY_KW/HARVEST_KW 120, ERS_DEPLOY_LIMIT 4.0 MJ/lap, ERS_HARVEST_LIMIT 2.0 MJ/lap. `create_ers_state()` returns dict with energy_mj, lap_deploy_mj, lap_harvest_mj, battery_temp. `update_ers(state, deploy_kw, harvest_kw, dt)` applies deploy drain and harvest charge with per-lap limits, battery temp rises with use and cools toward 30C ambient. `reset_ers_lap()` clears per-lap counters. `compute_diff_effect(lock_pct, lateral_g, speed)` returns (traction_mult 0.85-1.0, understeer_factor). `compute_diff_tire_wear(lock_pct, lateral_g, dt)` models inside tire wear from locked diff in corners. `compute_tire_load(mass, downforce, lateral_g)` calculates total tire load. `compute_grip_from_load(load, grip_base)` applies sublinear load sensitivity (exponent 0.8). 11 tests in `tests/test_hybrid_physics.py` (121 lines) across 6 classes. Arch check clean.
+
+- **T20.2 done**: Powertrain physics -- engine/gearbox/fuel computations. Created `engine/powertrain_physics.py` (91 lines, 7 functions). Constants: GEAR_RATIOS (8 gears), FINAL_DRIVE 3.0, TIRE_RADIUS_M 0.33, MAX_RPM 15000, IDLE_RPM 4000. `torque_curve(rpm)` returns normalized torque 0-1 with linear rise 4000-10800, plateau 10800-12500, falloff above 12500. `compute_rpm(speed_kmh, gear)` converts vehicle speed to engine RPM via gear/final drive ratios, clamped IDLE-MAX. `compute_wheel_torque(torque_pct, rpm, gear, engine_spec)` applies torque curve and gear multiplication. `compute_acceleration(wheel_torque, mass_kg, drag, rolling_r)` converts wheel torque to m/s^2. `compute_fuel_consumption(fuel_flow_pct, lambda_value, max_flow, dt)` with rich/lean mixture multipliers. `compute_engine_temp(current, torque_pct, rpm, cooling, dt)` with load heating and cooling, floor at 80C. `compute_mixture_torque_mult(lambda)` returns torque bonus/penalty for rich/lean mixtures. 21 tests in `tests/test_powertrain_physics.py` (151 lines) across 7 classes. Arch check clean on both files.
+
+- **T20.3 done** (auto-updated by hook)
+
+- **T20.3 done**: Chassis physics -- aero/suspension/brakes/cooling parts. Created `engine/chassis_physics.py` (117 lines, 7 functions). Constants: AIR_DENSITY=1.225 kg/m^3, REFERENCE_AREA=1.5 m^2. `compute_downforce()` with ground effect multiplier from ride height (-1.0=1.3x, +1.0=0.7x). `compute_drag()` with cooling-induced drag penalty (up to +8%). `compute_braking_force()` friction-limited by downforce+weight normal force. `apply_brake_bias()` splits force front/rear by percentage. `compute_brake_temp_change()` with braking heat and airflow+cooling cooling. `compute_ride_height_effect()` with speed-dependent compression and bottoming-out detection at <-0.8. `compute_cooling_effect()` returns engine/brake/battery temp reductions. 12 tests in `tests/test_chassis_physics.py` (120 lines) across 4 classes (TestAerodynamics, TestBraking, TestSuspension, TestCooling). Exported via `engine/__init__.py`. Ruff clean, arch check clean.
+
+- **T20.1 done** (auto-updated by hook)
+
+- **T20.1 done**: Parts API -- 10 car part signatures + defaults. Created `engine/parts_api.py` (204 lines, 14 functions incl. 10 defaults + 2 private helpers + 3 utilities). `CAR_PARTS` list of 10 part names. Default implementations for all 10: engine_map (throttle passthrough), gearbox (RPM-based shifting 1-8), ers_deploy (80kW unless braking/low battery), ers_harvest (braking-proportional up to 120kW), brake_bias (fixed 57%), suspension (speed-based ride height), cooling (temp-reactive), fuel_mix (rate-based lambda), differential (phase-based lock%), strategy (wear-based pit request). `OUTPUT_RANGES` dict for 9 parts (not strategy) with min/max tuples. `HARDWARE_SPECS` with ENGINE_SPEC (v6_1000hp), AERO_SPEC (3 configs), CHASSIS_SPEC (2 configs). `clamp_output()` handles scalars, tuples, and unknown parts gracefully. `get_defaults()` returns name->function dict. `get_hardware_spec()` with None fallback. 27 tests in `tests/test_parts_api.py` (171 lines) across 10 classes. Ruff clean, arch check clean (204-line warning only).
 
 - **T11.1 done**: Simulation extraction -- free space for new systems. Created `engine/drama.py` (74 lines, 3 functions): `process_collisions()` handles collision detection loop, damage/speed/spin/DNF application, SC trigger, contact cooldown decrement; `update_step_systems()` handles leader lap detection, SC update, weather update, forecast generation, gap compression under SC, flag propagation to car states; `process_spin_risk()` handles grip/demand calculation, spin risk check, spin event creation, SC trigger on high-curvature spins. Replaced ~45 inline lines in `simulation.py` `step()` and `_step_car()` with 3 function calls. Removed 6 now-unused imports from simulation.py (`check_collisions`, `apply_damage`, `trigger_sc`, `update_sc`, `should_compress_gaps`, `update_weather`, `generate_forecast`, `compute_spin_risk`, `check_spin`, `create_spin_event`). Added drama.py exports to `engine/__init__.py`. simulation.py: 400->355 lines, still 15 functions. drama.py: 74 lines, 3 functions. 10 new tests in `tests/test_drama.py`. 1319 fast tests passing, 0 failures. Ruff clean.
 
