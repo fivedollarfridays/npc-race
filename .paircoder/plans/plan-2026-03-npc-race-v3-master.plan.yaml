@@ -1,0 +1,52 @@
+id: plan-2026-03-npc-race-v3-master
+title: "NPC Race v3 — Build a Car Out of Code (Master Plan)"
+type: feature
+status: planned
+created: "2026-03-21"
+
+description: |
+  Master plan for NPC Race v3. Covers Phases 0-5.
+  Reference: docs/proposal-npc-race-v3.md + npc-race-v3.1-proposal.md
+
+phases:
+  - id: phase-0
+    title: "Baseline Measurement"
+    sprints: [23]
+    complexity: 20
+    status: todo
+    gate: "Sensitivity report produced with v2 numbers documented"
+
+  - id: phase-1
+    title: "Core Physics Engine"
+    sprints: [24, 25]
+    complexity: 150
+    status: todo
+    gate: "sensitivity_test.py proves 10s spread, per-part 0.5-1.5s, 3+ coupled pairs"
+
+  - id: phase-2
+    title: "Code Quality System"
+    sprints: [26]
+    complexity: 60
+    status: todo
+    gate: "A-grade vs D-grade produces measurable time difference"
+
+  - id: phase-3
+    title: "Car Project Loader"
+    sprints: [27]
+    complexity: 50
+    status: todo
+    gate: "Multi-file car project loads, evaluates, and races"
+
+  - id: phase-4
+    title: "League System + Viewer"
+    sprints: [28, 29]
+    complexity: 80
+    status: todo
+    gate: "Live code terminal, TRON diagnostic, league gates working"
+
+  - id: phase-5
+    title: "Race Infrastructure"
+    sprints: [30]
+    complexity: 60
+    status: todo
+    gate: "Submission pipeline end-to-end: submit repo → evaluate → race → results"

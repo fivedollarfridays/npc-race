@@ -1,0 +1,74 @@
+id: plan-2026-03-npc-race-phase1-physics
+title: "Sprints 24-25: Phase 1 — Core Physics Engine (Multiplicative Model)"
+type: refactor
+status: planned
+created: "2026-03-21"
+sprint: 24
+total_complexity: 150
+
+description: |
+  Replace the current parts runner with the multiplicative efficiency model.
+  Each part's decision is evaluated against theoretical optimum. Efficiency
+  factors multiply. All computed against t-1 state. 1ms hard timeout per call.
+  Overtaking model wired in.
+
+  EXIT GATE: sensitivity_test.py must prove:
+  - 10s spread default→perfect
+  - Each part 0.5-1.5s individually
+  - 3+ coupled pairs
+  - No part > 25% of total
+
+tasks:
+  - id: T24.1
+    title: "1ms watchdog timeout for _safe_call"
+    complexity: 15
+    depends_on: []
+    file: tasks/T24.1.task.md
+
+  - id: T24.2
+    title: "t-1 state snapshot + efficiency computation framework"
+    complexity: 25
+    depends_on: []
+    file: tasks/T24.2.task.md
+
+  - id: T24.3
+    title: "Engine map + gearbox efficiency — torque band sensitivity"
+    complexity: 20
+    depends_on: [T24.2]
+    file: tasks/T24.3.task.md
+
+  - id: T24.4
+    title: "ERS efficiency — power-limited vs traction-limited detection"
+    complexity: 20
+    depends_on: [T24.2]
+    file: tasks/T24.4.task.md
+
+  - id: T24.5
+    title: "Brake bias + differential efficiency — per-axle lockup + torque split"
+    complexity: 20
+    depends_on: [T24.2]
+    file: tasks/T24.5.task.md
+
+  - id: T24.6
+    title: "Suspension + cooling efficiency — downforce/drag sensitivity"
+    complexity: 20
+    depends_on: [T24.2]
+    file: tasks/T24.6.task.md
+
+  - id: T24.7
+    title: "Multiplicative aggregation + overtaking model"
+    complexity: 15
+    depends_on: [T24.3, T24.4, T24.5, T24.6]
+    file: tasks/T24.7.task.md
+
+  - id: T24.8
+    title: "GATE: sensitivity_test.py proves the spread"
+    complexity: 15
+    depends_on: [T24.7]
+    file: tasks/T24.8.task.md
+
+wave_plan: |
+  Wave 1 (parallel): T24.1 + T24.2          (40 Cx — timeout + framework)
+  Wave 2 (parallel): T24.3 + T24.4 + T24.5 + T24.6  (80 Cx — 4 efficiency groups)
+  Wave 3:            T24.7                    (15 Cx — aggregation + overtaking)
+  Wave 4 (GATE):     T24.8                    (15 Cx — sensitivity proof)

@@ -1,24 +1,37 @@
 # Current State
 
-> Last updated: 2026-03-20 Sprint 22 planned — Physics Calibration.
+> Last updated: 2026-03-21 v3.1 proposal approved. Phase 0+1 planned.
 
 ## Active Plan
 
-**Plan:** Sprint 22: Physics Calibration — Make the Numbers Real
-**Status:** Planned (5 tasks, 5 waves, 100 Cx)
-**Total Complexity:** 100 Cx
+**Plan:** NPC Race v3 — Build a Car Out of Code (Master Plan)
+**Reference:** docs/proposal-npc-race-v3.md + npc-race-v3.1-proposal.md
 
 ## Current Focus
 
-Sprint 22: Get the physics right. Power-based speed model for correct absolute numbers. Traction limits for realistic grip. Measure per-part sensitivity. Calibrate interactions. Verify 3-second spread from worst to best code.
-
+### Phase 0: Baseline (Sprint 23) — next
 | ID | Task | Cx | Status |
 |----|------|----|--------|
-| T22.1 | Power-based speed model — correct absolute numbers | 30 | todo |
-| T22.2 | Traction limits — grip caps acceleration/braking | 20 | todo |
-| T22.3 | Sensitivity measurement — per-part lap time impact | 25 | todo |
-| T22.4 | Interaction calibration — parts affect each other | 15 | todo |
-| T22.5 | Integration gate — 3-second spread verification | 10 | todo |
+| T23.1 | Lock sensitivity test script | 10 | todo |
+| T23.2 | Run baseline + document results | 10 | todo |
+
+### Phase 1: Core Physics (Sprints 24-25) — after Phase 0
+| ID | Task | Cx | Status |
+|----|------|----|--------|
+| T24.1 | 1ms watchdog timeout | 15 | todo |
+| T24.2 | t-1 state snapshot + efficiency framework | 25 | todo |
+| T24.3 | Engine map + gearbox efficiency | 20 | todo |
+| T24.4 | ERS efficiency | 20 | todo |
+| T24.5 | Brake bias + differential efficiency | 20 | todo |
+| T24.6 | Suspension + cooling efficiency | 20 | todo |
+| T24.7 | Multiplicative aggregation + overtaking | 15 | todo |
+| T24.8 | GATE: sensitivity_test.py proves 10s spread | 15 | todo |
+
+### Future Phases
+- Phase 2 (Sprint 26): Code quality → reliability system
+- Phase 3 (Sprint 27): Multi-file car project loader
+- Phase 4 (Sprints 28-29): League system + live code terminal + TRON viewer
+- Phase 5 (Sprint 30): Race infrastructure (submission pipeline, leaderboard)
 
 ## What Was Just Done
 
