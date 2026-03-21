@@ -203,7 +203,7 @@ class PartsRaceSim:
                 "max_fuel_kg": s.get("fuel_capacity_kg", 110),
                 "pit_state": {"status": "racing", "pit_stops": s.get("pit_stops", 0)},
                 "engine_mode": "standard",
-                "tire_temp": s.get("engine_temp", 90),
+                "tire_temp": s.get("tire_temp", 85.0),
                 "drs_available": False,
                 "drs_active": False,
                 "damage": {"damage": 0, "dnf": False},

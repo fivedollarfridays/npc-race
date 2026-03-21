@@ -1,7 +1,5 @@
 """Tests for efficiency engine wiring into parts simulation."""
 
-import pytest
-
 from engine.car_loader import load_all_cars
 from engine.parts_simulation import PartsRaceSim
 from tracks import get_track

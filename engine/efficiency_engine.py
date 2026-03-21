@@ -1,13 +1,9 @@
-"""Efficiency engine — computes per-part efficiency factors and multiplies them.
+"""Efficiency engine — per-part efficiency factors multiply into car performance.
 
-Each part's decision is evaluated against the theoretical optimum for the
-current conditions (using t-1 state). The efficiency factors multiply together
-to determine what fraction of theoretical max performance is realized.
-
-This is the core of v3's game design: better code → higher efficiency → faster car.
+Better code → higher efficiency → faster car. Uses t-1 state for stability.
 """
 
-from .safe_call import _safe_call_with_timeout  # noqa: F401
+from .safe_call import _safe_call_with_timeout
 from .parts_api import get_defaults
 from .powertrain_physics import (
     compute_rpm, torque_curve, compute_power_force,
@@ -21,36 +17,19 @@ from .hybrid_physics import update_ers, compute_diff_effect
 
 def compute_grip_factor(tire_mu, downforce, mass_kg, _unused,
                         speed_kmh, cl, baseline_rh=-0.3):
-    """Compute grip relative to baseline car at the same speed.
-
-    Compares actual grip (tire + downforce) against what the default car
-    would produce at this speed. No clamping needed — the baseline
-    reference eliminates speed-dependent downforce variation.
-    Diff traction is NOT included — it affects acceleration, not corner speed.
-    """
+    """Grip relative to baseline car at same speed. Diff NOT included."""
     weight = mass_kg * 9.81
-    baseline_tire_mu = 1.4
-
-    # Baseline downforce with default ride height at this speed
     base_rh, base_bottoming = compute_ride_height_effect(baseline_rh, speed_kmh)
     base_df = compute_downforce(speed_kmh, cl, base_rh)
     if base_bottoming:
         base_df *= 0.8
-
-    # Ratios relative to baseline
-    tire_ratio = tire_mu / baseline_tire_mu
-    actual_normal = weight + downforce
-    baseline_normal = max(1, weight + base_df)
-    df_ratio = actual_normal / baseline_normal
-
+    tire_ratio = tire_mu / 1.4  # baseline tire mu
+    df_ratio = (weight + downforce) / max(1, weight + base_df)
     return tire_ratio * df_ratio
 
 
 def compute_gearbox_efficiency(actual_rpm, speed_kmh):
-    """Gearbox efficiency: how close the RPM is to the torque peak.
-
-    Wrong gear = RPM outside optimal band = less power = lower efficiency.
-    """
+    """Wrong gear = RPM outside optimal band = less power."""
     actual_tc = torque_curve(actual_rpm)
     best_tc = 0
     for gear in range(1, 9):
@@ -67,10 +46,7 @@ def compute_gearbox_efficiency(actual_rpm, speed_kmh):
 
 def compute_ers_waste(drive_force_with_ers, drive_force_without_ers,
                       traction_limit, lateral_g, mass_kg):
-    """Track how much ERS energy was wasted (clipped by traction circle).
-
-    Returns waste ratio 0.0-1.0 (fraction of ERS energy that produced no speed).
-    """
+    """ERS waste ratio 0.0-1.0: fraction clipped by traction circle."""
     ers_force_added = drive_force_with_ers - drive_force_without_ers
     if ers_force_added <= 0:
         return 0.0
@@ -82,11 +58,7 @@ def compute_ers_waste(drive_force_with_ers, drive_force_without_ers,
 
 
 def compute_brake_bias_efficiency(bias_pct, speed_kmh, grip_front, grip_rear):
-    """Brake bias efficiency: how close to optimal front/rear split.
-
-    Optimal shifts significantly with speed (weight transfer at high speed
-    pushes optimal forward). Fixed bias = always suboptimal.
-    """
+    """Fixed bias = suboptimal. Optimal shifts with speed (weight transfer)."""
     total_grip = grip_front + grip_rear
     if total_grip <= 0:
         return 0.85
@@ -100,11 +72,7 @@ def compute_brake_bias_efficiency(bias_pct, speed_kmh, grip_front, grip_rear):
 
 
 def compute_suspension_efficiency(ride_height, speed_kmh):
-    """Suspension efficiency: how close EFFECTIVE ride height is to optimal.
-
-    Accounts for speed-dependent suspension compression.
-    Lower = more downforce, but bottoming (-0.8) kills downforce.
-    """
+    """Effective ride height vs speed-dependent optimal. Bottoming kills downforce."""
     actual_rh, bottoming = compute_ride_height_effect(ride_height, speed_kmh)
     # Optimal effective height: speed-dependent, as low as possible without bottoming
     optimal_eff = -0.20 - min(0.58, speed_kmh / 500)
@@ -115,10 +83,7 @@ def compute_suspension_efficiency(ride_height, speed_kmh):
 
 
 def compute_cooling_efficiency(cooling_effort, engine_temp, speed_kmh):
-    """Cooling efficiency: balance temp management vs drag.
-
-    Combines temp score (is engine in sweet spot?) with drag score (minimal cooling?).
-    """
+    """Balance temp management (108-118°C sweet spot) vs drag penalty."""
     # Temp score: engine at 108-118°C is optimal
     if 108 <= engine_temp <= 118:
         temp_score = 1.0
@@ -134,11 +99,7 @@ def compute_cooling_efficiency(cooling_effort, engine_temp, speed_kmh):
 
 
 def compute_diff_efficiency(lock_pct, corner_phase, lateral_g, speed_kmh):
-    """Differential efficiency: optimal lock for the corner phase.
-
-    Over-locked in mid-corner = understeer. Under-locked on exit = wheelspin.
-    Even on straights, lock affects stability at high speed.
-    """
+    """Over-locked = understeer. Under-locked = wheelspin. Phase-dependent."""
     if corner_phase == "straight":
         # Even on straights, optimal is 50% — deviation costs slightly
         deviation = abs(lock_pct - 50)
@@ -158,12 +119,7 @@ def compute_diff_efficiency(lock_pct, corner_phase, lateral_g, speed_kmh):
 
 
 def compute_fuel_mix_efficiency(lambda_val, fuel_remaining_kg, laps_left):
-    """Fuel mix efficiency: how well the mixture balances power vs fuel saving.
-
-    Rich (lambda < 1.0) = more power but wastes fuel. Optimal depends on
-    remaining fuel and laps. Running rich when fuel is tight = DNF risk.
-    Running lean when you have excess = leaving pace on the table.
-    """
+    """Rich = power but wastes fuel. Lean = saves fuel but slower."""
     fuel_per_lap = fuel_remaining_kg / max(1, laps_left)
     # Target consumption rate ~2.0 kg/lap
     if fuel_per_lap > 2.5:
@@ -178,12 +134,71 @@ def compute_fuel_mix_efficiency(lambda_val, fuel_remaining_kg, laps_left):
     return max(0.75, 1.0 - deviation * 2.0)
 
 
+def _apply_braking(s, physics_state, brake_bias_val, grip_f, grip_r,
+                    drive_force, drag, rolling_r, product, lateral_g,
+                    effective_traction, mass_kg):
+    """Returns (net_force, brake_g, excess)."""
+    is_braking = physics_state.get("braking", False)
+    brake_g = 0.0
+    excess = 0.0
+    if is_braking:
+        target_spd = physics_state.get("target_speed", s["speed_kmh"])
+        excess = s["speed_kmh"] - target_spd
+        if excess > 0:
+            brake_g = min(5.5, 0.5 + excess / 40)
+            total_brake = mass_kg * brake_g * 9.81
+            front_demand = total_brake * brake_bias_val / 100
+            rear_demand = total_brake * (100 - brake_bias_val) / 100
+            front_actual = min(front_demand, grip_f)
+            rear_actual = min(rear_demand, grip_r)
+            raw_brake = -(front_actual + rear_actual)
+            net_force = apply_traction_circle(raw_brake, lateral_g, effective_traction, mass_kg)
+        else:
+            raw_drive = (drive_force - drag - rolling_r) * product
+            net_force = apply_traction_circle(raw_drive, lateral_g, effective_traction, mass_kg)
+    else:
+        raw_drive = (drive_force - drag - rolling_r) * product
+        net_force = apply_traction_circle(raw_drive, lateral_g, effective_traction, mass_kg)
+    return net_force, brake_g, excess
+
+
+def _update_state(s, torque_pct, fuel_flow_pct, lambda_val, cooling_effort,
+                  drive_force, traction, lateral_g, is_braking, brake_g,
+                  excess, deploy_kw, harvest_kw, hw, dt):
+    """Update fuel, temps, tire wear, ERS."""
+    fuel_consumed = compute_fuel_consumption(
+        fuel_flow_pct, lambda_val, hw.get("max_fuel_flow_kghr", 100), dt)
+    s["fuel_remaining_kg"] = max(0, s["fuel_remaining_kg"] - fuel_consumed)
+    s["engine_temp"] = compute_engine_temp(
+        s["engine_temp"], torque_pct, s["rpm"], cooling_effort, dt)
+    e_cool, b_cool, bat_cool = compute_cooling_effect(
+        cooling_effort, s["engine_temp"], s["brake_temp"], s["battery_temp"], dt)
+    s["engine_temp"] -= e_cool
+    s["brake_temp"] = max(200, s["brake_temp"] - b_cool)
+    s["battery_temp"] = max(25, s["battery_temp"] - bat_cool)
+
+    # Tire wear from wheelspin
+    if drive_force > traction and not is_braking:
+        wheelspin = (drive_force - traction) / max(1, traction)
+        s["tire_wear"] = min(1.0, s.get("tire_wear", 0) + wheelspin * 0.002 * dt)
+        tire_temp = s.get("tire_temp", 85.0)
+        s["tire_temp"] = tire_temp + wheelspin * 8.0 * dt
+    # Cornering wear
+    if lateral_g > 0.5:
+        corner_wear = (lateral_g - 0.5) * 0.0003 * dt
+        s["tire_wear"] = min(1.0, s.get("tire_wear", 0) + corner_wear)
+    # Tire temp cools toward ambient
+    tire_temp = s.get("tire_temp", 85.0)
+    s["tire_temp"] = max(50, tire_temp - (tire_temp - 85.0) * 0.02 * dt)
+
+    # ERS
+    s["ers_state"], _ = update_ers(s["ers_state"], deploy_kw, harvest_kw, dt)
+    s["battery_temp"] = s["ers_state"]["battery_temp"]
+
+
 def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
                         dt, tick, prev_state=None):
-    """Run all 10 parts with efficiency computation.
-
-    Returns (updated_state, call_log, efficiency_product).
-    """
+    """Run all 10 parts. Returns (state, log, efficiency_product)."""
     defaults = get_defaults()
     s = dict(car_state)
     log = []
@@ -266,19 +281,14 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
     log.append(entry)
     deploy_kw = entry["output"] if not is_braking else 0
 
-    # 8. COMPUTE FORCES with t-1 dependent values
+    # 8. Compute forces (t-1 dependent)
     mixture_mult = compute_mixture_torque_mult(lambda_val)
     hp = engine_spec.get("max_hp", 1000)
     temp_penalty = max(0.6, 1.0 - max(0, t1.get("engine_temp", 90) - 120) * 0.04)
-    cl = aero_spec.get("base_cl", 4.5)
-    cd = aero_spec.get("base_cd", 0.88)
-
-    # Drive force WITHOUT ERS (for ERS efficiency calc)
-    drive_force_no_ers = compute_power_force(
-        hp * temp_penalty, torque_pct, s["rpm"], s["speed_kmh"], 0, mixture_mult)
-    # Drive force WITH ERS
-    drive_force = compute_power_force(
-        hp * temp_penalty, torque_pct, s["rpm"], s["speed_kmh"], deploy_kw, mixture_mult)
+    cl, cd = aero_spec.get("base_cl", 4.5), aero_spec.get("base_cd", 0.88)
+    eff_hp = hp * temp_penalty
+    drive_force_no_ers = compute_power_force(eff_hp, torque_pct, s["rpm"], s["speed_kmh"], 0, mixture_mult)
+    drive_force = compute_power_force(eff_hp, torque_pct, s["rpm"], s["speed_kmh"], deploy_kw, mixture_mult)
 
     downforce = compute_downforce(s["speed_kmh"], cl, t1.get("ride_height", -0.2))
     if bottoming:
@@ -350,64 +360,18 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
     for eff in efficiencies:
         product *= eff
 
-    # 12. Apply forces with efficiency product scaling
+    # 12. Apply forces
     effective_traction = traction * diff_traction
     rolling_r = mass_kg * 9.81 * 0.008
-
-    if is_braking:
-        target_spd = physics_state.get("target_speed", s["speed_kmh"])
-        excess = s["speed_kmh"] - target_spd
-        if excess > 0:
-            brake_g = min(5.5, 0.5 + excess / 40)
-            total_brake = mass_kg * brake_g * 9.81
-            # Brake bias splits force front/rear — wrong split = axle lockup
-            front_demand = total_brake * brake_bias_val / 100
-            rear_demand = total_brake * (100 - brake_bias_val) / 100
-            front_actual = min(front_demand, grip_f)
-            rear_actual = min(rear_demand, grip_r)
-            actual_brake = front_actual + rear_actual
-            raw_brake = -actual_brake
-            net_force = apply_traction_circle(raw_brake, lateral_g, effective_traction, mass_kg)
-        else:
-            raw_drive = (drive_force - drag - rolling_r) * product
-            net_force = apply_traction_circle(raw_drive, lateral_g, effective_traction, mass_kg)
-    else:
-        raw_drive = (drive_force - drag - rolling_r) * product
-        net_force = apply_traction_circle(raw_drive, lateral_g, effective_traction, mass_kg)
+    net_force, brake_g, excess = _apply_braking(
+        s, physics_state, brake_bias_val, grip_f, grip_r,
+        drive_force, drag, rolling_r, product, lateral_g,
+        effective_traction, mass_kg)
 
     accel = net_force / max(1, mass_kg)
     s["speed_kmh"] = max(0, s["speed_kmh"] + accel * dt * 3.6)
 
-    # 13. Update state
-    fuel_consumed = compute_fuel_consumption(
-        fuel_flow_pct, lambda_val, engine_spec.get("max_fuel_flow_kghr", 100), dt)
-    s["fuel_remaining_kg"] = max(0, s["fuel_remaining_kg"] - fuel_consumed)
-    s["engine_temp"] = compute_engine_temp(
-        s["engine_temp"], torque_pct, s["rpm"], cooling_effort, dt)
-    e_cool, b_cool, bat_cool = compute_cooling_effect(
-        cooling_effort, s["engine_temp"], s["brake_temp"], s["battery_temp"], dt)
-    s["engine_temp"] -= e_cool
-    s["brake_temp"] = max(200, s["brake_temp"] - b_cool)
-    s["battery_temp"] = max(25, s["battery_temp"] - bat_cool)
-
-    # Tire wear from excess torque (wheelspin)
-    if drive_force > traction and not is_braking:
-        wheelspin = (drive_force - traction) / max(1, traction)
-        s["tire_wear"] = min(1.0, s.get("tire_wear", 0) + wheelspin * 0.002 * dt)
-        # Wheelspin heats tires — thermal degradation reduces grip within the lap
-        tire_temp = s.get("tire_temp", 85.0)
-        tire_temp += wheelspin * 8.0 * dt  # aggressive heating from sliding
-        s["tire_temp"] = tire_temp
-    # Cornering wear (lateral force degrades tires)
-    if lateral_g > 0.5:
-        corner_wear = (lateral_g - 0.5) * 0.0003 * dt
-        s["tire_wear"] = min(1.0, s.get("tire_wear", 0) + corner_wear)
-    # Tire temp naturally cools toward ambient
-    tire_temp = s.get("tire_temp", 85.0)
-    tire_temp -= (tire_temp - 85.0) * 0.02 * dt  # cool toward 85°C ambient
-    s["tire_temp"] = max(50, tire_temp)
-
-    # 14. ERS harvest — pass actual braking G (not hardcoded 1.0)
+    # 13. ERS harvest
     braking_g_actual = brake_g if (is_braking and excess > 0) else 0.0
     if is_braking:
         entry = _safe_call_with_timeout(
@@ -421,8 +385,10 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
                      "status": "ok", "efficiency": 1.0})
         harvest_kw = 0
 
-    s["ers_state"], _ = update_ers(s["ers_state"], deploy_kw, harvest_kw, dt)
-    s["battery_temp"] = s["ers_state"]["battery_temp"]
+    # 14. Update state (fuel, temps, tire wear, ERS)
+    _update_state(s, torque_pct, fuel_flow_pct, lambda_val, cooling_effort,
+                  drive_force, traction, lateral_g, is_braking, brake_g,
+                  excess, deploy_kw, harvest_kw, hardware_specs, dt)
 
     # 15. Strategy
     entry = _safe_call_with_timeout(
