@@ -85,7 +85,7 @@ class TestSafeCallWithTimeout:
 
     def test_slow_function_returns_default_with_timeout_status(self):
         def slow_func(x):
-            time.sleep(0.1)
+            time.sleep(0.5)  # well above 1ms timeout, reliable even in CI
             return x
 
         def default(x):

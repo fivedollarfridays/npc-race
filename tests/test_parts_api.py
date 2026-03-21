@@ -38,10 +38,11 @@ class TestDefaultEngineMap:
         assert isinstance(result[0], float) or isinstance(result[0], int)
         assert isinstance(result[1], float) or isinstance(result[1], int)
 
-    def test_engine_map_passes_through_throttle(self):
+    def test_engine_map_returns_full_torque(self):
+        """Naive default: full power regardless of throttle demand."""
         defaults = get_defaults()
         result = defaults["engine_map"](10000, 0.5, 100)
-        assert result == (0.5, 0.5)
+        assert result == (1.0, 1.0)
 
 
 class TestDefaultGearbox:
