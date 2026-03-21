@@ -35,8 +35,8 @@ def default_ers_deploy(
     battery_pct: float, speed: float, lap: int, gap_ahead: float, braking: bool,
 ) -> float:
     """Battery deploy system. Return deploy_kw (0-120)."""
-    # Naive: max deploy always. Wastes battery in corners where traction clips it.
-    if battery_pct < 5:
+    # Naive: max deploy always (except braking). Wastes battery in corners.
+    if braking or battery_pct < 5:
         return 0
     return 120
 
@@ -45,7 +45,9 @@ def default_ers_harvest(
     braking_force: float, battery_pct: float, battery_temp: float,
 ) -> float:
     """Regeneration system. Return harvest_kw (0-120)."""
-    # Naive: fixed rate, ignores available braking energy.
+    # Naive: fixed rate, ignores available braking energy. Stops when full.
+    if battery_pct > 95:
+        return 0
     return 50
 
 
