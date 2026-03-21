@@ -84,16 +84,22 @@ class TestSafeCallWithTimeout:
         assert "boom" in result["error"]
 
     def test_slow_function_returns_default_with_timeout_status(self):
-        def slow_func(x):
-            time.sleep(0.5)  # well above 1ms timeout, reliable even in CI
-            return x
+        from engine import safe_call
+        original = safe_call.TIMEOUT_ENABLED
+        safe_call.TIMEOUT_ENABLED = True  # force thread-based timeout
+        try:
+            def slow_func(x):
+                time.sleep(5)  # 5s — well above 1ms timeout even under CI load
+                return x
 
-        def default(x):
-            return 4
+            def default(x):
+                return 4
 
-        result = _safe_call_with_timeout("gearbox", slow_func, (3,), default, tick=1)
-        assert result["output"] == 4
-        assert result["status"] == "timeout"
+            result = _safe_call_with_timeout("gearbox", slow_func, (3,), default, tick=1)
+            assert result["output"] == 4
+            assert result["status"] == "timeout"
+        finally:
+            safe_call.TIMEOUT_ENABLED = original
 
     def test_clamped_output_sets_clamped_status(self):
         # gearbox range is (1, 8); returning 10 should clamp to 8
