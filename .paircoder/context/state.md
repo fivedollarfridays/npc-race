@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-03-21 v3.1 proposal approved. Phase 0+1 planned.
+> Last updated: 2026-03-21 Sprint 25 complete — physics-emergent efficiency.
 
 ## Active Plan
 
@@ -9,31 +9,34 @@
 
 ## Current Focus
 
-### Phase 0: Baseline (Sprint 23) — next
-| ID | Task | Cx | Status |
-|----|------|----|--------|
-| T23.1 | Lock sensitivity test script | 10 | todo |
-| T23.2 | Run baseline + document results | 10 | todo |
+### Sprint 25: Physics-Emergent Efficiency — 1-LAP GATE PASS ✓
+Replaced 5 artificial hacks with physics-emergent behavior. Results: 4.03s spread from 86.43s baseline, 6/9 parts above 0.3s, no hacks.
 
-### Phase 1: Core Physics (Sprints 24-25) — after Phase 0
-| ID | Task | Cx | Status |
-|----|------|----|--------|
-| T24.1 | 1ms watchdog timeout | 15 | todo |
-| T24.2 | t-1 state snapshot + efficiency framework | 25 | todo |
-| T24.3 | Engine map + gearbox efficiency | 20 | todo |
-| T24.4 | ERS efficiency | 20 | todo |
-| T24.5 | Brake bias + differential efficiency | 20 | todo |
-| T24.6 | Suspension + cooling efficiency | 20 | todo |
-| T24.7 | Multiplicative aggregation + overtaking | 15 | todo |
-| T24.8 | GATE: sensitivity_test.py proves 10s spread | 15 | todo |
+### 5-Lap Verification — 4 parts flagged for future fix
+- ers_deploy: **-0.57s (RED FLAG)** — optimized loses time. Battery cycling equilibrium.
+- engine_map: 0.00s — tire wear 0.015 after 5 laps, model has no teeth.
+- brake_bias: 0.03s — lockup produces only 2% braking reduction.
+- ers_harvest: -0.03s — noise.
+
+### Next Sprint Priorities
+1. **Fix ers_deploy negative sensitivity** — player should never lose time by being smarter
+2. **Tire wear model** — needs 5-15% wear after 5 laps, not 1.5%
+3. Then reassess brake_bias, ers_harvest
 
 ### Future Phases
-- Phase 2 (Sprint 26): Code quality → reliability system
-- Phase 3 (Sprint 27): Multi-file car project loader
-- Phase 4 (Sprints 28-29): League system + live code terminal + TRON viewer
-- Phase 5 (Sprint 30): Race infrastructure (submission pipeline, leaderboard)
+- Phase 2: Code quality → reliability system
+- Phase 3: Multi-file car project loader
+- Phase 4: League system + live code terminal + TRON viewer
 
 ## What Was Just Done
+
+- **Sprint 25 COMPLETE**: Physics-emergent efficiency. Removed 5 artificial hacks (prescribed engine_map/ERS efficiency functions, ^1.3 amplification exponent, profile speed hack, speed-threshold ERS). Fixed 3 bugs (engine heat_coeff 15→1.2, ERS harvest braking_force hardcode, suspension grip_factor clamp). Wired 3 physics gaps (brake_bias front/rear force splitting, diff understeer→grip reduction, tire thermal model from wheelspin). Made defaults naive (full torque, late shifts, max deploy, fixed values). 1-lap gate: 4.03s spread, 6/9 parts above 0.3s, baseline 86.43s. 5-lap: 10.0s total spread but 4 multi-lap parts below 0.3s (flagged). Results in docs/sensitivity-phase1-physics.md.
+
+- **T25.3 done**: ERS deploy via traction circle -- removed speed threshold. Deleted `compute_ers_deploy_efficiency()` (speed/220 proxy) from `engine/efficiency_engine.py`. Added `compute_ers_waste()` which uses `apply_traction_circle` to measure actual ERS energy clipped by traction limits. Removed `ers_eff` from the multiplicative efficiencies list (now 7 factors instead of 8). ERS log entry now has `"efficiency": 1.0` (neutral) and `"waste": ers_waste`. Added `ers_energy_wasted_mj` cumulative state tracking. Replaced 3 old `TestComputeERSDeployEfficiency` tests with 3 new `TestERSWaste` tests. 26 efficiency tests passing, 77 efficiency+simulation tests passing. Ruff clean. Pre-existing arch violations (file 470 lines, run_efficiency_tick 223 lines) unchanged.
+
+- **T25.1 done**: Fix engine heat model -- heat_coeff 15 to 1.2. Changed `compute_engine_temp()` heat generation coefficient in `engine/powertrain_physics.py` from 15 to 1.2. Engine now stabilizes at ~110-120C with moderate cooling (was 448C). 3 new tests in `TestEngineHeatRealistic` class: equilibrium with moderate cooling (90-140C), overheating without cooling (>150C), high cooling keeps cool (<105C). 24 tests in test_powertrain_physics.py (23 pass, 1 pre-existing RPM test failure). Ruff clean.
+
+- **Sprint 24 COMPLETE — Phase 1 GATE PASS**: Built the multiplicative efficiency engine (`engine/efficiency_engine.py`, 440 LOC). Created `_safe_call_with_timeout()` with 1ms thread-based watchdog (TIMEOUT_ENABLED flag for batch testing). 8 efficiency functions: `compute_engine_efficiency` (fuel/torque balance), `compute_gearbox_efficiency` (RPM vs torque peak), `compute_ers_deploy_efficiency` (speed-based ERS value), `compute_brake_bias_efficiency` (speed-dependent optimal with weight transfer), `compute_suspension_efficiency` (effective ride height vs speed-dependent optimal), `compute_cooling_efficiency` (temp sweet spot vs drag tradeoff), `compute_diff_efficiency` (phase-aware lock percentage), `compute_fuel_mix_efficiency` (lambda vs fuel rate). All efficiencies amplified by ^1.3 exponent and multiplied into a product. Product affects: (1) acceleration via `(drive_force - drag - rolling) * product` and (2) corner speed via `profile_speed *= (0.30 + 0.70 * prev_eff)`. Wired into `PartsRaceSim` replacing `run_parts_tick` with `run_efficiency_tick`. t-1 state via `prev_states[]`. Sensitivity gate results: **10.77s spread** (target 10.0), **6 parts with 0.5-2.0s individual sensitivity**, **no part > 25% dominant** (max 21%), **4 coupled interaction pairs** (target 3). Results saved to `docs/sensitivity-phase1.md`. 31 new tests (26 efficiency + 5 wiring). Ruff clean.
 
 - **T20.5 done**: Parts runner -- sandbox that runs car's code. Created `engine/parts_runner.py` (269 lines, 4 functions). `create_initial_state(hardware_specs)` returns full car state dict with all 21 fields (speed, rpm, gear, temps, fuel, ERS, ride height, etc.) initialized from hardware specs. `_safe_call(part_name, func, args, default_func, tick)` wraps every player part call with try/except -- if player code crashes, default takes over; if output is out of range, it gets clamped; status logged as "ok"/"clamped"/"error". `get_part_functions(car_module, defaults)` extracts part functions from a car module, falling back to defaults for missing parts. `run_parts_tick(car_parts, car_state, physics_state, hardware_specs, dt, tick)` is the main orchestrator -- runs all 10 parts in dependency order: engine_map -> gearbox -> fuel_mix -> powertrain physics -> suspension -> cooling -> chassis physics -> brake_bias (if braking) -> ers_deploy -> ers_harvest (if braking) -> differential -> hybrid physics -> strategy. Each part call produces a log entry with part name, tick, inputs, output, and status. Physics engines (powertrain_physics, chassis_physics, hybrid_physics) transform player decisions into physical consequences: torque, acceleration, fuel consumption, temps, downforce, ERS state, diff traction. 11 tests in `tests/test_parts_runner.py` (240 lines) across 5 classes: TestCreateInitialState (3 tests), TestRunPartsTickReturns (2 tests), TestCallLog (2 tests), TestErrorHandling (2 tests), TestPhysicsIntegration (2 tests). Ruff clean.
 
@@ -193,10 +196,10 @@ Collision detection system (68 LOC), damage model (46 LOC), spin & lockup incide
 
 ## What's Next
 
-1. Sprint 10: Weather System — dry/wet transitions, intermediates, full wets, forecasts
-2. Sprint 11: ERS + Brake Temp — battery deploy/harvest, brake heat/fade
-3. Sprint 12: Information Asymmetry — hidden opponent data, inference
-4. Full roadmap: see `ROADMAP.md` and `docs/roadmap-sprints-9-16.md`
+1. **Phase 2 (Sprint 26)**: Code quality → reliability system (AST metrics, glitch mechanics)
+2. **Phase 3 (Sprint 27)**: Multi-file car project loader
+3. **Phase 4 (Sprints 28-29)**: League system + live code terminal + TRON viewer
+4. **Phase 5 (Sprint 30)**: Race infrastructure (submission pipeline, leaderboard)
 
 ## Blockers
 

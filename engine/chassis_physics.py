@@ -24,7 +24,7 @@ def compute_downforce(speed_kmh: float, cl: float, ride_height: float) -> float:
 def compute_drag(speed_kmh: float, cd: float, cooling_effort: float) -> float:
     """Compute drag force in Newtons. Cooling adds drag."""
     speed_ms = speed_kmh / 3.6
-    cooling_drag = 1.0 + cooling_effort * 0.08  # up to +8% drag from cooling
+    cooling_drag = 1.0 + cooling_effort * 0.20  # up to +20% drag from cooling
     return 0.5 * AIR_DENSITY * cd * REFERENCE_AREA * speed_ms**2 * cooling_drag
 
 

@@ -9,7 +9,8 @@ import random
 from .track_gen import compute_track_data, compute_track_headings, get_curvature_at
 from .replay import record_frame, get_results, export_replay, _compute_positions
 from .parts_api import get_defaults, get_hardware_spec
-from .parts_runner import create_initial_state, run_parts_tick
+from .parts_runner import create_initial_state, run_parts_tick  # noqa: F401
+from .efficiency_engine import run_efficiency_tick
 from .driver_model import create_driver, compute_driver_inputs
 
 
@@ -57,6 +58,8 @@ class PartsRaceSim:
             state["laps_total"] = laps
             state["finished"] = False
             state["finish_tick"] = None
+            state.setdefault("position", i + 1)
+            state.setdefault("gap_ahead", 0)
             self.car_states.append(state)
 
             # Get part functions
@@ -72,6 +75,7 @@ class PartsRaceSim:
                                    real_length_m=real_length_m or 5793)
             self.drivers.append(driver)
 
+        self.prev_states = [None] * len(cars)
         self.history = []
         self.tick = 0
         self.race_over = False
@@ -101,6 +105,10 @@ class PartsRaceSim:
             from .speed_profile import get_profile_speed
             profile_speed = get_profile_speed(
                 driver["profile"], state["distance"], self.distances, self.track_length)
+            # Part outputs affect achievable corner speed through grip
+            if curv > 0.005:
+                grip_factor = state.get("grip_factor", 1.0)
+                profile_speed *= grip_factor
             is_braking = state["speed_kmh"] > profile_speed * 1.02
             corner_phase = "straight"
             if curv > 0.02:
@@ -128,9 +136,12 @@ class PartsRaceSim:
                                              self.cars[i].get("chassis_spec", "standard")) or {}
             hw = {**engine_spec, **aero_spec, **chassis_spec}
 
-            # Run all 10 parts
-            new_state, log = run_parts_tick(
-                self.car_parts[i], state, physics, hw, dt, self.tick)
+            # Run all 10 parts via efficiency engine
+            new_state, log, efficiency_product = run_efficiency_tick(
+                self.car_parts[i], state, physics, hw, dt, self.tick,
+                prev_state=self.prev_states[i])
+            self.prev_states[i] = dict(state)  # snapshot for next tick's t-1
+            new_state["efficiency_product"] = efficiency_product
 
             # Update distance
             speed_ms = new_state["speed_kmh"] / 3.6

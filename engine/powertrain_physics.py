@@ -78,7 +78,7 @@ def compute_engine_temp(
     cooling_effort: float, dt: float,
 ) -> float:
     """Update engine temp. Load heats, cooling cools."""
-    heat = torque_pct * (rpm / 10000) * 15 * dt
+    heat = torque_pct * (rpm / 10000) * 1.2 * dt
     cool = cooling_effort * max(0, current_temp - 80) * 0.05 * dt
     return max(80, current_temp + heat - cool)
 

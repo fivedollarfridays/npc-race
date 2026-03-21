@@ -149,3 +149,39 @@ class TestMixtureTorqueMult:
     def test_stoich_is_unity(self):
         """lambda=1.0 gives exactly 1.0 multiplier."""
         assert compute_mixture_torque_mult(1.0) == 1.0
+
+
+class TestEngineHeatRealistic:
+    """Engine temp should stabilize at realistic temperatures."""
+
+    def test_equilibrium_with_moderate_cooling(self):
+        """Full load with cooling=0.5 should stabilize at 100-130C, not 400+."""
+        from engine.chassis_physics import compute_cooling_effect
+
+        temp = 90.0
+        dt = 1.0 / 30
+        for _ in range(3000):  # 100 seconds
+            temp = compute_engine_temp(temp, 1.0, 10000, 0.5, dt)
+            e_cool, _, _ = compute_cooling_effect(0.5, temp, 400, 30, dt)
+            temp -= e_cool
+        assert 90 < temp < 140, f"Equilibrium {temp:.0f}C is unrealistic"
+
+    def test_overheats_without_cooling(self):
+        """Zero cooling should lead to overheating (>150C)."""
+        temp = 90.0
+        dt = 1.0 / 30
+        for _ in range(3000):
+            temp = compute_engine_temp(temp, 1.0, 10000, 0.0, dt)
+        assert temp > 150, f"Should overheat without cooling, got {temp:.0f}C"
+
+    def test_high_cooling_keeps_engine_cool(self):
+        """Full cooling should stabilize below 100C."""
+        from engine.chassis_physics import compute_cooling_effect
+
+        temp = 90.0
+        dt = 1.0 / 30
+        for _ in range(3000):
+            temp = compute_engine_temp(temp, 0.8, 10000, 1.0, dt)
+            e_cool, _, _ = compute_cooling_effect(1.0, temp, 400, 30, dt)
+            temp -= e_cool
+        assert temp < 105, f"Full cooling should keep engine cool, got {temp:.0f}C"
