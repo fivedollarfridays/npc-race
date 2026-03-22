@@ -11,6 +11,7 @@ import os
 from tracks import get_track
 from .car_loader import load_all_cars
 from .league_system import (
+    LEAGUE_TIERS,
     determine_league,
     generate_quality_report,
     validate_car_for_league,
@@ -74,7 +75,6 @@ def _apply_league_gates(
     # Determine effective league
     if league is None:
         per_car = [determine_league(c) for c in cars]
-        from .league_system import LEAGUE_TIERS
         effective = max(per_car, key=lambda t: LEAGUE_TIERS.index(t))
         label = f"{effective} (auto-detected)"
     else:
