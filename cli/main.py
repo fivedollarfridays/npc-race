@@ -18,58 +18,54 @@ from .commands import (
 )
 
 
-def _build_parser() -> argparse.ArgumentParser:
-    """Build the argument parser with all subcommands."""
-    parser = argparse.ArgumentParser(
-        prog="npcrace",
-        description="NPC Race — you build the car, we run the race",
-    )
-    subs = parser.add_subparsers(dest="command")
-    subs.required = True
-
-    # run
+def _add_run_parser(subs) -> None:
+    """Add the 'run' subparser with race and league options."""
     run_p = subs.add_parser("run", help="Run a race")
     run_p.add_argument("--car-dir", default="cars",
                        help="Directory containing car .py files")
-    run_p.add_argument("--laps", type=int, default=None,
-                       help="Number of laps")
-    run_p.add_argument("--seed", type=int, default=42,
-                       help="Track generation seed")
-    run_p.add_argument("--output", default="replay.json",
-                       help="Replay output file")
-    run_p.add_argument("--track", default=None,
-                       help="Named track or 'random'")
+    run_p.add_argument("--laps", type=int, default=None, help="Number of laps")
+    run_p.add_argument("--seed", type=int, default=42, help="Track generation seed")
+    run_p.add_argument("--output", default="replay.json", help="Replay output file")
+    run_p.add_argument("--track", default=None, help="Named track or 'random'")
+    run_p.add_argument("--league", choices=["F3", "F2", "F1", "Championship"],
+                       default=None, help="League tier (auto-detect if not specified)")
 
-    # init
-    init_p = subs.add_parser("init", help="Create cars/ directory with template")
-    init_p.add_argument("--dir", default="cars",
-                        help="Target directory (default: cars)")
 
-    # validate
-    val_p = subs.add_parser("validate", help="Validate car file(s)")
-    val_p.add_argument("car_files", nargs="+", help="Car .py files to validate")
-
-    # list-tracks
-    subs.add_parser("list-tracks", help="Print available tracks")
-
-    # wizard (stub)
-    subs.add_parser("wizard", help="Interactive car wizard (coming soon)")
-
-    # tournament
-    _add_tournament_parser(subs)
-
-    # season (championship)
+def _add_season_parser(subs) -> None:
+    """Add the 'season' subparser."""
     season_p = subs.add_parser("season", help="Run a championship season")
     season_p.add_argument("--calendar", default="short",
                            help="Preset calendar: short, full, classic")
     season_p.add_argument("--tracks", default=None,
                            help="Custom track list (comma-separated)")
-    season_p.add_argument("--laps", type=int, default=5,
-                           help="Laps per race")
-    season_p.add_argument("--car-dir", default="cars",
-                           help="Car directory")
+    season_p.add_argument("--laps", type=int, default=5, help="Laps per race")
+    season_p.add_argument("--car-dir", default="cars", help="Car directory")
     season_p.add_argument("--output-dir", default="season_output",
                            help="Output directory for replays")
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the argument parser with all subcommands."""
+    parser = argparse.ArgumentParser(
+        prog="npcrace",
+        description="NPC Race -- you build the car, we run the race",
+    )
+    subs = parser.add_subparsers(dest="command")
+    subs.required = True
+
+    _add_run_parser(subs)
+
+    init_p = subs.add_parser("init", help="Create cars/ directory with template")
+    init_p.add_argument("--dir", default="cars", help="Target directory (default: cars)")
+
+    val_p = subs.add_parser("validate", help="Validate car file(s)")
+    val_p.add_argument("car_files", nargs="+", help="Car .py files to validate")
+
+    subs.add_parser("list-tracks", help="Print available tracks")
+    subs.add_parser("wizard", help="Interactive car wizard (coming soon)")
+
+    _add_tournament_parser(subs)
+    _add_season_parser(subs)
 
     return parser
 

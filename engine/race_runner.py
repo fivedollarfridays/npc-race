@@ -10,6 +10,11 @@ import os
 
 from tracks import get_track
 from .car_loader import load_all_cars
+from .league_system import (
+    determine_league,
+    generate_quality_report,
+    validate_car_for_league,
+)
 from .track_gen import generate_track, interpolate_track
 from .simulation import RaceSim
 from .narrative import detect_events
@@ -59,6 +64,116 @@ def _print_results(results):
         print(f"  P{r['position']}  {r['name']:12s}  {time_str}{gap}{best_str}")
 
 
+def _apply_league_gates(
+    cars: list[dict], league: str | None,
+) -> tuple[list[dict], str]:
+    """Detect/validate league, print quality reports, filter rejected cars.
+
+    Returns (filtered_cars, effective_league).
+    """
+    # Determine effective league
+    if league is None:
+        per_car = [determine_league(c) for c in cars]
+        from .league_system import LEAGUE_TIERS
+        effective = max(per_car, key=lambda t: LEAGUE_TIERS.index(t))
+        label = f"{effective} (auto-detected)"
+    else:
+        effective = league
+        label = effective
+
+    print(f"\n=== League: {label} ===")
+
+    filtered: list[dict] = []
+    for car in cars:
+        car["league"] = effective
+        name = car.get("name", "Unknown")
+        parts = car.get("_loaded_parts", [])
+
+        # Validate parts against league
+        if league is not None:
+            vr = validate_car_for_league(car, effective)
+            if not vr.passed:
+                reasons = "; ".join(vr.violations)
+                print(f"  {name}: REJECTED -- {reasons}")
+                continue
+
+        # Quality report
+        qr = generate_quality_report(car, effective)
+        _print_car_league_status(name, parts, qr, effective)
+
+        if not qr.passed:
+            violations = "; ".join(qr.blocking_violations)
+            print(f"  {name}: REJECTED -- {violations}")
+            continue
+
+        filtered.append(car)
+
+    return filtered, effective
+
+
+def _print_car_league_status(
+    name: str, parts: list[str], qr, league: str,
+) -> None:
+    """Print one car's league status line."""
+    n_parts = len(parts)
+    if n_parts == 0:
+        print(f"  {name}: 0 custom parts -> using defaults ({league} allowed)")
+    else:
+        part_list = ", ".join(sorted(parts))
+        print(f"  {name}: {n_parts} custom parts [{part_list}]")
+
+    # Quality details
+    if qr.advisory_messages:
+        for msg in qr.advisory_messages:
+            print(f"    Advisory: {msg}")
+    if qr.passed and not qr.blocking_violations:
+        status = "Advisory: clean code" if league in ("F3", "F2") else f"Passed {league} gate"
+        print(
+            f"    Quality: reliability {qr.reliability_score:.2f} | "
+            f"CC avg n/a | {status}"
+        )
+
+
+def _export_replay(sim, results, output, track_name):
+    """Build narrative, export replay JSON, and print report."""
+    replay = sim.export_replay()
+
+    events = detect_events(replay["frames"], replay.get("ticks_per_sec", 30), results)
+    commentary = format_events(events)
+    report = generate_report(
+        results, events, commentary, track_name=track_name or "Unknown",
+    )
+    replay["events"] = [
+        {"type": e.type, "tick": e.tick, "cars": e.cars, "data": e.data}
+        for e in events
+    ]
+    replay["commentary"] = commentary
+    replay["race_report"] = report
+
+    with open(output, "w", encoding="utf-8") as f:
+        json.dump(replay, f)
+    print(f"\nReplay saved: {output}")
+    print(f"Total frames: {len(replay['frames'])}")
+    print(f"\n{report}")
+
+
+def _load_and_filter_cars(car_dir, car_data_dir, league):
+    """Load cars from directory, apply league gates, return filtered list."""
+    if car_data_dir:
+        os.makedirs(car_data_dir, exist_ok=True)
+        os.makedirs("cars/data", exist_ok=True)
+
+    cars = load_all_cars(car_dir)
+    if len(cars) < 2:
+        raise ValueError("Need at least 2 cars to race!")
+
+    cars, _effective_league = _apply_league_gates(cars, league)
+    if len(cars) < 2:
+        raise ValueError("Need at least 2 cars after league validation!")
+
+    return cars
+
+
 def run_race(
     car_dir: str = "cars",
     laps: int | None = None,
@@ -67,22 +182,9 @@ def run_race(
     track_name: str | None = None,
     car_data_dir: str | None = None,
     race_number: int = 1,
+    league: str | None = None,
 ) -> list[dict]:
-    """Load cars, run race, export replay.
-
-    Parameters
-    ----------
-    car_dir : str
-        Directory containing car Python files.
-    track_name : str | None
-        Named track preset key (e.g. "monza").  ``None`` generates a random track.
-    laps : int | None
-        Number of laps.  ``None`` means "use track default" (or 3).
-    car_data_dir : str | None
-        Directory for cross-race learning JSON files.  ``None`` disables learning.
-    race_number : int
-        Sequential race number within a tournament (passed to car strategies).
-    """
+    """Load cars, apply league gates, run simulation, and export replay."""
     track, effective_laps, real_length_m, drs_zones = _resolve_track(
         track_name, track_seed, laps
     )
@@ -91,14 +193,7 @@ def run_race(
     print(f"{'─' * 40}")
     print(f"Loading cars from: {car_dir}/\n")
 
-    if car_data_dir:
-        os.makedirs(car_data_dir, exist_ok=True)
-        # Seed cars write to this hardcoded path (required by bot_scanner security model)
-        os.makedirs("cars/data", exist_ok=True)
-
-    cars = load_all_cars(car_dir)
-    if len(cars) < 2:
-        raise ValueError("Need at least 2 cars to race!")
+    cars = _load_and_filter_cars(car_dir, car_data_dir, league)
 
     print(f"\n{len(cars)} cars on the grid")
     if track_name:
@@ -114,22 +209,6 @@ def run_race(
     results = sim.run()
 
     _print_results(results)
-
-    replay = sim.export_replay()
-
-    # Narrative engine — detect events, generate commentary and report
-    events = detect_events(replay["frames"], replay.get("ticks_per_sec", 30), results)
-    commentary = format_events(events)
-    report = generate_report(results, events, commentary, track_name=track_name or "Unknown")
-    replay["events"] = [{"type": e.type, "tick": e.tick, "cars": e.cars, "data": e.data}
-                         for e in events]
-    replay["commentary"] = commentary
-    replay["race_report"] = report
-
-    with open(output, "w", encoding="utf-8") as f:
-        json.dump(replay, f)
-    print(f"\nReplay saved: {output}")
-    print(f"Total frames: {len(replay['frames'])}")
-    print(f"\n{report}")
+    _export_replay(sim, results, output, track_name)
 
     return results

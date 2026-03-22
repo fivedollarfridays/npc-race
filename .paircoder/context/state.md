@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-03-22 Phase 1 closed. Sprints 24-28 complete.
+> Last updated: 2026-03-22 Sprint 30 in progress. Phase 4 league system.
 
 ## Active Plan
 
@@ -29,6 +29,14 @@ AST metrics, reliability score (0.50-1.00), glitch engine with reliability_scale
 - Phase 5: Infrastructure (submission pipeline, onboarding)
 
 ## What Was Just Done
+
+- **T30.4**: Integration gate for the league system. Created `tests/test_league_integration.py` with 8 end-to-end tests across 5 test classes: auto-detection (default_project -> F1 due to engine_map, seed cars all get league, single-file cars -> F3), F3 validation (valid parts pass, advisory report always passes), F2 detection (6-part car), enforced gates (high-CC code rejected at F1), and race integration (mixed-league cars complete 1-lap Monza race). 40 total league tests passing across 3 test files. Ruff clean.
+
+- **T30.3**: League system wired into race runner and CLI. Added `_apply_league_gates()` to `engine/race_runner.py` that auto-detects league from car parts (highest tier wins) or validates against a specified league, generates quality reports, prints league status with advisory/rejection messages, and filters out cars that fail enforced gates (F1+). Added `--league` flag to CLI (`choices=["F3", "F2", "F1", "Championship"]`, default None). Refactored `run_race()` by extracting `_export_replay()`, `_load_and_filter_cars()` to stay under 50-line function limit; refactored `_build_parser()` by extracting `_add_run_parser()`, `_add_season_parser()`. 13 new tests in `tests/test_league_wiring.py` (230 lines), all passing. 32 total league tests passing. Ruff clean, arch check clean (warnings only).
+
+- **T30.2**: Quality gate enforcement. Added `QualityReport` dataclass and `generate_quality_report()` to `engine/league_system.py` (166 lines). Advisory gates (F3/F2) always pass but include informational messages about CC and reliability. Enforced gates (F1) reject cars with CC > 15. Championship additionally requires reliability >= 0.88. Cars without `_source` default to passing. Uses AST metrics from `code_quality.py` (no subprocess ruff). 8 new tests in `TestQualityGates` class, 19 total in `tests/test_league_system.py` (211 lines). All passing, ruff clean.
+
+- **T30.1**: League definitions and validation. Created `engine/league_system.py` (71 lines) with `LEAGUE_TIERS`, `LEAGUE_PARTS` dicts, `LeagueResult` dataclass, `determine_league()` (infers tier from loaded parts), and `validate_car_for_league()` (checks part restrictions). F3=3 parts, F2=6, F1=all 10, Championship=all 10 + project dir. 11 tests in `tests/test_league_system.py` (88 lines), all passing. Ruff clean.
 
 - **T29.5**: Integration gate for car project loader. Created `tests/test_car_project_integration.py` with 10 end-to-end tests covering: project car completes race, mixed cars race together, partial project defaults fill (3 loaded + 7 defaults), source enables reliability scoring, malicious helper caught by scanner, and all 5 seed cars still load and race. All 10 tests passing. Ruff clean, arch check clean.
 
