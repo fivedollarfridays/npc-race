@@ -97,11 +97,11 @@ def _apply_league_gates(
                 print(f"  {name}: REJECTED -- {reasons}")
                 continue
 
-        # Quality report
+        # Quality report (only enforce gates when league is explicitly specified)
         qr = generate_quality_report(car, effective)
         _print_car_league_status(name, parts, qr, effective)
 
-        if not qr.passed:
+        if league is not None and not qr.passed:
             violations = "; ".join(qr.blocking_violations)
             print(f"  {name}: REJECTED -- {violations}")
             continue
