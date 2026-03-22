@@ -197,33 +197,28 @@ def _update_state(s, torque_pct, fuel_flow_pct, lambda_val, cooling_effort,
 
 
 def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
-                        dt, tick, prev_state=None):
+                        dt, tick, prev_state=None, glitch_engine=None,
+                        reliability=1.0, car_idx=0, glitch_rng=None):
     """Run all 10 parts. Returns (state, log, efficiency_product)."""
     defaults = get_defaults()
     s = dict(car_state)
     log = []
+    g_ctx = ({"engine": glitch_engine, "reliability": reliability,
+              "car_idx": car_idx, "rng": glitch_rng} if glitch_engine else None)
 
-    # Use t-1 state for dependent computations
     t1 = prev_state if prev_state else s
-
-    engine_spec = hardware_specs
-    aero_spec = hardware_specs
     mass_kg = hardware_specs.get("weight_kg", 798) + s["fuel_remaining_kg"]
 
-    # Merge physics state into car state
     s["throttle_demand"] = physics_state.get("throttle_demand", 1.0)
     s["lateral_g"] = physics_state.get("lateral_g", 0)
     s["curvature"] = physics_state.get("curvature", 0)
     s["corner_phase"] = physics_state.get("corner_phase", "straight")
 
-    # 1. RPM
     s["rpm"] = compute_rpm(s["speed_kmh"], s["gear"])
-
-    # 2. Engine map
     entry = _safe_call_with_timeout(
         "engine_map", car_parts.get("engine_map", defaults["engine_map"]),
         (s["rpm"], s["throttle_demand"], s["engine_temp"]),
-        defaults["engine_map"], tick)
+        defaults["engine_map"], tick, g_ctx)
     log.append(entry)
     torque_pct, fuel_flow_pct = entry["output"] if isinstance(entry["output"], tuple) else (entry["output"], entry["output"])
 
@@ -231,7 +226,7 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
     entry = _safe_call_with_timeout(
         "gearbox", car_parts.get("gearbox", defaults["gearbox"]),
         (s["rpm"], s["speed_kmh"], s["gear"], s["throttle_demand"]),
-        defaults["gearbox"], tick)
+        defaults["gearbox"], tick, g_ctx)
     log.append(entry)
     s["gear"] = entry["output"]
     s["rpm"] = compute_rpm(s["speed_kmh"], s["gear"])
@@ -243,7 +238,7 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
     entry = _safe_call_with_timeout(
         "fuel_mix", car_parts.get("fuel_mix", defaults["fuel_mix"]),
         (s["fuel_remaining_kg"], laps_left, s["position"], s["gap_ahead"]),
-        defaults["fuel_mix"], tick)
+        defaults["fuel_mix"], tick, g_ctx)
     log.append(entry)
     lambda_val = entry["output"]
     fuel_eff = compute_fuel_mix_efficiency(lambda_val, s["fuel_remaining_kg"], laps_left)
@@ -253,7 +248,7 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
     entry = _safe_call_with_timeout(
         "suspension", car_parts.get("suspension", defaults["suspension"]),
         (s["speed_kmh"], s["lateral_g"], physics_state.get("bump_severity", 0), s["ride_height"]),
-        defaults["suspension"], tick)
+        defaults["suspension"], tick, g_ctx)
     log.append(entry)
     ride_target = entry["output"]
     actual_rh, bottoming = compute_ride_height_effect(ride_target, s["speed_kmh"])
@@ -265,7 +260,7 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
     entry = _safe_call_with_timeout(
         "cooling", car_parts.get("cooling", defaults["cooling"]),
         (s["engine_temp"], s["brake_temp"], s["battery_temp"], s["speed_kmh"]),
-        defaults["cooling"], tick)
+        defaults["cooling"], tick, g_ctx)
     log.append(entry)
     cooling_effort = entry["output"]
     cool_eff = compute_cooling_efficiency(cooling_effort, t1.get("engine_temp", 90), s["speed_kmh"])
@@ -277,15 +272,15 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
         "ers_deploy", car_parts.get("ers_deploy", defaults["ers_deploy"]),
         (s["ers_state"]["energy_mj"] / 4.0 * 100, s["speed_kmh"],
          s["lap"], s["gap_ahead"], is_braking),
-        defaults["ers_deploy"], tick)
+        defaults["ers_deploy"], tick, g_ctx)
     log.append(entry)
     deploy_kw = entry["output"] if not is_braking else 0
 
     # 8. Compute forces (t-1 dependent)
     mixture_mult = compute_mixture_torque_mult(lambda_val)
-    hp = engine_spec.get("max_hp", 1000)
+    hp = hardware_specs.get("max_hp", 1000)
     temp_penalty = max(0.6, 1.0 - max(0, t1.get("engine_temp", 90) - 120) * 0.04)
-    cl, cd = aero_spec.get("base_cl", 4.5), aero_spec.get("base_cd", 0.88)
+    cl, cd = hardware_specs.get("base_cl", 4.5), hardware_specs.get("base_cd", 0.88)
     eff_hp = hp * temp_penalty
     drive_force_no_ers = compute_power_force(eff_hp, torque_pct, s["rpm"], s["speed_kmh"], 0, mixture_mult)
     drive_force = compute_power_force(eff_hp, torque_pct, s["rpm"], s["speed_kmh"], deploy_kw, mixture_mult)
@@ -320,7 +315,7 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
     entry = _safe_call_with_timeout(
         "differential", car_parts.get("differential", defaults["differential"]),
         (s["corner_phase"], s["speed_kmh"], s["lateral_g"]),
-        defaults["differential"], tick)
+        defaults["differential"], tick, g_ctx)
     log.append(entry)
     diff_lock = entry["output"]
     diff_eff = compute_diff_efficiency(diff_lock, s["corner_phase"], lateral_g, s["speed_kmh"])
@@ -346,7 +341,7 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
         entry = _safe_call_with_timeout(
             "brake_bias", car_parts.get("brake_bias", defaults["brake_bias"]),
             (s["speed_kmh"], 1.0, grip_f, grip_r),
-            defaults["brake_bias"], tick)
+            defaults["brake_bias"], tick, g_ctx)
         log.append(entry)
         brake_bias_val = entry["output"]
         entry["efficiency"] = 1.0
@@ -355,7 +350,8 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
                      "status": "ok", "efficiency": 1.0})
 
     # 11. MULTIPLY ALL EFFICIENCIES
-    efficiencies = [gb_eff, sus_eff, cool_eff, diff_eff, fuel_eff]
+    # Suspension and diff work through physics (downforce, traction), not efficiency
+    efficiencies = [gb_eff, cool_eff, fuel_eff]
     product = 1.0
     for eff in efficiencies:
         product *= eff
@@ -377,7 +373,7 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
         entry = _safe_call_with_timeout(
             "ers_harvest", car_parts.get("ers_harvest", defaults["ers_harvest"]),
             (braking_g_actual, s["ers_state"]["energy_mj"] / 4.0 * 100, s["battery_temp"]),
-            defaults["ers_harvest"], tick)
+            defaults["ers_harvest"], tick, g_ctx)
         log.append(entry)
         harvest_kw = entry["output"]
     else:
@@ -393,7 +389,10 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
     # 15. Strategy
     entry = _safe_call_with_timeout(
         "strategy", car_parts.get("strategy", defaults["strategy"]),
-        (s,), defaults["strategy"], tick)
+        (s,), defaults["strategy"], tick, g_ctx)
     log.append(entry)
+
+    if glitch_engine:
+        glitch_engine.tick_glitches(car_idx)
 
     return s, log, product

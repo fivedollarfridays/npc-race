@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-03-21 Sprint 26 complete — physics bug fixes.
+> Last updated: 2026-03-22 T27.7 complete — Glitch + code quality wired into race loop.
 
 ## Active Plan
 
@@ -24,6 +24,10 @@ Redesign suspension and differential optimized test variants for correct lateral
 - Phase 4: League system + live code terminal + TRON viewer
 
 ## What Was Just Done
+
+- **T27.7 COMPLETE**: Wired `GlitchEngine` + `compute_reliability_score` into the race loop. Added `_apply_glitch` helper to `safe_call.py` (115 lines). `_safe_call_with_timeout` now accepts optional `glitch_ctx` and applies glitch checks internally. `run_efficiency_tick` passes glitch context through all 10 part calls + calls `tick_glitches` at end. `PartsRaceSim.__init__` creates `GlitchEngine(scale=0.3)` and computes per-car reliability from `_source` (defaults to 1.0). 11 tests in `tests/test_glitch_wiring.py` (197 lines). All 72 related tests pass, ruff clean, `efficiency_engine.py` at 398 lines.
+
+- **T27.4 + T27.5 COMPLETE**: Added `engine/code_quality.py` (119 lines) with 5 AST-based metrics: cyclomatic complexity, cognitive complexity, function lengths, type hint coverage, and aggregate reliability score (0.50-1.00). 13 tests in `tests/test_code_quality.py` (122 lines). All passing, ruff clean, under size limits.
 
 - **Sprint 26 COMPLETE**: Fixed ERS per-lap counter reset (deploy/harvest caps were never resetting — ERS dead after lap 1). Fixed lateral G formula (was 50x too low — `curv*speed/150` replaced with `v²κ/g`). Calibrated cornering wear rate for real G values (0.0003→0.00009). Reduced diff understeer coefficient (0.40→0.10). 5-lap spread jumped from 10.0s to 19.5s. ERS deploy from -0.57s to +0.60s. Tire wear from 1.5% to 12.5%.
 
@@ -53,7 +57,7 @@ Replaced all artificial hacks: heat model fix, removed prescribed efficiencies, 
 - **Monza 1-lap baseline: 86.43s** (physics-emergent, naive defaults)
 - **Monza 1-lap optimized: 82.40s** (4.03s spread from physics)
 - **6/9 parts above 0.3s sensitivity** (gearbox, suspension, cooling, fuel_mix, differential, ers_deploy)
-- **efficiency_engine.py: 433 lines** | **safe_call.py: 86 lines**
+- **efficiency_engine.py: 398 lines** | **safe_call.py: 115 lines**
 
 ## Blockers
 
