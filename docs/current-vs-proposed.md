@@ -1,136 +1,103 @@
 # NPC Race: Current State vs Proposed State
 
-## Current State (v2, Sprints 1-22)
+> Updated: 2026-03-21 after Sprint 26 (physics bug fixes)
+
+## Current State (Sprints 1-26)
 
 ### What We Have
 
-**Engine:** 1,759 tests. 30+ modules. 20 tracks. 5 seed cars. Simulation runs at 30 Hz. WebSocket streaming viewer with pit wall dashboard.
+**Engine:** 1,700+ tests. 30+ modules. 20 tracks. 5 seed cars. Simulation at 30 Hz. WebSocket viewer with pit wall dashboard.
 
-**Car System:** Two coexisting systems, neither complete:
-- **Legacy (v1):** 5 abstract stats (POWER/GRIP/WEIGHT/AERO/BRAKES, 100-point budget) + `strategy()` function. Still the primary system used by the race runner. Cars are single files under 100 lines.
-- **Parts (v2):** 10 part functions (engine_map, gearbox, etc.) + 3 physics engines (powertrain, chassis, hybrid) + parts runner sandbox. Built in Sprints 20-21 but not yet the primary system. `PartsRaceSim` exists as a separate class.
+**Car System:** Two coexisting systems:
+- **Legacy (v1):** 5 abstract stats + `strategy()` function. Still used by the old `RaceSim`.
+- **Parts (v3):** 10 part functions + efficiency engine + 3 physics engines. `PartsRaceSim` is the primary system for v3.
 
-**Physics:** Power-based speed model (F=P/v) with traction circle. Simplified Pacejka-like tire model. Real F1 constants. Monza lap times: 82-86s (target ~80s). Top speed: 333-362 km/h (realistic). The physics is CORRECT but the sensitivity test shows near-zero impact from player code changes.
+**Physics (v3 — Sprints 24-26):**
+- Multiplicative efficiency engine (`efficiency_engine.py`) — 5 efficiency factors multiply into a product that scales acceleration
+- Physics-derived grip_factor scales corner speed (downforce, tire grip, understeer)
+- Real lateral G formula (v²κ/g) — cornering forces at 1.7-3.0G
+- Realistic engine thermal model (equilibrium ~110°C with moderate cooling)
+- ERS battery with per-lap deploy/harvest caps and lap reset
+- Tire wear: 12.5% after 5 laps with real F1 degradation rates
+- Traction circle with front/rear brake force splitting (lockup model)
+- Differential understeer reduces corner speed through physics
 
-**The Critical Gap:** Parts exist but don't meaningfully affect lap time. Changing one part function by a lot changes lap time by 0.0-0.3s. The physics engine computes speed independently of part outputs. There is no multiplicative model. Code quality has zero effect on race performance.
-
-**Viewer:** Dashboard with timing tower, telemetry panels, speed/tire/gap charts, TV Director camera, spatial audio, narrative engine. No live code terminal. No TRON car diagnostic. No code quality display.
-
-**Infrastructure:** GitHub CI (fast/slow split), branch protection, WebSocket streaming, championship mode with seasons/points/development. All working.
+**Sensitivity (Sprint 26 results):**
+- 1-lap: 3.47s spread, 80.83s baseline, 4/9 parts above 0.3s
+- 5-lap: 19.50s spread, compound effects working across laps
+- ERS deploy/harvest alive at 5 laps (+0.60s, +0.77s)
+- No artificial hacks (no prescribed optimals, no amplification, no profile speed hack)
 
 ### What Works
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| 20 tracks with real-world data | ✅ Working | Monza recently redesigned with longer straights |
-| 5 seed cars | ✅ Working | Legacy format, hardware specs added |
-| Race simulation (legacy) | ✅ Working | Produces races with results, narrative, replay |
-| Parts runner sandbox | ✅ Working | Calls 10 functions per tick, logs calls, handles errors |
-| 3 physics engines | ✅ Working | Powertrain, chassis, hybrid — correct equations |
-| Speed profile + driver model | ✅ Working | Pre-computes optimal speed, provides throttle/brake |
-| WebSocket viewer | ✅ Working | Streams frames live, dashboard layout |
-| Narrative engine | ✅ Working | Detects events, generates commentary, race reports |
-| Championship mode | ✅ Working | Seasons, points, car development |
-| CI pipeline | ✅ Working | Fast tests (~3 min) on push, full suite on labeled PRs |
-| Bot scanner security | ✅ Working | Sandboxed execution, import restrictions |
+| 20 tracks with real-world data | ✅ Working | Monza lap time ~81s (real F1 ~80s) |
+| 5 seed cars | ✅ Working | Legacy format + parts defaults |
+| Efficiency engine | ✅ Working | 5 factors: gearbox, suspension, cooling, diff, fuel_mix |
+| Grip factor (corner speed) | ✅ Working | Downforce + tire grip → physics-derived corner speed |
+| ERS battery cycling | ✅ Working | Deploy/harvest with per-lap caps, lap reset |
+| Tire wear model | ✅ Working | 12.5% after 5 laps, grip degrades meaningfully |
+| Traction circle | ✅ Working | Real lateral G, wheelspin detection, brake lockup |
+| 3 physics engines | ✅ Working | Powertrain, chassis, hybrid |
+| Speed profile + driver model | ✅ Working | Pre-computes optimal speed |
+| WebSocket viewer | ✅ Working | Dashboard, telemetry, timing tower |
+| Narrative engine | ✅ Working | Events, commentary, race reports |
+| CI pipeline | ✅ Working | Fast tests + lint on push |
+| Bot scanner security | ✅ Working | Sandboxed execution |
 
-### What Doesn't Work
+### What Doesn't Work Yet
 
 | Component | Status | Problem |
 |-----------|--------|---------|
-| Part sensitivity | ❌ Failed | Changing parts produces 0.0-0.3s effect (target: 0.5-1.5s each) |
-| Multiplicative model | ❌ Not built | Parts add, not multiply. No compound effects. |
-| Code quality → performance | ❌ Not built | Code quality has zero effect on car behavior |
+| Code quality → reliability | ❌ Not built | No AST analysis, no glitch system |
 | Multi-file car projects | ❌ Not built | Cars are single files |
 | League system | ❌ Not built | No progression, no part restrictions |
 | Live code terminal | ❌ Not built | Viewer doesn't show code executing |
 | TRON car diagnostic | ❌ Not built | No wireframe car status display |
-| Part coupling | ❌ Broken | Engine_map doesn't affect gearbox, ERS doesn't add power to speed, cooling doesn't affect drag in speed calc |
 | Evaluation pipeline | ❌ Not built | No submission flow, no quality scoring |
-| Player onboarding | ❌ Not built | No default car repo, no README, no email signup |
+| Suspension optimized variant | ⚠️ Stale | Designed for 50x-wrong lateral G, shows -0.83s |
+| Differential optimized variant | ⚠️ Stale | Strategy wrong for real traction model, shows -0.53s |
+| Engine_map sensitivity (1-lap) | ⚠️ Limited | 0.00s at 1 lap (tire wear too slow for 1-lap effect) |
+| Brake_bias sensitivity | ⚠️ Weak | 0.00s — lockup model functional but penalty gentle |
 
 ---
 
-## Proposed State (v3)
+## Proposed State (v3.1)
 
-### The Shift
+### Progress Against v3.1 Proposal
 
-| Dimension | v2 | v3 |
-|-----------|----|----|
-| **Game model** | Configure stats, write strategy | Write code for 10 car parts |
-| **What player codes** | 1 function (strategy) | 10 functions (each IS a car part) |
-| **Physics sensitivity** | ~0.0s per part change | ~0.5-1.5s per part change |
-| **Combination model** | Additive (A + B + C) | Multiplicative (A × B × C) |
-| **Code quality effect** | None | Reliability score → glitch rate |
-| **Car file format** | Single .py file, <100 lines | Multi-file project directory |
-| **Difficulty progression** | None | F3 (3 parts) → F2 (6) → F1 (10) → Championship |
-| **Evaluation** | Bot scanner only | Security + quality + architecture + reliability |
-| **Viewer** | Pit wall dashboard | + live code terminal + TRON diagnostic |
-| **Target audience** | Anyone | Engineers who want depth (with accessible entry via F3) |
-| **Total spread** | ~3s (from driver model) | ~10s (from code quality × part optimization) |
+| Phase | Status | What Was Done |
+|-------|--------|---------------|
+| Phase 0: Baseline | ✅ Done (S23) | Measured -0.07s spread — proved v2 was broken |
+| Phase 1: Core physics | ✅ Done (S24-26) | Efficiency engine, grip factor, lateral G, ERS, tire wear |
+| Phase 2: Code quality | ❌ Next | AST analyzer, reliability scoring, glitch engine |
+| Phase 3: Car loader | ❌ Future | Multi-file car project support |
+| Phase 4: Leagues + viewer | ❌ Future | League system, code terminal, TRON diagnostic |
+| Phase 5: Infrastructure | ❌ Future | Submission pipeline, onboarding |
 
-### What Gets Built (New)
+### Sensitivity Evolution
 
-| Module | What It Does | Why It's Needed |
-|--------|-------------|----------------|
-| Refactored `parts_runner.py` | Real physics coupling, multiplicative efficiency | Core gap: parts must affect speed |
-| `engine/code_quality.py` | AST-based quality analysis → reliability score | Code quality = car reliability |
-| `engine/car_project_loader.py` | Load multi-file car projects | Modular code > monolithic |
-| `engine/league_system.py` | Part restrictions per tier, quality gates | Accessibility + progression |
-| `viewer/js/code-terminal.js` | Show player code executing in real-time | The game's signature experience |
-| `viewer/js/car-diagnostic.js` | TRON wireframe car status | Visual feedback per part |
-| `scripts/sensitivity_test.py` | Verify per-part impact + interactions | Calibration verification |
-| Default car template repo | Open source onboarding project | Player entry point |
-| Evaluation pipeline | Security → quality → reliability → race | Submission flow |
+| Metric | Phase 0 (v2) | Phase 1 (S24) | Phase 1 (S25) | Phase 1 (S26) |
+|--------|-------------|---------------|---------------|---------------|
+| Baseline lap | 87.73s | — | 86.43s | 80.83s |
+| Total spread | -0.07s | 10.77s* | 4.03s | 3.47s |
+| Parts > 0.3s | 0/9 | 6/9* | 6/9 | 4/9 |
+| Lateral G | 0.04G | 0.04G | 0.04G | 1.7-3.0G |
+| Tire wear (5 lap) | — | — | 1.5% | 12.5% |
+| ERS deploy (5 lap) | — | — | -0.57s | +0.60s |
+| 5-lap spread | — | — | 10.0s | 19.5s |
+| Physics honest? | Yes (but dead) | No (hacks) | Yes | Yes |
 
-### What Gets Kept (Existing)
+*Sprint 24 numbers used artificial hacks (prescribed optimals, ^1.3 amplification, profile speed hack). All removed in Sprint 25.
 
-| Module | Status | Changes Needed |
-|--------|--------|---------------|
-| 20 tracks | Keep as-is | Monza already redesigned |
-| Powertrain physics | Keep | Wire outputs INTO speed computation |
-| Chassis physics | Keep | Wire traction circle INTO acceleration |
-| Hybrid physics | Keep | Wire ERS power INTO drive force |
-| Speed profile + driver model | Keep | Provides throttle/brake demands |
-| Narrative engine | Keep as-is | Works with any sim class |
-| Sound engine | Keep as-is | Independent of physics |
-| WebSocket streaming | Keep | Extend to include part call logs |
-| Championship mode | Keep | Works with any sim class |
-| CI pipeline | Keep as-is | |
-| Bot scanner | Extend | Scan directories, not just single files |
+### Remaining Effort
 
-### What Gets Replaced
-
-| Old | New | Why |
-|-----|-----|-----|
-| Legacy 5-stat car system | Multi-file car projects with 10 part functions | The game IS the code |
-| `simulation.py` as primary race runner | `PartsRaceSim` as primary | Parts-driven physics |
-| Fixed reliability (no code quality effect) | Reliability from AST quality analysis | Better code = better car |
-| Additive part effects | Multiplicative efficiency model | Compound optimization depth |
-| Single car template | Open source car project template | Onboarding + modular code |
-
----
-
-## The Gap
-
-| What Exists | What's Needed | Gap Size |
-|-------------|--------------|----------|
-| Parts runner calls 10 functions | Parts outputs must AFFECT speed multiplicatively | Large — core architecture change |
-| Physics engines compute correct forces | Forces must flow FROM part decisions, not around them | Medium — rewiring, not rewriting |
-| Quality metrics computable from AST | Need `code_quality.py` + reliability + glitch system | Medium — new module |
-| Viewer shows telemetry | Need live code terminal + TRON diagnostic | Medium — new JS modules |
-| Single-file cars | Need directory-based car loader | Small — loader extension |
-| No league system | Need league definitions + part restrictions | Small — new module |
-| No evaluation pipeline | Need submission → evaluation → race flow | Medium — new infrastructure |
-| No player onboarding | Need default car repo + documentation | Small — content creation |
-
-### Estimated Effort
-
-| Phase | Sprints | What |
-|-------|---------|------|
-| Phase 1: Core physics coupling | 2-3 | Multiplicative model, real part sensitivity |
-| Phase 2: Code quality system | 1 | AST analyzer, reliability, glitches |
-| Phase 3: Car project loader | 1 | Multi-file support, extended scanner |
-| Phase 4: Leagues + viewer | 2 | League system, code terminal, TRON diagnostic |
-| Phase 5: Infrastructure | 1-2 | Submission pipeline, onboarding |
-| **Total** | **7-10 sprints** | |
+| Task | Sprints | Depends On |
+|------|---------|------------|
+| Suspension/diff variant redesign | <1 | Nothing (stale test fixtures) |
+| Phase 2: Code quality system | 1 | Nothing (physics stable) |
+| Phase 3: Car project loader | 1 | Phase 2 |
+| Phase 4: Leagues + viewer | 2 | Phase 3 |
+| Phase 5: Infrastructure | 1-2 | Phase 4 |
+| **Total remaining** | **5-7 sprints** | |

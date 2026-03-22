@@ -1,4 +1,5 @@
-# NPC Race — Sensitivity Test
+# NPC Race — Sensitivity Test (SUPERSEDED by sensitivity-sprint26.md)
+# This result used 50x-wrong lateral G formula.
 Date: 2026-03-21 12:41
 Track: Monza | Laps: 1 | Seed: 42 | Car: BrickHouse (idx 0)
 

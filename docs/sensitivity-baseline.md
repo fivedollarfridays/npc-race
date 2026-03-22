@@ -1,4 +1,5 @@
-# NPC Race — Sensitivity Test
+# NPC Race — Phase 0 Baseline (v2 system, before efficiency engine)
+# Proves v2 had zero sensitivity: -0.07s total spread.
 Date: 2026-03-21 01:34
 Track: Monza | Laps: 1 | Seed: 42 | Car: BrickHouse (idx 0)
 

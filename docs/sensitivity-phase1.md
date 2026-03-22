@@ -1,4 +1,5 @@
-# NPC Race — Sensitivity Test
+# NPC Race — Sensitivity Test (SUPERSEDED by sensitivity-sprint26.md)
+# This result used artificial hacks (^1.3 amplification, profile speed hack).
 Date: 2026-03-21 02:41
 Track: Monza | Laps: 1 | Seed: 42 | Car: BrickHouse (idx 0)
 
