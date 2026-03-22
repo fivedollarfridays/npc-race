@@ -30,6 +30,18 @@ AST metrics, reliability score (0.50-1.00), glitch engine with reliability_scale
 
 ## What Was Just Done
 
+- **T29.5**: Integration gate for car project loader. Created `tests/test_car_project_integration.py` with 10 end-to-end tests covering: project car completes race, mixed cars race together, partial project defaults fill (3 loaded + 7 defaults), source enables reliability scoring, malicious helper caught by scanner, and all 5 seed cars still load and race. All 10 tests passing. Ruff clean, arch check clean.
+
+- **T29.3 done** (auto-updated by hook)
+
+- **T29.3**: Wired car project loader into race runner. Updated `engine/car_loader.py` so `load_all_cars()` detects both single-file cars and directory-based car projects (subdirs with `car.py`). Added `_source` population for all cars. Projects are security-scanned via `scan_car_project()` before loading; malicious projects are skipped with warning. Refactored `load_car()` by extracting `_apply_components`, `_extract_parts`, `_extract_hardware_specs` to fix function length violation. 6 new tests in `tests/test_car_loader_projects.py`, all 20 car loader tests passing. 6 cars now load from `cars/` (5 single-file + 1 default_project).
+
+- **T29.4**: Default car project template. Created `cars/default_project/` with car.py (metadata), engine_map.py, gearbox.py, strategy.py (3 F3 parts with teaching docstrings), and README.md (quick-start guide, 39 lines). All .py files under 30 lines. 15 tests in `tests/test_default_project.py`, all passing. Ruff clean.
+
+- **T29.1**: Multi-file car project loader. Created `engine/car_project_loader.py` with `load_car_project()` that loads a directory as a car project: metadata from car.py, per-part .py files for custom part functions, defaults for missing parts, `_loaded_parts` tracking, `_source` concatenation, hardware specs with defaults. 9 tests in `tests/test_car_project_loader.py`, all passing. 88 lines implementation, 130 lines tests.
+
+- **T29.2**: Deep import scanner for car projects. Added `scan_car_project()` that walks the full import graph of directory-based car projects, detecting forbidden imports buried in helpers, circular imports, missing modules, and relative imports. Extracted into `security/project_scanner.py` (hub-and-spoke) with re-export from `bot_scanner.py`. 8 new tests in `tests/test_bot_scanner_v3.py`, all 64 scanner tests passing.
+
 - **Sprint 28**: Diff + suspension physics rewiring. Differential: speed-dependent optimal lock (traction peaks at 20% low speed, 70% high speed). Suspension: ride height drag + stronger ground effect (0.3→0.5). Both produce positive sensitivity. 6/9 parts above 0.3s, 0 negative.
 
 - **Sprint 27**: Code quality system (Phase 2). AST metrics, reliability score, glitch engine. Removed suspension/differential from efficiency product.
