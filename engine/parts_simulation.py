@@ -11,6 +11,7 @@ from .replay import record_frame, get_results, export_replay, _compute_positions
 from .parts_api import get_defaults, get_hardware_spec
 from .parts_runner import create_initial_state, run_parts_tick  # noqa: F401
 from .efficiency_engine import run_efficiency_tick
+from .hybrid_physics import reset_ers_lap
 from .driver_model import create_driver, compute_driver_inputs
 
 
@@ -32,8 +33,10 @@ class PartsRaceSim:
 
         if real_length_m and real_length_m > 0:
             self.world_scale = self.track_length / real_length_m
+            self.real_per_sim = real_length_m / self.track_length
         else:
             self.world_scale = self.track_length / 5000.0
+            self.real_per_sim = 5000.0 / self.track_length
 
         # Build hardware specs for each car
         self.car_states = []
@@ -119,7 +122,7 @@ class PartsRaceSim:
             physics = {
                 "curvature": curv,
                 "corner_phase": corner_phase,
-                "lateral_g": curv * state["speed_kmh"] / 150,
+                "lateral_g": (state["speed_kmh"] / 3.6) ** 2 * curv / (self.real_per_sim * 9.81),
                 "bump_severity": 0.0,
                 "weather_wetness": 0.0,
                 "throttle_demand": driver_inputs["throttle"],
@@ -157,6 +160,7 @@ class PartsRaceSim:
             current_lap = int(new_state["distance"] / self.track_length)
             if current_lap > state.get("lap", 0):
                 new_state["lap"] = current_lap
+                new_state["ers_state"] = reset_ers_lap(new_state["ers_state"])
             total_dist = self.track_length * self.laps
             if new_state["distance"] >= total_dist:
                 new_state["finished"] = True
