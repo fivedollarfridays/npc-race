@@ -92,8 +92,8 @@ def optimized_brake_bias(speed, deceleration_g, tire_grip_front, tire_grip_rear)
 
 
 def optimized_suspension(speed, lateral_g, bump_severity, current_ride_height):
-    """Slightly lower than default for better downforce without bottoming risk."""
-    return -0.4
+    """Lower ride height for more downforce, staying above drag penalty zone."""
+    return -0.50
 
 
 def optimized_cooling(engine_temp, brake_temp, battery_temp, speed):
@@ -118,14 +118,8 @@ def optimized_fuel_mix(fuel_remaining_kg, laps_left, position, gap_ahead):
 
 
 def optimized_differential(corner_phase, speed, lateral_g):
-    """Precisely tuned lock to match efficiency function's optimal."""
-    if corner_phase == "entry":
-        return 35 + lateral_g * 8
-    if corner_phase == "mid":
-        return 18 + lateral_g * 5
-    if corner_phase == "exit":
-        return 65 + min(15, speed / 25)
-    return 50
+    """Low lock minimizes understeer penalty for corner speed."""
+    return 15
 
 
 OPTIMIZED = {
