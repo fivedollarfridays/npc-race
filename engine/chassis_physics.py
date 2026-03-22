@@ -16,7 +16,7 @@ def compute_downforce(speed_kmh: float, cl: float, ride_height: float) -> float:
     """Compute downforce in Newtons. Lower ride height = more ground effect."""
     speed_ms = speed_kmh / 3.6
     # Ground effect multiplier: ride_height -1.0 = max downforce, +1.0 = minimal
-    ground_mult = 1.0 + (-ride_height) * 0.3  # -1.0 -> 1.3x, +1.0 -> 0.7x
+    ground_mult = 1.0 + (-ride_height) * 0.5  # -1.0 -> 1.5x, +1.0 -> 0.5x
     ground_mult = max(0.5, min(1.5, ground_mult))
     return 0.5 * AIR_DENSITY * cl * REFERENCE_AREA * speed_ms**2 * ground_mult
 
