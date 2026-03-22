@@ -330,7 +330,7 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
     # Diff understeer reduces lateral grip → slower through corners.
     # Diff traction helps acceleration (already in effective_traction), not corner speed.
     _, understeer = compute_diff_effect(diff_lock, lateral_g, s["speed_kmh"])
-    understeer_penalty = max(0.80, 1.0 - understeer * 0.40)
+    understeer_penalty = max(0.90, 1.0 - understeer * 0.10)
     s["grip_factor"] = compute_grip_factor(
         tire_mu, downforce, mass_kg, 1.0,  # diff NOT in grip_factor
         s["speed_kmh"], cl) * understeer_penalty
