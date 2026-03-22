@@ -8,12 +8,13 @@ from __future__ import annotations
 
 from .parts_api import CAR_PARTS, clamp_output, get_defaults
 from .powertrain_physics import (
-    compute_rpm, compute_wheel_torque, compute_fuel_consumption,
-    compute_engine_temp, compute_mixture_torque_mult,
+    compute_rpm, compute_fuel_consumption,
+    compute_engine_temp, compute_mixture_torque_mult, compute_power_force,
 )
 from .chassis_physics import (
     compute_downforce, compute_drag, compute_braking_force,
     compute_ride_height_effect, compute_cooling_effect,
+    compute_traction_limit, apply_traction_circle,
 )
 from .hybrid_physics import update_ers, compute_diff_effect, create_ers_state
 
@@ -149,26 +150,7 @@ def run_parts_tick(
     log.append(entry)
     lambda_val = entry["output"]
 
-    # 5. Apply powertrain physics
-    mixture_mult = compute_mixture_torque_mult(lambda_val)
-    wheel_torque = compute_wheel_torque(
-        torque_pct * mixture_mult, s["rpm"], s["gear"], engine_spec,
-    )
-    drag = compute_drag(s["speed_kmh"], aero_spec.get("base_cd", 0.88), 0.4)
-    accel = wheel_torque / max(1, mass_kg) - drag / max(1, mass_kg)
-    s["speed_kmh"] = max(0, s["speed_kmh"] + accel * dt * 3.6)
-
-    fuel_consumed = compute_fuel_consumption(
-        fuel_flow_pct, lambda_val,
-        engine_spec.get("max_fuel_flow_kghr", 100), dt,
-    )
-    s["fuel_remaining_kg"] = max(0, s["fuel_remaining_kg"] - fuel_consumed)
-
-    s["engine_temp"] = compute_engine_temp(
-        s["engine_temp"], torque_pct, s["rpm"], 0.4, dt,
-    )
-
-    # 6. suspension
+    # 5. Call suspension + cooling FIRST (they affect downforce + drag)
     entry = _safe_call(
         "suspension", car_parts["suspension"],
         (s["speed_kmh"], s["lateral_g"], physics_state.get("bump_severity", 0),
@@ -177,8 +159,9 @@ def run_parts_tick(
     )
     log.append(entry)
     ride_target = entry["output"]
+    actual_rh, bottoming = compute_ride_height_effect(ride_target, s["speed_kmh"])
+    s["ride_height"] = actual_rh
 
-    # 7. cooling
     entry = _safe_call(
         "cooling", car_parts["cooling"],
         (s["engine_temp"], s["brake_temp"], s["battery_temp"], s["speed_kmh"]),
@@ -186,36 +169,10 @@ def run_parts_tick(
     )
     log.append(entry)
     cooling_effort = entry["output"]
+    s["_cooling_effort"] = cooling_effort
 
-    # 8. Apply chassis physics
-    actual_rh, _bottoming = compute_ride_height_effect(ride_target, s["speed_kmh"])
-    s["ride_height"] = actual_rh
-    downforce = compute_downforce(
-        s["speed_kmh"], aero_spec.get("base_cl", 4.5), actual_rh,
-    )
-    e_cool, b_cool, bat_cool = compute_cooling_effect(
-        cooling_effort, s["engine_temp"], s["brake_temp"], s["battery_temp"], dt,
-    )
-    s["engine_temp"] -= e_cool
-    s["brake_temp"] = max(200, s["brake_temp"] - b_cool)
-    s["battery_temp"] = max(25, s["battery_temp"] - bat_cool)
-
-    # 9. brake_bias (only if braking)
-    is_braking = s["throttle_demand"] < 0.1 and s["speed_kmh"] > 10
-    if is_braking:
-        entry = _safe_call(
-            "brake_bias", car_parts["brake_bias"],
-            (s["speed_kmh"], 1.0, s["tire_grip"], s["tire_grip"]),
-            defaults["brake_bias"], tick,
-        )
-        log.append(entry)
-    else:
-        log.append({
-            "part": "brake_bias", "tick": tick,
-            "inputs": {}, "output": 57, "status": "ok", "error": None,
-        })
-
-    # 10. ers_deploy
+    # 6. Call ERS deploy (affects power)
+    is_braking = physics_state.get("braking", False)
     entry = _safe_call(
         "ers_deploy", car_parts["ers_deploy"],
         (s["ers_state"]["energy_mj"] / 4.0 * 100, s["speed_kmh"],
@@ -223,37 +180,113 @@ def run_parts_tick(
         defaults["ers_deploy"], tick,
     )
     log.append(entry)
-    deploy_kw = entry["output"]
+    deploy_kw = entry["output"] if not is_braking else 0
 
-    # 11. ers_harvest (only if braking)
-    if is_braking:
-        brake_force = compute_braking_force(
-            s["speed_kmh"], 1.0, downforce, mass_kg,
-        )
-        entry = _safe_call(
-            "ers_harvest", car_parts["ers_harvest"],
-            (brake_force, s["ers_state"]["energy_mj"] / 4.0 * 100,
-             s["battery_temp"]),
-            defaults["ers_harvest"], tick,
-        )
-        log.append(entry)
-        harvest_kw = entry["output"]
-    else:
-        log.append({
-            "part": "ers_harvest", "tick": tick,
-            "inputs": {}, "output": 0, "status": "ok", "error": None,
-        })
-        harvest_kw = 0
+    # 7. Compute forces with REAL part outputs
+    mixture_mult = compute_mixture_torque_mult(lambda_val)
+    hp = engine_spec.get("max_hp", 1000)
+    # Engine temp penalty: >120°C loses power
+    temp_penalty = max(0.7, 1.0 - max(0, s["engine_temp"] - 120) * 0.02)
+    drive_force = compute_power_force(
+        hp * temp_penalty, torque_pct, s["rpm"], s["speed_kmh"],
+        deploy_kw, mixture_mult)  # ERS deploy adds power!
+    cl = aero_spec.get("base_cl", 4.5)
+    cd = aero_spec.get("base_cd", 0.88)
+    downforce = compute_downforce(s["speed_kmh"], cl, actual_rh)  # uses suspension output
+    drag = compute_drag(s["speed_kmh"], cd, cooling_effort)  # uses cooling output
+    # Bottoming out penalty: lose 20% downforce if riding too low
+    if bottoming:
+        downforce *= 0.8
+        drag *= 1.1  # more drag from scraping
+    rolling_r = mass_kg * 9.81 * 0.008
 
-    # 12. differential
+    # 8. Traction limit from tires + downforce
+    tire_mu = 1.4 * (1.0 - s.get("tire_wear", 0) * 0.3)
+    traction = compute_traction_limit(tire_mu, mass_kg, downforce)
+    lateral_g = physics_state.get("lateral_g", 0)
+
+    # 9. Differential affects traction in corners
     entry = _safe_call(
         "differential", car_parts["differential"],
         (s["corner_phase"], s["speed_kmh"], s["lateral_g"]),
         defaults["differential"], tick,
     )
     log.append(entry)
+    diff_lock = entry["output"]
+    diff_traction, diff_understeer = compute_diff_effect(diff_lock, lateral_g, s["speed_kmh"])
+    # Diff traction modifies available grip
+    effective_traction = traction * diff_traction
 
-    # 13. Apply hybrid physics
+    # 10. Brake bias affects braking effectiveness
+    if is_braking:
+        entry = _safe_call(
+            "brake_bias", car_parts["brake_bias"],
+            (s["speed_kmh"], 1.0, s["tire_grip"], s["tire_grip"]),
+            defaults["brake_bias"], tick,
+        )
+        log.append(entry)
+        bias = entry["output"]
+        # Bad bias = less effective braking (balance penalty)
+        ideal_bias = 57  # optimal for current conditions
+        bias_penalty = 1.0 - abs(bias - ideal_bias) * 0.01  # 1% per point off
+        bias_penalty = max(0.8, bias_penalty)
+
+        target_spd = physics_state.get("target_speed", s["speed_kmh"])
+        excess = s["speed_kmh"] - target_spd
+        if excess > 0:
+            brake_g = min(5.5, 0.5 + excess / 40) * bias_penalty
+            raw_brake = -mass_kg * brake_g * 9.81
+            net_force = apply_traction_circle(raw_brake, lateral_g, effective_traction, mass_kg)
+        else:
+            raw_drive = drive_force - drag - rolling_r
+            net_force = apply_traction_circle(raw_drive, lateral_g, effective_traction, mass_kg)
+    else:
+        log.append({"part": "brake_bias", "tick": tick, "inputs": {},
+                     "output": 57, "status": "ok", "error": None})
+        raw_drive = drive_force - drag - rolling_r
+        net_force = apply_traction_circle(raw_drive, lateral_g, effective_traction, mass_kg)
+
+    # 11. Apply acceleration
+    accel = net_force / max(1, mass_kg)
+    s["speed_kmh"] = max(0, s["speed_kmh"] + accel * dt * 3.6)
+
+    # 12. Fuel consumption
+    fuel_consumed = compute_fuel_consumption(
+        fuel_flow_pct, lambda_val,
+        engine_spec.get("max_fuel_flow_kghr", 100), dt,
+    )
+    s["fuel_remaining_kg"] = max(0, s["fuel_remaining_kg"] - fuel_consumed)
+
+    # 13. Engine temp — uses ACTUAL cooling effort
+    s["engine_temp"] = compute_engine_temp(
+        s["engine_temp"], torque_pct, s["rpm"], cooling_effort, dt,
+    )
+    # Apply cooling to brakes and battery
+    e_cool, b_cool, bat_cool = compute_cooling_effect(
+        cooling_effort, s["engine_temp"], s["brake_temp"], s["battery_temp"], dt,
+    )
+    s["engine_temp"] -= e_cool
+    s["brake_temp"] = max(200, s["brake_temp"] - b_cool)
+    s["battery_temp"] = max(25, s["battery_temp"] - bat_cool)
+
+    # 14. ERS harvest (only if braking)
+    if is_braking:
+        brake_force_for_harvest = compute_braking_force(
+            s["speed_kmh"], 1.0, downforce, mass_kg)
+        entry = _safe_call(
+            "ers_harvest", car_parts["ers_harvest"],
+            (brake_force_for_harvest, s["ers_state"]["energy_mj"] / 4.0 * 100,
+             s["battery_temp"]),
+            defaults["ers_harvest"], tick,
+        )
+        log.append(entry)
+        harvest_kw = entry["output"]
+    else:
+        log.append({"part": "ers_harvest", "tick": tick, "inputs": {},
+                     "output": 0, "status": "ok", "error": None})
+        harvest_kw = 0
+
+    # 15. Apply hybrid physics
     s["ers_state"], _actual_deploy = update_ers(
         s["ers_state"], deploy_kw, harvest_kw, dt,
     )

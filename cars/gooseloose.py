@@ -1,4 +1,4 @@
-"""GooseLoose -- 1-stop, weather-aware, SC-aware pitting."""
+"""GooseLoose -- balanced, smart fuel, SC-aware. All-rounder."""
 import json
 CAR_NAME = "GooseLoose"
 CAR_COLOR = "#ff6600"
@@ -7,6 +7,7 @@ GRIP = 25
 WEIGHT = 15
 AERO = 20
 BRAKES = 15
+ENGINE_SPEC, AERO_SPEC, CHASSIS_SPEC = "v6_1000hp", "medium_downforce", "standard"
 SETUP = {"wing_angle": -0.2, "brake_bias": 0.55, "suspension": 0.1, "tire_pressure": 0.0}
 _data = None
 _last_race = -1
@@ -67,7 +68,6 @@ def strategy(state):
     tire_temp = state.get("tire_temp", 20.0)
     sc_active, wetness = state.get("safety_car", False), state.get("track_wetness", 0.0)
     compound = state.get("tire_compound", "medium")
-    # Weather-aware compound switching
     if wetness > 0.7 and compound != "wet":
         pit_request, compound_req = True, "wet"
     elif wetness > 0.4 and compound in ("soft", "medium", "hard"):
@@ -88,7 +88,6 @@ def strategy(state):
     lateral = _lateral_decision(curv, gap_behind, state["nearby_cars"])
     use_boost = (state["lap"] >= state["total_laps"] - 1
                  and state["boost_available"] and position > 1)
-    # ERS management
     ers = state.get("ers_energy", 4.0)
     ers_mode = "attack" if position > 2 and gap_ahead < 2.0 and ers > 1.0 else ("harvest" if ers < 0.5 else "balanced")
     return {

@@ -1,20 +1,14 @@
-"""Silky -- The corner carver.
-1-stop: soft -> medium. Conserve first stint, standard on mediums.
-Inside line in corners, blocks on straights. Learns compound order per track."""
-
+"""Silky -- The corner carver. 1-stop: soft->medium. Learns compound order."""
 import json
-
 CAR_NAME = "Silky"
 CAR_COLOR = "#aa44ff"
-
 POWER = 15
 GRIP = 35
 WEIGHT = 15
 AERO = 15
 BRAKES = 20
-
+ENGINE_SPEC, AERO_SPEC, CHASSIS_SPEC = "v6_1000hp", "high_downforce", "standard"
 SETUP = {"wing_angle": 0.4, "brake_bias": 0.58, "suspension": -0.2, "tire_pressure": 0.1}
-
 _data = None
 _last_race = -1
 _use_medium_first = False

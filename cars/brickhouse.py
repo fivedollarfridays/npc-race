@@ -1,18 +1,13 @@
-"""BrickHouse -- The brute.
-2-stop: soft -> medium -> hard. Push when behind, conserve when leading.
-Heavy car needs caution in corners. Learns optimal pit wear threshold."""
-
+"""BrickHouse -- The brute. 2-stop: soft->medium->hard. Learns pit threshold."""
 import json
-
 CAR_NAME = "BrickHouse"
 CAR_COLOR = "#cc2222"
-
 POWER = 35
 GRIP = 10
 WEIGHT = 25
 AERO = 15
 BRAKES = 15
-
+ENGINE_SPEC, AERO_SPEC, CHASSIS_SPEC = "v6_1000hp", "high_downforce", "standard"
 _data = None
 _last_race = -1
 _threshold_1 = 0.65

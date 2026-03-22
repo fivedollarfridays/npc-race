@@ -24,7 +24,7 @@ def compute_downforce(speed_kmh: float, cl: float, ride_height: float) -> float:
 def compute_drag(speed_kmh: float, cd: float, cooling_effort: float) -> float:
     """Compute drag force in Newtons. Cooling adds drag."""
     speed_ms = speed_kmh / 3.6
-    cooling_drag = 1.0 + cooling_effort * 0.08  # up to +8% drag from cooling
+    cooling_drag = 1.0 + cooling_effort * 0.20  # up to +20% drag from cooling
     return 0.5 * AIR_DENSITY * cd * REFERENCE_AREA * speed_ms**2 * cooling_drag
 
 
@@ -115,3 +115,28 @@ def compute_cooling_effect(
     brake_cool = cooling_effort * max(0, brake_temp - 200) * 0.02 * dt
     battery_cool = cooling_effort * max(0, battery_temp - 25) * 0.04 * dt
     return engine_cool, brake_cool, battery_cool
+
+
+def compute_traction_limit(tire_grip_mu: float, mass_kg: float,
+                           downforce_n: float) -> float:
+    """Maximum force tires can transmit (acceleration, braking, or cornering).
+
+    This is the traction circle limit: F_max = mu * N where N = weight + downforce.
+    """
+    normal_force = mass_kg * 9.81 + downforce_n
+    return tire_grip_mu * normal_force
+
+
+def apply_traction_circle(longitudinal_force: float, lateral_g: float,
+                          traction_limit: float, mass_kg: float) -> float:
+    """Apply traction circle: available longitudinal force reduced by lateral load.
+
+    sqrt(F_long^2 + F_lat^2) <= traction_limit
+    """
+    lateral_force = lateral_g * mass_kg * 9.81
+    available_long_sq = max(0, traction_limit ** 2 - lateral_force ** 2)
+    available_long = available_long_sq ** 0.5
+    # Clamp longitudinal force
+    if abs(longitudinal_force) > available_long:
+        return available_long if longitudinal_force > 0 else -available_long
+    return longitudinal_force

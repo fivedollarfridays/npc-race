@@ -1,0 +1,56 @@
+id: plan-2026-03-npc-race-parts-wiring
+title: "Sprint 21: Wire Parts Into Simulation — Make It Playable"
+type: feature
+status: planned
+created: "2026-03-20"
+sprint: 21
+total_complexity: 120
+
+description: |
+  Wire the parts runner into the live simulation so player-coded parts
+  actually drive cars in races. New car template with part functions.
+  Migrate seed cars. Calibrate on Monza. After this sprint, the game works.
+
+tasks:
+  - id: T21.1
+    title: "New car template — parts-based car file"
+    complexity: 20
+    depends_on: []
+    file: tasks/T21.1.task.md
+
+  - id: T21.2
+    title: "Parts-aware car loader"
+    complexity: 20
+    depends_on: [T21.1]
+    file: tasks/T21.2.task.md
+
+  - id: T21.3
+    title: "Wire parts runner into simulation._step_car"
+    complexity: 30
+    depends_on: [T21.2]
+    file: tasks/T21.3.task.md
+
+  - id: T21.4
+    title: "Migrate 5 seed cars to parts format"
+    complexity: 20
+    depends_on: [T21.1]
+    file: tasks/T21.4.task.md
+
+  - id: T21.5
+    title: "Monza calibration — lap time 1:15-1:25"
+    complexity: 15
+    depends_on: [T21.3, T21.4]
+    file: tasks/T21.5.task.md
+
+  - id: T21.6
+    title: "Integration gate — parts-driven race on Monza"
+    complexity: 15
+    depends_on: [T21.5]
+    file: tasks/T21.6.task.md
+
+wave_plan: |
+  Wave 1 (parallel):  T21.1 + T21.4    (40 Cx — template + seed cars)
+  Wave 2:             T21.2             (20 Cx — loader)
+  Wave 3:             T21.3             (30 Cx — wire into sim)
+  Wave 4:             T21.5             (15 Cx — calibration)
+  Wave 5 (GATE):      T21.6             (15 Cx — race verification)

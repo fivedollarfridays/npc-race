@@ -1,0 +1,29 @@
+id: plan-2026-03-npc-race-phase0-baseline
+title: "Sprint 23: Phase 0 — Baseline Measurement"
+type: chore
+status: planned
+created: "2026-03-21"
+sprint: 23
+total_complexity: 20
+
+description: |
+  Establish baseline sensitivity numbers on v2 code before refactoring.
+  The SAME sensitivity script runs again after Phase 1 to prove improvement.
+  No code changes — measurement only.
+
+tasks:
+  - id: T23.1
+    title: "Lock sensitivity test script"
+    complexity: 10
+    depends_on: []
+    file: tasks/T23.1.task.md
+
+  - id: T23.2
+    title: "Run baseline + document results"
+    complexity: 10
+    depends_on: [T23.1]
+    file: tasks/T23.2.task.md
+
+wave_plan: |
+  Wave 1: T23.1 (lock script)
+  Wave 2: T23.2 (run + document)

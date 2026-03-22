@@ -17,14 +17,16 @@ CAR_PARTS = [
 
 def default_engine_map(rpm: float, throttle_demand: float, engine_temp: float) -> tuple[float, float]:
     """The engine's brain. Return (torque_pct: 0-1, fuel_flow_pct: 0-1)."""
-    return (throttle_demand, throttle_demand)
+    # Naive: full power always. Wastes fuel, causes wheelspin in corners.
+    return (1.0, 1.0)
 
 
 def default_gearbox(rpm: float, speed: float, current_gear: int, throttle: float) -> int:
     """The transmission. Return target_gear (1-8)."""
-    if rpm > 12000 and current_gear < 8:
+    # Slightly off peak: shifts past torque plateau, downshifts early.
+    if rpm > 12800 and current_gear < 8:
         return current_gear + 1
-    if rpm < 7000 and current_gear > 1:
+    if rpm < 6200 and current_gear > 1:
         return current_gear - 1
     return current_gear
 
@@ -33,67 +35,59 @@ def default_ers_deploy(
     battery_pct: float, speed: float, lap: int, gap_ahead: float, braking: bool,
 ) -> float:
     """Battery deploy system. Return deploy_kw (0-120)."""
-    if braking or battery_pct < 20:
+    # Naive: max deploy always (except braking). Wastes battery in corners.
+    if braking or battery_pct < 5:
         return 0
-    return 80
+    return 120
 
 
 def default_ers_harvest(
     braking_force: float, battery_pct: float, battery_temp: float,
 ) -> float:
     """Regeneration system. Return harvest_kw (0-120)."""
-    if battery_pct > 95 or battery_temp > 50:
+    # Naive: fixed rate, ignores available braking energy. Stops when full.
+    if battery_pct > 95:
         return 0
-    return min(120, braking_force * 0.4)
+    return 50
 
 
 def default_brake_bias(
     speed: float, deceleration_g: float, tire_grip_front: float, tire_grip_rear: float,
 ) -> float:
     """Brake balance bar. Return front_pct (50-65)."""
-    return 57
+    # Naive: fixed value, ignores speed-dependent weight transfer.
+    return 55
 
 
 def default_suspension(
     speed: float, lateral_g: float, bump_severity: float, current_ride_height: float,
 ) -> float:
     """Ride height controller. Return ride_height_target (-1.0 to 1.0)."""
-    if speed > 250:
-        return -0.5
-    return -0.2
+    # Naive: fixed ride height. Suboptimal at both low speed (too low) and
+    # high speed (not low enough for max downforce, risks bottoming).
+    return -0.3
 
 
 def default_cooling(
     engine_temp: float, brake_temp: float, battery_temp: float, speed: float,
 ) -> float:
     """Cooling duct controller. Return cooling_effort (0.0-1.0)."""
-    if engine_temp > 115 or battery_temp > 50:
-        return 0.9
-    return 0.4
+    # Naive: moderate cooling. Slight overcooling at low load.
+    return 0.48
 
 
 def default_fuel_mix(
     fuel_remaining_kg: float, laps_left: int, position: int, gap_ahead: float,
 ) -> float:
     """Fuel mixture valve. Return lambda_value (0.85-1.15)."""
-    if laps_left <= 0:
-        return 1.0
-    rate = fuel_remaining_kg / laps_left
-    if rate > 2.2:
-        return 0.92
-    if rate < 1.6:
-        return 1.10
-    return 1.0
+    # Naive: slightly rich but not optimal. Doesn't adapt to fuel state.
+    return 0.96
 
 
 def default_differential(corner_phase: str, speed: float, lateral_g: float) -> int:
     """Diff lock controller. Return lock_pct (0-100)."""
-    if corner_phase == "entry":
-        return 40
-    if corner_phase == "mid":
-        return 25
-    if corner_phase == "exit":
-        return 70
+    # Naive: fixed lock regardless of corner phase. Too locked for mid-corner
+    # (understeer), not locked enough for exit (wheelspin).
     return 50
 
 
@@ -129,7 +123,7 @@ HARDWARE_SPECS: dict[str, dict[str, dict]] = {
     "ENGINE_SPEC": {
         "v6_1000hp": {
             "max_hp": 1000, "peak_torque_rpm": 10800, "peak_power_rpm": 12500,
-            "torque_nm": 300, "max_fuel_flow_kghr": 100,
+            "torque_nm": 400, "max_fuel_flow_kghr": 100,
         },
     },
     "AERO_SPEC": {

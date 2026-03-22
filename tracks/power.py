@@ -9,24 +9,27 @@ MONZA = {
     "real_length_m": 5793,
     "real_laps": 53,
     "control_points": [
-        (400, 100),  # Start/finish straight top
-        (600, 80),   # Variante del Rettifilo approach
-        (650, 120),  # Chicane right
-        (620, 180),  # Chicane exit
-        (700, 300),  # Curva Grande
-        (720, 450),  # Back straight entry
-        (700, 550),  # Variante della Roggia
-        (650, 580),  # Roggia exit
-        (500, 600),  # Lesmo approach
-        (380, 580),  # Lesmo 1
-        (320, 520),  # Lesmo 2
-        (200, 400),  # Long back straight
-        (150, 250),  # Ascari chicane entry
-        (180, 180),  # Ascari apex
-        (220, 140),  # Ascari exit
-        (300, 110),  # Parabolica entry
+        # Real Monza: massive straights, tight chicanes
+        (100, 300),    # S/F line
+        (400, 300),    # Main straight mid (DRS)
+        (700, 300),    # Main straight continues
+        (1000, 300),   # End main straight (~1050m real)
+        (1040, 320),   # T1 chicane (sharp 340→80)
+        (1020, 350),   # T1 exit
+        (950, 450),    # Curva Grande (gentle arc)
+        (900, 600),    # Approach Roggia
+        (870, 660),    # Roggia chicane
+        (890, 700),    # Roggia exit
+        (800, 780),    # Lesmo 1
+        (700, 820),    # Lesmo 2 exit
+        (500, 800),    # Back straight start
+        (200, 780),    # Back straight end (~700m real)
+        (160, 750),    # Ascari chicane
+        (180, 700),    # Ascari exit
+        (150, 550),    # Parabolica approach
+        (120, 400),    # Parabolica (fast sweeper)
     ],
-    "drs_zones": [(0.05, 0.18), (0.55, 0.70)],
+    "drs_zones": [(0.0, 0.15), (0.55, 0.68)],
 }
 
 # Baku: Street circuit with castle section and massive straight

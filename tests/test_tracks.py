@@ -71,11 +71,11 @@ def test_control_points_count_in_range():
 
 
 def test_control_points_within_canvas():
-    """All x in 50-750, y in 50-650 (800x700 canvas)."""
+    """All x in 50-1100, y in 50-850 (wider canvas for redesigned tracks)."""
     for key, track in TRACKS.items():
         for i, (x, y) in enumerate(track["control_points"]):
-            assert 50 <= x <= 750, f"{key} point {i} x={x} out of [50,750]"
-            assert 50 <= y <= 650, f"{key} point {i} y={y} out of [50,650]"
+            assert 50 <= x <= 1100, f"{key} point {i} x={x} out of [50,1100]"
+            assert 50 <= y <= 850, f"{key} point {i} y={y} out of [50,850]"
 
 
 def test_control_points_are_numeric():

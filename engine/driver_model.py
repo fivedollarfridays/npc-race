@@ -17,10 +17,11 @@ DEFAULT_REACTIVE = {
 
 
 def create_driver(track_points, curvatures, distances, headings,
-                  track_length, car_stats: dict) -> dict:
+                  track_length, car_stats: dict, real_length_m: float = 5793) -> dict:
     """Create a driver with pre-computed speed profile and racing line."""
     profile = compute_speed_profile(
-        track_points, curvatures, distances, track_length, car_stats)
+        track_points, curvatures, distances, track_length, car_stats,
+        real_length_m=real_length_m)
     line = compute_racing_line(track_points, curvatures, headings)
     return {
         "profile": profile,
