@@ -185,7 +185,7 @@ def _update_state(s, torque_pct, fuel_flow_pct, lambda_val, cooling_effort,
         s["tire_temp"] = tire_temp + wheelspin * 8.0 * dt
     # Cornering wear
     if lateral_g > 0.5:
-        corner_wear = (lateral_g - 0.5) * 0.0003 * dt
+        corner_wear = (lateral_g - 0.5) * 0.00009 * dt
         s["tire_wear"] = min(1.0, s.get("tire_wear", 0) + corner_wear)
     # Tire temp cools toward ambient
     tire_temp = s.get("tire_temp", 85.0)
