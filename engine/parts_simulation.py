@@ -13,6 +13,7 @@ from .parts_runner import create_initial_state, run_parts_tick  # noqa: F401
 from .efficiency_engine import run_efficiency_tick
 from .hybrid_physics import reset_ers_lap
 from .driver_model import create_driver, compute_driver_inputs
+from .glitch import GlitchEngine
 
 
 class PartsRaceSim:
@@ -79,6 +80,15 @@ class PartsRaceSim:
             self.drivers.append(driver)
 
         self.prev_states = [None] * len(cars)
+        self.glitch_engine = GlitchEngine(reliability_scale=0.3)
+        self.car_reliability = []
+        for car in cars:
+            source = car.get("_source", "")
+            if source:
+                from .code_quality import compute_reliability_score
+                self.car_reliability.append(compute_reliability_score(source))
+            else:
+                self.car_reliability.append(1.0)
         self.history = []
         self.tick = 0
         self.race_over = False
@@ -142,7 +152,10 @@ class PartsRaceSim:
             # Run all 10 parts via efficiency engine
             new_state, log, efficiency_product = run_efficiency_tick(
                 self.car_parts[i], state, physics, hw, dt, self.tick,
-                prev_state=self.prev_states[i])
+                prev_state=self.prev_states[i],
+                glitch_engine=self.glitch_engine,
+                reliability=self.car_reliability[i],
+                car_idx=i, glitch_rng=self.rng)
             self.prev_states[i] = dict(state)  # snapshot for next tick's t-1
             new_state["efficiency_product"] = efficiency_product
 
