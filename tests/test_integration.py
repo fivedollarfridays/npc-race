@@ -92,9 +92,9 @@ class TestAllSeedCarsFinish:
                 f"{result['name']} did not finish"
             )
 
-    def test_five_seed_cars_loaded(self):
+    def test_seed_cars_loaded(self):
         cars = load_all_cars(CARS_DIR)
-        assert len(cars) == 5
+        assert len(cars) >= 5  # 5 seed cars + default_project
 
 
 # -- Test: Replay JSON schema detail ----------------------------------
