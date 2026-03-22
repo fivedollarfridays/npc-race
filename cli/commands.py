@@ -64,12 +64,14 @@ def cmd_run(args) -> None:
         return
 
     track_name = _resolve_track(args)
+    league = getattr(args, "league", None)
     run_race(
         car_dir=args.car_dir,
         laps=args.laps,
         track_seed=args.seed,
         output=args.output,
         track_name=track_name,
+        league=league,
     )
 
 

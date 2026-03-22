@@ -288,7 +288,7 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
     downforce = compute_downforce(s["speed_kmh"], cl, t1.get("ride_height", -0.2))
     if bottoming:
         downforce *= 0.8
-    drag = compute_drag(s["speed_kmh"], cd, cooling_effort)
+    drag = compute_drag(s["speed_kmh"], cd, cooling_effort, s["ride_height"])
 
     tire_mu = 1.4 * (1.0 - s.get("tire_wear", 0) * 0.3)
     # Tire temp penalty: grip degrades when overheated (>100°C optimal window)

@@ -20,6 +20,7 @@ __all__ = [
     "ScanResult",
     "scan_car_source",
     "scan_car_file",
+    "scan_car_project",
 ]
 
 ALLOWED_IMPORTS: frozenset[str] = frozenset({
@@ -300,3 +301,7 @@ def scan_car_file(path: str) -> ScanResult:
         return ScanResult(passed=False, violations=[f"Failed to read file: {e}"])
 
     return scan_car_source(source)
+
+
+# Re-export from project_scanner (import at bottom to avoid circular import)
+from security.project_scanner import scan_car_project  # noqa: E402, F811

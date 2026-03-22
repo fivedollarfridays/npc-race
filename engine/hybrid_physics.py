@@ -81,13 +81,20 @@ def reset_ers_lap(ers_state: dict) -> dict:
 def compute_diff_effect(
     lock_pct: float, lateral_g: float, speed_kmh: float,
 ) -> tuple[float, float]:
-    """Compute differential effect on traction and handling.
+    """Differential effect on traction and handling.
 
     Returns (traction_mult, understeer_factor).
-    Higher lock = more traction but more understeer.
+    Traction peaks at a speed-dependent optimal lock. Too high or too low costs grip.
+    Slow corners want lower lock (rotation). Fast sweepers want higher lock (stability).
     """
     lock = lock_pct / 100.0
-    traction = 0.85 + lock * 0.15  # 0.85-1.0
+    # Optimal lock varies with speed: 0.2 at 0 km/h, 0.7 at 250+ km/h
+    optimal_lock = min(0.9, 0.2 + speed_kmh / 500)
+    lock_excess = max(0, lock - optimal_lock)
+    lock_deficit = max(0, optimal_lock - lock)
+    # Traction peaks at optimal, drops on either side
+    traction = 1.0 - lock_deficit * 0.30 - lock_excess * 0.25
+    traction = max(0.80, traction)
     understeer = lock * lateral_g * 0.1
     return traction, understeer
 

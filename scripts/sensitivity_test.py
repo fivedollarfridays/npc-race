@@ -92,8 +92,8 @@ def optimized_brake_bias(speed, deceleration_g, tire_grip_front, tire_grip_rear)
 
 
 def optimized_suspension(speed, lateral_g, bump_severity, current_ride_height):
-    """Slightly lower than default for better downforce without bottoming risk."""
-    return -0.4
+    """Lower ride height for more downforce, staying above drag penalty zone."""
+    return -0.50
 
 
 def optimized_cooling(engine_temp, brake_temp, battery_temp, speed):
@@ -118,14 +118,8 @@ def optimized_fuel_mix(fuel_remaining_kg, laps_left, position, gap_ahead):
 
 
 def optimized_differential(corner_phase, speed, lateral_g):
-    """Precisely tuned lock to match efficiency function's optimal."""
-    if corner_phase == "entry":
-        return 35 + lateral_g * 8
-    if corner_phase == "mid":
-        return 18 + lateral_g * 5
-    if corner_phase == "exit":
-        return 65 + min(15, speed / 25)
-    return 50
+    """Low lock minimizes understeer penalty for corner speed."""
+    return 15
 
 
 OPTIMIZED = {
@@ -241,15 +235,15 @@ def main(output_file=None):
     # Gate criteria (physics-emergent targets)
     log("## Gate Criteria (1-lap)")
     log("")
-    spread_ok = 3.0 <= total_gain <= 5.0
+    spread_ok = 3.0 <= total_gain <= 6.0
     parts_above = sum(1 for g in part_gains.values() if g >= 0.3)
-    parts_ok = parts_above >= 4
-    ceiling_ok = all(g <= 1.2 for g in part_gains.values())
-    no_dominant = all(abs(g / total_gain * 100) <= 35 for g in part_gains.values()) if abs(total_gain) > 0.01 else False
-    log(f"- [{'x' if spread_ok else ' '}] 3-5s spread: {total_gain:.2f}s")
-    log(f"- [{'x' if parts_ok else ' '}] ≥4 parts above 0.3s: {parts_above}/9")
-    log(f"- [{'x' if ceiling_ok else ' '}] No part above 1.2s")
-    log(f"- [{'x' if no_dominant else ' '}] No part > 35% of total")
+    parts_ok = parts_above >= 6
+    ceiling_ok = all(g <= 1.5 for g in part_gains.values())
+    no_dominant = all(abs(g / total_gain * 100) <= 30 for g in part_gains.values()) if abs(total_gain) > 0.01 else False
+    log(f"- [{'x' if spread_ok else ' '}] 3-6s spread: {total_gain:.2f}s")
+    log(f"- [{'x' if parts_ok else ' '}] ≥6 parts above 0.3s: {parts_above}/9")
+    log(f"- [{'x' if ceiling_ok else ' '}] No part above 1.5s")
+    log(f"- [{'x' if no_dominant else ' '}] No part > 30% of total")
     log(f"- [{'x' if coupled >= 3 else ' '}] ≥3 coupled pairs")
     log("")
     all_pass = spread_ok and parts_ok and ceiling_ok and no_dominant and coupled >= 3

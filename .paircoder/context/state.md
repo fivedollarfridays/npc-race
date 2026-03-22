@@ -1,71 +1,80 @@
 # Current State
 
-> Last updated: 2026-03-22 T27.7 complete — Glitch + code quality wired into race loop.
+> Last updated: 2026-03-22 Sprint 30 in progress. Phase 4 league system.
 
 ## Active Plan
 
 **Plan:** NPC Race v3 — Build a Car Out of Code (Master Plan)
-**Reference:** docs/proposal-npc-race-v3.md + npc-race-v3.1-proposal.md
+**Reference:** docs/proposal-npc-race-v3.md (updated with final numbers)
 
-## Current Focus
+## Phase 1: CLOSED ✓
 
-### Sprint 26: Physics Bug Fixes — BOTH GATES PASS ✓
-Fixed 2 root-cause bugs (ERS lap reset, lateral G formula) + 1 calibration (cornering wear rate).
+Physics foundation stable. 6/9 parts with positive sensitivity through honest physics. No artificial hacks.
 
-**1-lap**: 3.47s spread, 80.83s baseline, 4/9 parts above 0.3s. Gate PASS.
-**5-lap**: 19.50s spread, 12.5% tire wear, ers_deploy +0.60s, ers_harvest +0.77s. Gate PASS.
+| Metric | 1-Lap | 5-Lap |
+|--------|-------|-------|
+| Baseline | 81.13s | 393.77s |
+| Optimized | 75.33s | 376.00s |
+| Spread | 5.80s | 17.77s |
+| Parts > 0.3s | 6/9 | 2/4 multi-lap |
 
-### Follow-up Task (not blocking)
-Redesign suspension and differential optimized test variants for correct lateral G physics. Both show negative sensitivity because the "optimized" strategies were designed for 50x-wrong G values. ~30 min per part.
+## Phase 2: Code Quality — DONE ✓ (Sprint 27)
 
-### Future Phases
-- Phase 2: Code quality → reliability system
-- Phase 3: Multi-file car project loader
+AST metrics, reliability score (0.50-1.00), glitch engine with reliability_scale knob. Wired into race loop.
+
+## Next: Phase 3 — Multi-file Car Project Loader
+
+## Future
 - Phase 4: League system + live code terminal + TRON viewer
+- Phase 5: Infrastructure (submission pipeline, onboarding)
 
 ## What Was Just Done
 
-- **T27.7 COMPLETE**: Wired `GlitchEngine` + `compute_reliability_score` into the race loop. Added `_apply_glitch` helper to `safe_call.py` (115 lines). `_safe_call_with_timeout` now accepts optional `glitch_ctx` and applies glitch checks internally. `run_efficiency_tick` passes glitch context through all 10 part calls + calls `tick_glitches` at end. `PartsRaceSim.__init__` creates `GlitchEngine(scale=0.3)` and computes per-car reliability from `_source` (defaults to 1.0). 11 tests in `tests/test_glitch_wiring.py` (197 lines). All 72 related tests pass, ruff clean, `efficiency_engine.py` at 398 lines.
+- **T30.4**: Integration gate for the league system. Created `tests/test_league_integration.py` with 8 end-to-end tests across 5 test classes: auto-detection (default_project -> F1 due to engine_map, seed cars all get league, single-file cars -> F3), F3 validation (valid parts pass, advisory report always passes), F2 detection (6-part car), enforced gates (high-CC code rejected at F1), and race integration (mixed-league cars complete 1-lap Monza race). 40 total league tests passing across 3 test files. Ruff clean.
 
-- **T27.4 + T27.5 COMPLETE**: Added `engine/code_quality.py` (119 lines) with 5 AST-based metrics: cyclomatic complexity, cognitive complexity, function lengths, type hint coverage, and aggregate reliability score (0.50-1.00). 13 tests in `tests/test_code_quality.py` (122 lines). All passing, ruff clean, under size limits.
+- **T30.3**: League system wired into race runner and CLI. Added `_apply_league_gates()` to `engine/race_runner.py` that auto-detects league from car parts (highest tier wins) or validates against a specified league, generates quality reports, prints league status with advisory/rejection messages, and filters out cars that fail enforced gates (F1+). Added `--league` flag to CLI (`choices=["F3", "F2", "F1", "Championship"]`, default None). Refactored `run_race()` by extracting `_export_replay()`, `_load_and_filter_cars()` to stay under 50-line function limit; refactored `_build_parser()` by extracting `_add_run_parser()`, `_add_season_parser()`. 13 new tests in `tests/test_league_wiring.py` (230 lines), all passing. 32 total league tests passing. Ruff clean, arch check clean (warnings only).
 
-- **Sprint 26 COMPLETE**: Fixed ERS per-lap counter reset (deploy/harvest caps were never resetting — ERS dead after lap 1). Fixed lateral G formula (was 50x too low — `curv*speed/150` replaced with `v²κ/g`). Calibrated cornering wear rate for real G values (0.0003→0.00009). Reduced diff understeer coefficient (0.40→0.10). 5-lap spread jumped from 10.0s to 19.5s. ERS deploy from -0.57s to +0.60s. Tire wear from 1.5% to 12.5%.
+- **T30.2**: Quality gate enforcement. Added `QualityReport` dataclass and `generate_quality_report()` to `engine/league_system.py` (166 lines). Advisory gates (F3/F2) always pass but include informational messages about CC and reliability. Enforced gates (F1) reject cars with CC > 15. Championship additionally requires reliability >= 0.88. Cars without `_source` default to passing. Uses AST metrics from `code_quality.py` (no subprocess ruff). 8 new tests in `TestQualityGates` class, 19 total in `tests/test_league_system.py` (211 lines). All passing, ruff clean.
 
-- **Sprint 25**: Physics-emergent efficiency. Removed 5 artificial hacks. 1-lap gate pass at 4.03s (with old lateral G).
+- **T30.1**: League definitions and validation. Created `engine/league_system.py` (71 lines) with `LEAGUE_TIERS`, `LEAGUE_PARTS` dicts, `LeagueResult` dataclass, `determine_league()` (infers tier from loaded parts), and `validate_car_for_league()` (checks part restrictions). F3=3 parts, F2=6, F1=all 10, Championship=all 10 + project dir. 11 tests in `tests/test_league_system.py` (88 lines), all passing. Ruff clean.
 
-- **Sprint 24**: Built multiplicative efficiency engine (efficiency_engine.py).
+- **T29.5**: Integration gate for car project loader. Created `tests/test_car_project_integration.py` with 10 end-to-end tests covering: project car completes race, mixed cars race together, partial project defaults fill (3 loaded + 7 defaults), source enables reliability scoring, malicious helper caught by scanner, and all 5 seed cars still load and race. All 10 tests passing. Ruff clean, arch check clean.
+
+- **T29.3 done** (auto-updated by hook)
+
+- **T29.3**: Wired car project loader into race runner. Updated `engine/car_loader.py` so `load_all_cars()` detects both single-file cars and directory-based car projects (subdirs with `car.py`). Added `_source` population for all cars. Projects are security-scanned via `scan_car_project()` before loading; malicious projects are skipped with warning. Refactored `load_car()` by extracting `_apply_components`, `_extract_parts`, `_extract_hardware_specs` to fix function length violation. 6 new tests in `tests/test_car_loader_projects.py`, all 20 car loader tests passing. 6 cars now load from `cars/` (5 single-file + 1 default_project).
+
+- **T29.4**: Default car project template. Created `cars/default_project/` with car.py (metadata), engine_map.py, gearbox.py, strategy.py (3 F3 parts with teaching docstrings), and README.md (quick-start guide, 39 lines). All .py files under 30 lines. 15 tests in `tests/test_default_project.py`, all passing. Ruff clean.
+
+- **T29.1**: Multi-file car project loader. Created `engine/car_project_loader.py` with `load_car_project()` that loads a directory as a car project: metadata from car.py, per-part .py files for custom part functions, defaults for missing parts, `_loaded_parts` tracking, `_source` concatenation, hardware specs with defaults. 9 tests in `tests/test_car_project_loader.py`, all passing. 88 lines implementation, 130 lines tests.
+
+- **T29.2**: Deep import scanner for car projects. Added `scan_car_project()` that walks the full import graph of directory-based car projects, detecting forbidden imports buried in helpers, circular imports, missing modules, and relative imports. Extracted into `security/project_scanner.py` (hub-and-spoke) with re-export from `bot_scanner.py`. 8 new tests in `tests/test_bot_scanner_v3.py`, all 64 scanner tests passing.
+
+- **Sprint 28**: Diff + suspension physics rewiring. Differential: speed-dependent optimal lock (traction peaks at 20% low speed, 70% high speed). Suspension: ride height drag + stronger ground effect (0.3→0.5). Both produce positive sensitivity. 6/9 parts above 0.3s, 0 negative.
+
+- **Sprint 27**: Code quality system (Phase 2). AST metrics, reliability score, glitch engine. Removed suspension/differential from efficiency product.
+
+- **Sprint 26**: Physics bug fixes. ERS lap reset, lateral G formula (50x fix), tire wear calibration.
+
+- **Sprints 24-25**: Efficiency engine + physics-emergent rewiring.
 
 ## Completed Sprints
 
-### Sprints 1-9 — Core Game Engine ✓
-Tracks, viewer, realism (tires, fuel, DRS, setup), dashboard, drama engine (collisions, safety car). All done.
-
-### Sprints 10-11 — Weather + ERS + Brakes ✓
-Weather model, wet compounds, ERS model, brake temperature model, simulation extraction. All done.
-
-### Sprints 17-23 — Parts Engine Foundation ✓
-WebSocket streaming, driver model, physics recalibration, parts API (10 parts), physics engines (powertrain, chassis, hybrid), parts runner, parts simulation, Phase 0 baseline. All done.
-
-### Sprint 24 — Multiplicative Efficiency Engine ✓
-efficiency_engine.py with per-part efficiency factors, 1ms watchdog, t-1 state. Initial gate pass.
-
-### Sprint 25 — Physics-Emergent Efficiency ✓
-Replaced all artificial hacks: heat model fix, removed prescribed efficiencies, removed ^1.3 amplification, replaced profile speed hack with grip_factor, wired brake_bias/diff/tire thermal. 1-lap gate PASS. 5-lap verification flagged 4 parts for future fix.
+Sprints 1-9: Core game engine (tracks, viewer, realism, dashboard, drama)
+Sprints 10-11: Weather, ERS, brakes
+Sprints 17-23: Parts engine foundation
+Sprints 24-28: Physics + code quality (Phase 1 + Phase 2)
 
 ## Key Metrics
 
-- **Monza 1-lap baseline: 86.43s** (physics-emergent, naive defaults)
-- **Monza 1-lap optimized: 82.40s** (4.03s spread from physics)
-- **6/9 parts above 0.3s sensitivity** (gearbox, suspension, cooling, fuel_mix, differential, ers_deploy)
-- **efficiency_engine.py: 398 lines** | **safe_call.py: 115 lines**
-
-## Blockers
-
-None.
+- **Monza 1-lap**: 81.13s baseline, 75.33s optimized (5.80s spread)
+- **Monza 5-lap**: 393.77s baseline, 376.00s optimized (17.77s spread)
+- **6/9 parts above 0.3s**: gearbox, suspension, cooling, ERS deploy, fuel_mix, differential
+- **Tire wear**: 12.5% after 5 laps
+- **Lateral G**: 1.7-3.0G in corners (correct physics)
 
 ## Notes
 
-- ers_deploy **-0.57s at 5 laps = RED FLAG** — fix first in next physics sprint
-- Tire wear 0.015 after 5 laps = decorative — needs 5-15% for engine_map to matter
-- brake_bias lockup produces 2% reduction — tuning issue, lower priority
-- Trello not connected | Python stdlib only | No external dependencies
+- 3 parts at 0.00s 1-lap (engine_map, brake_bias, ers_harvest) — known multi-lap parts
+- v3.1 proposal updated with final numbers (Sprint 28)
+- Gate criteria: 1-lap 3-6s spread, 6+ parts >0.3s, no part >1.5s, no part >30%
