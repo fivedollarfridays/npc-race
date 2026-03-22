@@ -355,7 +355,8 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
                      "status": "ok", "efficiency": 1.0})
 
     # 11. MULTIPLY ALL EFFICIENCIES
-    efficiencies = [gb_eff, sus_eff, cool_eff, diff_eff, fuel_eff]
+    # Suspension and diff work through physics (downforce, traction), not efficiency
+    efficiencies = [gb_eff, cool_eff, fuel_eff]
     product = 1.0
     for eff in efficiencies:
         product *= eff
