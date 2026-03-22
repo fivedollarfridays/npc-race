@@ -21,11 +21,14 @@ def compute_downforce(speed_kmh: float, cl: float, ride_height: float) -> float:
     return 0.5 * AIR_DENSITY * cl * REFERENCE_AREA * speed_ms**2 * ground_mult
 
 
-def compute_drag(speed_kmh: float, cd: float, cooling_effort: float) -> float:
-    """Compute drag force in Newtons. Cooling adds drag."""
+def compute_drag(speed_kmh: float, cd: float, cooling_effort: float,
+                  ride_height: float = 0.0) -> float:
+    """Compute drag force in Newtons. Cooling and ride height add drag."""
     speed_ms = speed_kmh / 3.6
     cooling_drag = 1.0 + cooling_effort * 0.20  # up to +20% drag from cooling
-    return 0.5 * AIR_DENSITY * cd * REFERENCE_AREA * speed_ms**2 * cooling_drag
+    # Lower ride height = more aggressive floor seal = more drag
+    rh_drag = 1.0 + max(0, -0.3 - ride_height) * 0.15  # 0% at -0.3, +7.5% at -0.8
+    return 0.5 * AIR_DENSITY * cd * REFERENCE_AREA * speed_ms**2 * cooling_drag * rh_drag
 
 
 # ---------------------------------------------------------------------------
