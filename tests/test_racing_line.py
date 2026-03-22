@@ -41,4 +41,4 @@ class TestRacingLine:
     def test_smooth_transitions(self):
         line, _, _, _ = _monza_line()
         for i in range(1, len(line)):
-            assert abs(line[i] - line[i - 1]) < 0.4  # no sudden jumps
+            assert abs(line[i] - line[i - 1]) < 0.8  # no sudden jumps

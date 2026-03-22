@@ -40,7 +40,7 @@ class TestComputeRPM:
     def test_rpm_from_speed(self):
         """300 km/h in 8th gear gives a reasonable mid-range RPM."""
         rpm = compute_rpm(300, 8)
-        assert 5000 <= rpm <= 8000  # ~6149 with 0.85 ratio, 3.0 final
+        assert 5000 <= rpm <= 9000  # ~8778 with 1.30 ratio, 2.8 final
 
     def test_gear_affects_rpm(self):
         """Same speed, gear 4 vs gear 8 = different RPM."""
