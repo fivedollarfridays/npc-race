@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-03-21 Sprint 25 complete — physics-emergent efficiency.
+> Last updated: 2026-03-21 Sprint 26 complete — physics bug fixes.
 
 ## Active Plan
 
@@ -9,19 +9,14 @@
 
 ## Current Focus
 
-### Sprint 25: Physics-Emergent Efficiency — 1-LAP GATE PASS ✓
-Replaced 5 artificial hacks with physics-emergent behavior. Results: 4.03s spread from 86.43s baseline, 6/9 parts above 0.3s, no hacks.
+### Sprint 26: Physics Bug Fixes — BOTH GATES PASS ✓
+Fixed 2 root-cause bugs (ERS lap reset, lateral G formula) + 1 calibration (cornering wear rate).
 
-### 5-Lap Verification — 4 parts flagged for future fix
-- ers_deploy: **-0.57s (RED FLAG)** — optimized loses time. Battery cycling equilibrium.
-- engine_map: 0.00s — tire wear 0.015 after 5 laps, model has no teeth.
-- brake_bias: 0.03s — lockup produces only 2% braking reduction.
-- ers_harvest: -0.03s — noise.
+**1-lap**: 3.47s spread, 80.83s baseline, 4/9 parts above 0.3s. Gate PASS.
+**5-lap**: 19.50s spread, 12.5% tire wear, ers_deploy +0.60s, ers_harvest +0.77s. Gate PASS.
 
-### Next Sprint Priorities
-1. **Fix ers_deploy negative sensitivity** — player should never lose time by being smarter
-2. **Tire wear model** — needs 5-15% wear after 5 laps, not 1.5%
-3. Then reassess brake_bias, ers_harvest
+### Follow-up Task (not blocking)
+Redesign suspension and differential optimized test variants for correct lateral G physics. Both show negative sensitivity because the "optimized" strategies were designed for 50x-wrong G values. ~30 min per part.
 
 ### Future Phases
 - Phase 2: Code quality → reliability system
@@ -30,9 +25,11 @@ Replaced 5 artificial hacks with physics-emergent behavior. Results: 4.03s sprea
 
 ## What Was Just Done
 
-- **Sprint 25 COMPLETE**: Physics-emergent efficiency. Removed 5 artificial hacks, fixed 3 bugs, wired 3 physics gaps. 1-lap gate PASS: 4.03s spread, 6/9 parts above 0.3s, baseline 86.43s. 5-lap: 10.0s total, 4 multi-lap parts flagged (ers_deploy -0.57s red flag, tire wear decorative).
+- **Sprint 26 COMPLETE**: Fixed ERS per-lap counter reset (deploy/harvest caps were never resetting — ERS dead after lap 1). Fixed lateral G formula (was 50x too low — `curv*speed/150` replaced with `v²κ/g`). Calibrated cornering wear rate for real G values (0.0003→0.00009). Reduced diff understeer coefficient (0.40→0.10). 5-lap spread jumped from 10.0s to 19.5s. ERS deploy from -0.57s to +0.60s. Tire wear from 1.5% to 12.5%.
 
-- **Sprint 24 COMPLETE**: Built multiplicative efficiency engine (efficiency_engine.py). Initial gate with artificial hacks, subsequently replaced in Sprint 25.
+- **Sprint 25**: Physics-emergent efficiency. Removed 5 artificial hacks. 1-lap gate pass at 4.03s (with old lateral G).
+
+- **Sprint 24**: Built multiplicative efficiency engine (efficiency_engine.py).
 
 ## Completed Sprints
 

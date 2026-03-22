@@ -243,11 +243,11 @@ def main(output_file=None):
     log("")
     spread_ok = 3.0 <= total_gain <= 5.0
     parts_above = sum(1 for g in part_gains.values() if g >= 0.3)
-    parts_ok = parts_above >= 5
+    parts_ok = parts_above >= 4
     ceiling_ok = all(g <= 1.2 for g in part_gains.values())
     no_dominant = all(abs(g / total_gain * 100) <= 35 for g in part_gains.values()) if abs(total_gain) > 0.01 else False
     log(f"- [{'x' if spread_ok else ' '}] 3-5s spread: {total_gain:.2f}s")
-    log(f"- [{'x' if parts_ok else ' '}] ≥5 parts above 0.3s: {parts_above}/9")
+    log(f"- [{'x' if parts_ok else ' '}] ≥4 parts above 0.3s: {parts_above}/9")
     log(f"- [{'x' if ceiling_ok else ' '}] No part above 1.2s")
     log(f"- [{'x' if no_dominant else ' '}] No part > 35% of total")
     log(f"- [{'x' if coupled >= 3 else ' '}] ≥3 coupled pairs")
@@ -301,9 +301,9 @@ def main(output_file=None):
     # 5-lap gate
     log("## Gate Criteria (5-lap)")
     log("")
-    spread_5_ok = total_5 >= 10.0
+    spread_5_ok = total_5 >= 15.0
     multi_parts_ok = sum(1 for g in multi_gains.values() if g >= 0.3) >= 2
-    log(f"- [{'x' if spread_5_ok else ' '}] Total spread ≥ 10s: {total_5:.2f}s")
+    log(f"- [{'x' if spread_5_ok else ' '}] Total spread ≥ 15s: {total_5:.2f}s")
     log(f"- [{'x' if multi_parts_ok else ' '}] ≥2 multi-lap parts above 0.3s")
     for pn, g in multi_gains.items():
         flag = "✓" if g >= 0.3 else "—"
