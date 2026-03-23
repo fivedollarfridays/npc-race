@@ -119,19 +119,19 @@ class TestInitCommand:
     """Test the init subcommand."""
 
     def test_init_creates_cars_dir(self, tmp_path, capsys):
-        """init should create a cars/ directory with a template car."""
+        """init should create a project directory with F3 template files."""
         from cli.main import main
 
-        target = tmp_path / "cars"
-        main(["init", "--dir", str(target)])
+        target = tmp_path / "my_car"
+        main(["init", str(target)])
         assert target.is_dir()
-        files = list(target.iterdir())
-        assert len(files) == 1
-        content = files[0].read_text()
-        assert "CAR_NAME" in content
+        assert (target / "car.py").is_file()
+        assert (target / "gearbox.py").is_file()
+        assert (target / "cooling.py").is_file()
+        assert (target / "strategy.py").is_file()
 
     def test_init_default_dir(self, capsys, monkeypatch, tmp_path):
-        """init with no --dir should create cars/ in cwd."""
+        """init with no dir should create cars/ in cwd."""
         monkeypatch.chdir(tmp_path)
         from cli.main import main
 
@@ -139,15 +139,15 @@ class TestInitCommand:
         assert (tmp_path / "cars").is_dir()
 
     def test_init_existing_dir_no_overwrite(self, tmp_path, capsys):
-        """init on existing cars/ dir should not overwrite existing files."""
-        target = tmp_path / "cars"
+        """init on existing dir should return error code 1."""
+        target = tmp_path / "my_car"
         target.mkdir()
-        existing = target / "my_car.py"
-        existing.write_text("# my car")
-        from cli.main import main
+        from cli.commands import cmd_init
 
-        main(["init", "--dir", str(target)])
-        assert existing.read_text() == "# my car"
+        import types
+        args = types.SimpleNamespace(dir=str(target))
+        result = cmd_init(args)
+        assert result == 1
 
 
 class TestRunCommand:

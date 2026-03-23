@@ -12,7 +12,7 @@ from engine import run_race
 from security.bot_scanner import scan_car_file
 from tracks import TRACKS, list_tracks
 
-F1_POINTS = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
+from engine.championship import F1_POINTS
 
 
 def cmd_list_tracks(_args) -> None:
@@ -36,25 +36,21 @@ def cmd_validate(args) -> None:
                 print(f"  - {v}")
 
 
-def cmd_init(args) -> None:
-    """Create a cars/ directory with a template car file."""
+def cmd_init(args) -> int:
+    """Create a project directory from the default F3 template."""
     target = args.dir
-    if not os.path.isdir(target):
-        os.makedirs(target, exist_ok=True)
-        print(f"Created directory: {target}")
-    else:
-        print(f"Directory already exists: {target}")
+    if os.path.exists(target):
+        print(f"Error: directory already exists: {target}")
+        return 1
 
-    template_src = os.path.join(
+    template_dir = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "car_template.py",
+        "cars",
+        "default_project",
     )
-    dest = os.path.join(target, "car_template.py")
-    if not os.path.exists(dest):
-        shutil.copy2(template_src, dest)
-        print(f"Copied template to: {dest}")
-    else:
-        print(f"Template already exists: {dest} (skipped)")
+    shutil.copytree(template_dir, target)
+    print(f"Created {target}/ with 3 F3 parts. Run: npcrace run --car-dir {target}")
+    return 0
 
 
 def cmd_run(args) -> None:
@@ -164,7 +160,7 @@ def _award_points(standings, results, race_num, track_name):
     for result in results:
         name = result["name"]
         pos = result["position"]
-        points = F1_POINTS.get(pos, 0)
+        points = F1_POINTS[pos - 1] if pos <= len(F1_POINTS) else 0
         standings[name] = standings.get(name, 0) + points
         print(f"  P{pos}  {name:20s}  +{points} pts")
 
@@ -242,3 +238,53 @@ def cmd_season(args) -> None:
         laps=args.laps,
         output_dir=args.output_dir,
     )
+
+
+def cmd_leaderboard(args) -> int:
+    """View, update, or reset the local leaderboard."""
+    from engine.leaderboard import (
+        add_result,
+        format_standings,
+        load_leaderboard,
+        new_leaderboard,
+        save_leaderboard,
+    )
+
+    lb_path = args.file
+
+    if args.reset:
+        save_leaderboard(new_leaderboard(), lb_path)
+        print("Leaderboard reset.")
+        return 0
+
+    if args.add:
+        if not os.path.isfile(args.add):
+            print(f"Error: results file not found: {args.add}")
+            return 1
+
+        try:
+            with open(args.add) as f:
+                results = json.load(f)
+        except json.JSONDecodeError as e:
+            print(f"Error: Invalid JSON in {args.add}: {e}")
+            return 1
+
+        from engine.results import verify_integrity
+
+        if not verify_integrity(results):
+            print("Error: integrity check failed -- results may be tampered")
+            return 1
+
+        lb = load_leaderboard(lb_path)
+        lb = add_result(lb, results)
+        save_leaderboard(lb, lb_path)
+
+        num_cars = len(results.get("cars", []))
+        print(f"Added {num_cars} cars to leaderboard")
+        print(format_standings(lb))
+        return 0
+
+    # Default: show standings
+    lb = load_leaderboard(lb_path)
+    print(format_standings(lb))
+    return 0

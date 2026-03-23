@@ -23,10 +23,10 @@
 
 Closes the local product loop. After this sprint, the game is complete for local play.
 
-- T33.1: Leaderboard module (load/add/save/format standings)
-- T33.2: Leaderboard CLI (`npcrace leaderboard --add results.json`)
-- T33.3: Onboarding (`GETTING_STARTED.md` + `npcrace init` polish)
-- T33.4: Integration gate (init → run → submit → leaderboard)
+- T33.1: Leaderboard module (load/add/save/format standings) -- DONE
+- T33.2: Leaderboard CLI (`npcrace leaderboard --add results.json`) -- DONE
+- T33.3: Onboarding (`GETTING_STARTED.md` + `npcrace init` polish) -- DONE
+- T33.4: Integration gate (init → run → submit → leaderboard) -- DONE
 
 ## Future: Phase 6 — Hosted Infrastructure
 
@@ -34,6 +34,12 @@ Server-side execution, web leaderboard, multiplayer seasons, player accounts.
 Build when there are players, not before.
 
 ## What Was Just Done
+
+- **T33.4**: Integration gate. Wrote 8 end-to-end tests in `tests/test_integration_gate.py` exercising the full player journey: init -> run -> submit -> leaderboard add -> leaderboard show. Tests verify project creation, race execution with results export, submission validation, leaderboard accumulation across multiple races, and GETTING_STARTED.md command references. All 8 pass. Sprint 33 complete. 12/12 success criteria met.
+
+- **T33.2**: Leaderboard CLI. Added `leaderboard` subcommand to `cli/main.py` with `--add`, `--reset`, `--file` args. Added `cmd_leaderboard` to `cli/commands.py` handling show/add/reset flows with integrity verification. All 7 CLI tests pass, 18/18 leaderboard tests total.
+
+- **T33.3**: Onboarding polish. Rewrote `cmd_init` to copy `cars/default_project/` (car.py, gearbox.py, cooling.py, strategy.py, README.md) via `shutil.copytree`. Returns 0 on success, 1 if dir exists. Changed `init` parser from `--dir` flag to positional arg. Verified GETTING_STARTED.md has before/after RPM values (12,800 / 12,200). All 6 onboarding tests pass. Updated old test_cli.py init tests.
 
 - **Sprint 32**: Local submission pipeline. `engine/results.py` with results summary + SHA-256 integrity hash. `npcrace submit` CLI validates results. `run_race()` auto-exports results.json. 33 tests.
 
@@ -47,4 +53,4 @@ Build when there are players, not before.
 - **Monza 1-lap**: 81.13s baseline, 75.33s optimized (5.80s spread)
 - **Monza 5-lap**: 17.77s compound spread
 - **6/9 parts above 0.3s sensitivity**
-- **11/12 success criteria met** (leaderboard is #12)
+- **12/12 success criteria met** (Sprint 33 complete)
