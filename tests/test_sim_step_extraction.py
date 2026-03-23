@@ -68,7 +68,6 @@ def test_build_strategy_state_returns_dict():
 def test_step_car_no_unbound_local_error():
     """step_car must not raise UnboundLocalError when is_strategy_tick is False."""
     # This tests the fix: strat_state initialized before the if/else
-    from engine.sim_step import step_car
     # If step_car is called on a non-strategy tick, it should use cached decision
     # We just verify it doesn't crash with UnboundLocalError
     # Full integration tested by existing test suite

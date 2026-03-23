@@ -98,7 +98,7 @@ class TestDraftingEquivalence:
 
     def test_drafting_identical_results(self):
         """Drafting bonus via spatial index matches O(n^2) loop."""
-        from engine.physics import compute_draft_bonus, MAX_SPEED
+        from engine.physics import compute_draft_bonus
         from engine.spatial import SortedCarIndex
 
         states = [
