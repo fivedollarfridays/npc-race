@@ -41,6 +41,7 @@ from .season_runner import run_season
 from .narrative import detect_events, RaceEvent
 from .commentary import format_events, format_event, format_time
 from .race_report import generate_report
+from .fast_export import export_lap_summary
 from .chassis_physics import (compute_downforce, compute_drag, compute_braking_force,
                                apply_brake_bias, compute_brake_temp_change,
                                compute_ride_height_effect, compute_cooling_effect)
@@ -124,6 +125,7 @@ __all__ = [
     "build_opponent_info", "filter_nearby_cars", "OBSERVABLE_FIELDS", "PRIVATE_FIELDS",
     "detect_events", "RaceEvent", "format_events", "format_event", "format_time",
     "generate_report",
+    "export_lap_summary",
     "get_season", "create_custom_season", "list_seasons",
     "create_standings", "award_points", "get_sorted_standings", "format_standings",
     "create_dev_state", "award_dev_points", "apply_upgrades", "apply_dev_to_car",

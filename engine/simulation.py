@@ -1,7 +1,7 @@
 """Race simulation: compounds, fuel, pits, engine modes, collisions, SC."""
 import os, random  # noqa: E401
 from . import tire_model
-from .track_gen import compute_track_data, compute_track_headings, get_curvature_at
+from .track_gen import compute_track_data, compute_track_headings, CurvatureLookup
 from .replay import record_frame, get_results, export_replay, _compute_positions
 from .tire_model import compute_wear, compute_grip_multiplier
 from .fuel_model import compute_starting_fuel, compute_fuel_consumption, compute_weight_from_fuel, get_engine_mode
@@ -19,6 +19,8 @@ from .visibility import build_opponent_info, filter_nearby_cars
 from .ers_model import create_ers_state, update_ers, get_ers_speed_bonus, reset_ers_lap
 from .brake_model import create_brake_state, update_brake_temp, get_brake_efficiency
 from .driver_model import create_driver, compute_driver_inputs
+from .spatial import SortedCarIndex
+from .lap_accumulator import LapAccumulator
 
 VALID_ENGINE_MODES = {"push", "standard", "conserve"}
 
@@ -29,7 +31,7 @@ class RaceSim:
 
     def __init__(self, cars, track_points, laps=3, seed=42, track_name=None,
                  real_length_m=None, car_data_dir=None, race_number=1,
-                 drs_zones=None):
+                 drs_zones=None, fast_mode=False):
         self.cars, self.track, self.laps = cars, track_points, laps
         self.rng, self.track_name = random.Random(seed), track_name
         self.car_data_dir = car_data_dir
@@ -37,6 +39,8 @@ class RaceSim:
         self.drs_zones = drs_zones or []
         self.distances, self.curvatures, self.track_length = compute_track_data(
             track_points)
+        self.curvature_lookup = CurvatureLookup(
+            self.distances, self.curvatures, self.track_length)
         self.headings = compute_track_headings(track_points)
         self.n_points = len(track_points)
         if real_length_m and real_length_m > 0:
@@ -67,6 +71,7 @@ class RaceSim:
                 "spin_recovery": 0, "contact_cooldown": 0,
                 "ers": create_ers_state(), "ers_deploy_mode": "balanced",
                 "brake_state": create_brake_state(),
+                "_cached_decision": {},
             })
         self.timings = create_timing([cs["name"] for cs in self.states])
         self.sector_boundaries = (0.333, 0.666, 1.0)
@@ -81,6 +86,8 @@ class RaceSim:
                 track_points, self.curvatures, self.distances, self.headings,
                 self.track_length, {"power": cs["power"], "grip": cs["grip"],
                                      "weight": cs["weight"]})
+        self.fast_mode = fast_mode
+        self.accumulator = LapAccumulator() if fast_mode else None
         self.history, self.tick, self.race_over = [], 0, False
 
     def build_strategy_state(self, car_state, positions):
@@ -109,7 +116,7 @@ class RaceSim:
             "total_cars": len(self.cars), "lap": cs["lap"], "total_laps": self.laps,
             "tire_wear": cs["tire_wear"], "boost_available": cs["boost_available"],
             "boost_active": cs["boost_active"] > 0, "nearby_cars": nearby,
-            "curvature": get_curvature_at(cs["distance"], self.distances, self.curvatures, self.track_length),
+            "curvature": self.curvature_lookup[cs["distance"]],
             "distance": cs["distance"], "track_length": self.track_length, "lateral": cs["lateral"],
             "fuel_remaining": cs["fuel_kg"], "fuel_pct": cs["fuel_kg"] / max(cs.get("max_fuel_kg", 1.0), 0.001),
             "tire_compound": cs.get("tire_compound", "medium"), "tire_age_laps": cs.get("tire_age_laps", 0),
@@ -142,31 +149,57 @@ class RaceSim:
             return
         positions = _compute_positions(self.states)
         dt = 1.0 / self.TICKS_PER_SEC
+        spatial_index = SortedCarIndex(self.states)
         for state in self.states:
             if not state["finished"]:
-                self._step_car(state, positions, dt)
+                self._step_car(state, positions, dt, spatial_index)
         self.states, self.safety_car = process_collisions(
             self.states, self.rng, self.safety_car, self.tick)
         self.safety_car, self.weather, self._weather_forecast, self._sc_last_leader_lap = (
             update_step_systems(self.states, self.safety_car, self.weather,
                                 self.rng, self._sc_last_leader_lap,
                                 self._weather_forecast))
-        self._record_frame(positions)
+        if self.fast_mode:
+            name_positions = {s["name"]: positions[s["car_idx"]] for s in self.states}
+            self.accumulator.on_tick(self.states, name_positions, self.tick)
+            self._detect_lap_completions()
+            if self.tick % self.TICKS_PER_SEC == 0:
+                self._record_frame(positions)
+        else:
+            self._record_frame(positions)
         self.tick += 1
         if all(s["finished"] for s in self.states):
             self.race_over = True
 
-    def _step_car(self, state, positions, dt):
+    def _compute_gap_ahead_s(self, state):
+        """Lightweight gap_ahead_s for dirty air (computed every tick)."""
+        by_dist = sorted(self.states, key=lambda s: -s["distance"])
+        mi = next(i for i, s in enumerate(by_dist) if s["car_idx"] == state["car_idx"])
+        if mi > 0:
+            spd = by_dist[mi - 1]["speed"] * (1 / 3.6) * self.world_scale
+            return (by_dist[mi - 1]["distance"] - state["distance"]) / spd if spd > 0 else 0.0
+        return 0.0
+
+    def _step_car(self, state, positions, dt, spatial_index=None):
         """Advance a single car by one tick."""
         car = self.cars[state["car_idx"]]
 
-        strat_state = self.build_strategy_state(state, positions)
-        try:
-            decision = car["strategy"](strat_state)
-            if not isinstance(decision, dict):
+        # Strategy throttle: call strategy at 1Hz, cache decision
+        is_strategy_tick = (self.tick % self.TICKS_PER_SEC == 0)
+        if is_strategy_tick:
+            strat_state = self.build_strategy_state(state, positions)
+            try:
+                decision = car["strategy"](strat_state)
+                if not isinstance(decision, dict):
+                    decision = {}
+            except Exception:
                 decision = {}
-        except Exception:
-            decision = {}
+            state["_cached_decision"] = decision
+        else:
+            decision = state["_cached_decision"]
+
+        # Compute lightweight gap_ahead_s every tick for dirty air
+        gap_ahead_s = strat_state["gap_ahead_s"] if is_strategy_tick else self._compute_gap_ahead_s(state)
 
         # Spin recovery — skip most physics
         if state["spin_recovery"] > 0:
@@ -215,19 +248,18 @@ class RaceSim:
                 state["spin_recovery"] = max(state["spin_recovery"], extra)
 
         # Dirty air: compute grip/wear penalties from following in corners
-        curv = get_curvature_at(
-            state["distance"], self.distances, self.curvatures, self.track_length)
-        da_grip, da_wear = compute_dirty_air_factor(strat_state["gap_ahead_s"], curv)
+        curv = self.curvature_lookup[state["distance"]]
+        da_grip, da_wear = compute_dirty_air_factor(gap_ahead_s, curv)
         state["_in_dirty_air"] = da_grip < 1.0
         state["_dirty_air_grip"] = da_grip
         state["_dirty_air_wear"] = da_wear
 
         self._apply_boost(state, wants_boost)
         self._apply_tire_wear(state, tire_mode)
-        self._apply_tire_temp_drs(state, throttle, decision, strat_state, dt)
+        self._apply_tire_temp_drs(state, throttle, decision, gap_ahead_s, dt)
         self._apply_physics(state, throttle, dt)
-        self._apply_drafting(state, dt)
-        self._apply_lateral(state, lateral_target, dt)
+        self._apply_drafting(state, dt, spatial_index)
+        self._apply_lateral(state, lateral_target, dt, spatial_index)
 
         # ERS deploy + brake temp (braking ~ curvature × speed = cornering demand)
         braking_force = curv * state["speed"] / 100.0
@@ -250,7 +282,8 @@ class RaceSim:
         tr = update_timing(self.timings, state["name"], dp, state["lap"],
                            self.tick, self.TICKS_PER_SEC, self.sector_boundaries)
         state["_timing"] = tr
-        state["_gap_ahead_s"], state["_gap_behind_s"] = strat_state["gap_ahead_s"], strat_state["gap_behind_s"]
+        state["_gap_ahead_s"] = gap_ahead_s
+        state["_gap_behind_s"] = strat_state["gap_behind_s"] if is_strategy_tick else state.get("_gap_behind_s", 0.0)
         ct = self.timings[state["name"]]
         state["_last_lap_time"] = ct.lap_times[-1] if ct.lap_times else None
         state["_best_lap_s"] = ct.best_lap
@@ -271,14 +304,13 @@ class RaceSim:
         throttle_factor *= state.get("_dirty_air_wear", 1.0)  # dirty air increases wear
         throttle_factor *= get_sc_modifiers(self.safety_car)["tire_deg_mult"]
         throttle_factor *= get_wetness_wear_mult(self.weather.get("wetness", 0.0), state.get("tire_compound", "medium"))
-        curv = get_curvature_at(
-            state["distance"], self.distances, self.curvatures, self.track_length)
+        curv = self.curvature_lookup[state["distance"]]
         state["tire_wear"] = compute_wear(
             state["tire_wear"], state.get("tire_compound", "medium"), throttle_factor, curv)
 
-    def _apply_tire_temp_drs(self, state, throttle, decision, strat_state, dt):
+    def _apply_tire_temp_drs(self, state, throttle, decision, gap_ahead_s, dt):
         """Update tire temperature and DRS."""
-        curv = get_curvature_at(state["distance"], self.distances, self.curvatures, self.track_length)
+        curv = self.curvature_lookup[state["distance"]]
         heat = heat_generation(throttle, curv, state["lateral"], dt) * state["setup"].get("temp_rate_mult", 1.0)
         state["tire_temp"] = update_tire_temp(state["tire_temp"], heat, heat_dissipation(state["tire_temp"], state["speed"], dt))
         dp = (state["distance"] % self.track_length) / self.track_length if self.track_length > 0 else 0.0
@@ -287,7 +319,7 @@ class RaceSim:
         state["_prev_lap"] = state["lap"]
         state["drs_available"], state["drs_active"] = update_drs_state(
             state["drs_available"], state["drs_active"],
-            bool(decision.get("drs_request", False)), in_zone, strat_state["gap_ahead_s"], lap_changed)
+            bool(decision.get("drs_request", False)), in_zone, gap_ahead_s, lap_changed)
         state["_in_drs_zone"] = in_zone
 
     def _apply_physics(self, state, throttle, dt):
@@ -295,7 +327,7 @@ class RaceSim:
         setup, compound = state.get("setup", {}), state.get("tire_compound", "medium")
         grip_mult = (compute_grip_multiplier(state["tire_wear"], compound) * tire_temp_grip_factor(state["tire_temp"], compound)
                      * state.get("_dirty_air_grip", 1.0) * get_wetness_grip_mult(self.weather.get("wetness", 0.0), compound))
-        curv = get_curvature_at(state["distance"], self.distances, self.curvatures, self.track_length)
+        curv = self.curvature_lookup[state["distance"]]
         eff_aero = setup.get("effective_aero", state["aero"] * 40.0) / 40.0
         aero_grip = compute_aero_grip(state["speed"], eff_aero,
                                        state.get("setup_raw", {}).get("wing_angle", 0.0))
@@ -322,12 +354,14 @@ class RaceSim:
         state["speed"] = update_speed(state["speed"], target, state["power"], state["weight"], fuel_w, brakes, dt)
         state["speed"] = apply_drag(state["speed"], dt)
 
-    def _apply_drafting(self, state, dt):
-        """Apply drafting speed bonus from cars ahead."""
+    def _apply_drafting(self, state, dt, spatial_index=None):
+        """Apply drafting speed bonus from nearby cars ahead."""
         aero = state.get("setup", {}).get("effective_aero", state["aero"] * 40.0) / 40.0
-        for other in self.states:
-            if other["car_idx"] == state["car_idx"] or other["finished"]:
-                continue
+        neighbors = (spatial_index.neighbors(state["car_idx"], max_distance=40.0)
+                     if spatial_index else
+                     [o for o in self.states
+                      if o["car_idx"] != state["car_idx"] and not o["finished"]])
+        for other in neighbors:
             dist_ahead = other["distance"] - state["distance"]
             bonus = compute_draft_bonus(aero, dist_ahead, dt)
             state["speed"] += bonus
@@ -335,7 +369,7 @@ class RaceSim:
         # Speed can't go negative or exceed cap
         state["speed"] = max(0, min(MAX_SPEED, state["speed"]))
 
-    def _apply_lateral(self, state, lateral_target, dt):
+    def _apply_lateral(self, state, lateral_target, dt, spatial_index=None):
         """Move car laterally toward target. Faster cars are less agile."""
         lateral_target = max(-1.0, min(1.0, lateral_target))
         speed_factor = max(0.2, 1.0 - (state["speed"] / 300.0) * 0.6)
@@ -344,9 +378,11 @@ class RaceSim:
         rate = 2.0 * speed_factor * min(1.0, grip_mult) * dt
         state["lateral"] += (lateral_target - state["lateral"]) * rate
         state["lateral"] = max(-1.0, min(1.0, state["lateral"]))
-        for other in self.states:
-            if other["car_idx"] == state["car_idx"] or other["finished"]:
-                continue
+        neighbors = (spatial_index.neighbors(state["car_idx"], max_distance=10.0)
+                     if spatial_index else
+                     [o for o in self.states
+                      if o["car_idx"] != state["car_idx"] and not o["finished"]])
+        for other in neighbors:
             dist = abs(other["distance"] - state["distance"])
             push = compute_lateral_push(
                 state["lateral"] - other["lateral"], dist, dt)
@@ -366,6 +402,24 @@ class RaceSim:
         if state["distance"] >= total_race_dist:
             state["finished"], state["finish_tick"] = True, self.tick
             state["distance"] = total_race_dist
+
+    def _detect_lap_completions(self):
+        """Feed lap completions to accumulator (fast_mode only)."""
+        for state in self.states:
+            ct = self.timings[state["name"]]
+            n_laps = len(ct.lap_times)
+            prev = state.get("_acc_laps_reported", 0)
+            if n_laps > prev:
+                for i in range(prev, n_laps):
+                    self.accumulator.on_lap_complete(
+                        state["name"], i + 1, ct.lap_times[i])
+                state["_acc_laps_reported"] = n_laps
+
+    def get_lap_summaries(self) -> dict[str, list[dict]]:
+        """Return per-car lap summaries (fast_mode only)."""
+        if self.accumulator is None:
+            return {}
+        return self.accumulator.get_lap_summaries()
 
     def _record_frame(self, positions):
         """Record one animation frame for replay."""

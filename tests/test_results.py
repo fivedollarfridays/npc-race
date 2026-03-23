@@ -193,3 +193,56 @@ def test_hash_deterministic():
     s1.pop("timestamp")
     s2.pop("timestamp")
     assert compute_integrity_hash(s1) == compute_integrity_hash(s2)
+
+
+# --- Test 12: reliability_score persists through league gates ---
+
+def test_reliability_score_persisted_after_league_gates():
+    """After _apply_league_gates, car dict must contain reliability_score
+    computed from its source code, not the default 1.0."""
+    from engine.race_runner import _apply_league_gates
+
+    # Source with high CC (many branches) -> reliability < 1.0
+    complex_source = (
+        "def engine_map(state, physics, hw):\n"
+        "    x = 0\n"
+        "    if state > 1:\n"
+        "        x += 1\n"
+        "    if state > 2:\n"
+        "        x += 2\n"
+        "    if state > 3:\n"
+        "        x += 3\n"
+        "    if state > 4:\n"
+        "        x += 4\n"
+        "    if state > 5:\n"
+        "        x += 5\n"
+        "    if state > 6:\n"
+        "        x += 6\n"
+        "    return x\n"
+    )
+
+    cars = [
+        {
+            "CAR_NAME": "HighCC",
+            "name": "HighCC",
+            "_loaded_parts": ["gearbox"],
+            "_source": complex_source,
+        },
+        {
+            "CAR_NAME": "Simple",
+            "name": "Simple",
+            "_loaded_parts": ["gearbox"],
+            "_source": "def engine_map(state, physics, hw): return 0.8\n",
+        },
+    ]
+
+    filtered, league = _apply_league_gates(cars, None)
+    assert len(filtered) == 2
+
+    high_cc_car = filtered[0]
+    assert "reliability_score" in high_cc_car, (
+        "reliability_score not stored in car dict after league gates"
+    )
+    assert high_cc_car["reliability_score"] < 1.0, (
+        f"Expected reliability < 1.0 for complex source, got {high_cc_car['reliability_score']}"
+    )

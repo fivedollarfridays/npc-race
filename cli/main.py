@@ -18,6 +18,7 @@ from .commands import (
     cmd_validate,
     cmd_wizard,
 )
+from .race_commands import cmd_qualify, cmd_race
 
 
 def _add_run_parser(subs) -> None:
@@ -31,6 +32,10 @@ def _add_run_parser(subs) -> None:
     run_p.add_argument("--track", default=None, help="Named track or 'random'")
     run_p.add_argument("--league", choices=["F3", "F2", "F1", "Championship"],
                        default=None, help="League tier (auto-detect if not specified)")
+    run_p.add_argument("--no-browser", action="store_true",
+                       help="Don't auto-open the viewer in a browser")
+    run_p.add_argument("--live", action="store_true", default=False,
+                       help="Enable live replay mode (full replay.json export)")
 
 
 def _add_season_parser(subs) -> None:
@@ -75,6 +80,8 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_tournament_parser(subs)
     _add_season_parser(subs)
     _add_leaderboard_parser(subs)
+    _add_qualify_parser(subs)
+    _add_race_parser(subs)
 
     return parser
 
@@ -111,6 +118,35 @@ def _add_tournament_parser(subs) -> None:
                          help="Output directory for replays")
 
 
+def _add_qualify_parser(subs) -> None:
+    """Add the 'qualify' subparser."""
+    q_p = subs.add_parser("qualify", help="Run qualifying session")
+    q_p.add_argument("--car-dir", default="cars",
+                     help="Directory containing car .py files")
+    q_p.add_argument("--track", required=True, help="Named track")
+    q_p.add_argument("--output", default="grid.json",
+                     help="Grid output file (default: grid.json)")
+
+
+def _add_race_parser(subs) -> None:
+    """Add the 'race' subparser for qualify+race pipeline."""
+    r_p = subs.add_parser("race", help="Run a race (optionally with qualifying)")
+    r_p.add_argument("--car-dir", default="cars",
+                     help="Directory containing car .py files")
+    r_p.add_argument("--track", default=None, help="Named track")
+    r_p.add_argument("--laps", type=int, default=None, help="Number of laps")
+    r_p.add_argument("--qualify", action="store_true",
+                     help="Run qualifying before the race")
+    r_p.add_argument("--output", default="replay.json",
+                     help="Replay output file")
+    r_p.add_argument("--no-browser", action="store_true",
+                     help="Don't auto-open the viewer")
+    r_p.add_argument("--seed", type=int, default=42, help="Track seed")
+    r_p.add_argument("--league", default=None, help="League tier")
+    r_p.add_argument("--live", action="store_true", default=False,
+                     help="Enable live replay mode")
+
+
 _DISPATCH = {
     "run": cmd_run,
     "init": cmd_init,
@@ -121,6 +157,8 @@ _DISPATCH = {
     "season": cmd_season,
     "submit": cmd_submit,
     "leaderboard": cmd_leaderboard,
+    "qualify": cmd_qualify,
+    "race": cmd_race,
 }
 
 

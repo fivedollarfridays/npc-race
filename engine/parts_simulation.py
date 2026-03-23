@@ -6,7 +6,7 @@ Each tick, all 10 part functions are called for each car.
 
 import random
 
-from .track_gen import compute_track_data, compute_track_headings, get_curvature_at
+from .track_gen import compute_track_data, compute_track_headings, CurvatureLookup
 from .replay import record_frame, get_results, export_replay, _compute_positions
 from .parts_api import get_defaults, get_hardware_spec
 from .parts_runner import create_initial_state, run_parts_tick  # noqa: F401
@@ -30,6 +30,8 @@ class PartsRaceSim:
         self.rng = random.Random(seed)
         self.track_name = track_name
         self.distances, self.curvatures, self.track_length = compute_track_data(track_points)
+        self.curvature_lookup = CurvatureLookup(
+            self.distances, self.curvatures, self.track_length)
         self.headings = compute_track_headings(track_points)
 
         if real_length_m and real_length_m > 0:
@@ -111,8 +113,7 @@ class PartsRaceSim:
                 0.0, 0.0)
 
             # Compute curvature at current position
-            curv = get_curvature_at(state["distance"], self.distances,
-                                     self.curvatures, self.track_length)
+            curv = self.curvature_lookup[state["distance"]]
 
             # Brake when speed exceeds profile target
             from .speed_profile import get_profile_speed
