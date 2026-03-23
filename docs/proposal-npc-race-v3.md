@@ -388,17 +388,17 @@ The default car uses all default parts. It finishes races. It's slow. Improving 
 
 | League | Parts Available | Quality Gate | Monza Target |
 |--------|----------------|-------------|-------------|
-| **F3** | 3 (engine_map, gearbox, strategy) | Must parse, no crashes | ~86-92s |
-| **F2** | 6 (+ brakes, suspension, ERS deploy) | Ruff clean | ~82-86s |
+| **F3** | 3 (gearbox, cooling, strategy) | Must parse, no crashes | ~86-92s |
+| **F2** | 6 (+ suspension, ERS deploy, fuel_mix) | Ruff clean | ~82-86s |
 | **F1** | All 10 | Ruff clean + CC < 15 | ~79-82s |
-| **Championship** | All 10 + multi-file project | Full quality gate (A-grade reliability) | ~78-80s |
+| **Championship** | All 10 + multi-file project | Full quality gate (A-grade reliability) | ~75-78s |
 
 ### 7.2 Progression
 
 Inspired by iRacing's license system and Gran Turismo's medal structure:
 
-- **F3**: Accessible to anyone learning Python. Only 3 functions to write. Focus on understanding the torque curve and shift points.
-- **F2**: Intermediate. Introduces braking physics, suspension dynamics, and energy management. Must write clean code (ruff check passes).
+- **F3**: Accessible to anyone learning Python. Only 3 functions to write. Focus on understanding shift points, cooling tradeoffs, and pit strategy.
+- **F2**: Intermediate. Introduces suspension dynamics, ERS deployment, and fuel management. Must write clean code (ruff check passes).
 - **F1**: Advanced. All 10 parts interacting. Understanding system-level optimization: how engine_map affects gearbox affects tires. Code complexity limits enforced.
 - **Championship**: Expert. Multi-file project structure. Full quality scoring. Competing against other players' cars on the same track.
 
@@ -518,9 +518,9 @@ A wireframe top-down view of the car:
 
 ## 10. Implementation Phases
 
-### Phase 1: Core Physics Engine (Sprints 22-24)
+### Phase 1: Core Physics Engine (Sprints 22-28) -- DONE
 
-Replace the current parts runner with the multiplicative efficiency model. Implement proper Pacejka tire forces, traction circle, power model with real coupling chain. Verify 10-second spread from default to theoretical perfect on Monza.
+Replace the current parts runner with the multiplicative efficiency model. Implement proper Pacejka tire forces, traction circle, power model with real coupling chain. Verify 5.80s spread (1-lap) from default to optimized on Monza.
 
 **Deliverables:**
 - Refactored `parts_runner.py` with real physics coupling
@@ -529,7 +529,7 @@ Replace the current parts runner with the multiplicative efficiency model. Imple
 - Multiplicative aggregation
 - Sensitivity test script confirming per-part impact
 
-### Phase 2: Code Quality System (Sprint 25)
+### Phase 2: Code Quality System (Sprint 27) -- DONE
 
 Build AST-based quality analyzer. Compute reliability scores. Implement glitch system. Wire into parts runner.
 
@@ -539,27 +539,36 @@ Build AST-based quality analyzer. Compute reliability scores. Implement glitch s
 - Per-part glitch system
 - Integration with parts runner
 
-### Phase 3: Car Project Loader (Sprint 26)
+### Phase 3: Car Project Loader (Sprint 29) -- DONE
 
 Multi-file car project support. Directory-based car loading. Security scanning across all files. Quality scoring across all files.
 
 **Deliverables:**
 - `engine/car_project_loader.py`
-- Extended bot scanner for directories
+- Extended bot scanner for directories (`security/project_scanner.py`)
 - Car validation pipeline
-- Default car template project
+- Default car template project (`cars/default_project/`)
 
-### Phase 4: League System + Viewer (Sprints 27-28)
+### Phase 4a: League System (Sprint 30) -- DONE
 
-League definitions with part restrictions. Live code terminal in viewer. TRON car diagnostic. Glitch visualization. Quality grade display.
+League definitions with part restrictions. Quality gate enforcement. Auto-detection and validation wired into race runner and CLI.
 
 **Deliverables:**
 - `engine/league_system.py`
+- League auto-detection and validation
+- Quality gate enforcement (advisory F3/F2, enforced F1+)
+- `--league` CLI flag
+
+### Phase 4b: Viewer Enhancements (Future)
+
+Live code terminal in viewer. TRON car diagnostic. Glitch visualization. Quality grade display.
+
+**Deliverables:**
 - `viewer/js/code-terminal.js`
 - `viewer/js/car-diagnostic.js`
 - Updated dashboard layout
 
-### Phase 5: Race Infrastructure (Sprint 29)
+### Phase 5: Race Infrastructure (Future)
 
 Submission pipeline. Email signup. API key management. Race scheduling. Results delivery. Leaderboards.
 
@@ -654,8 +663,8 @@ Gate criteria: spread 3-6s, ≥6 parts above 0.3s, no part above 1.5s, no part a
 | 3 | 6+ parts individually contribute 0.3s+ | ✅ 6/9 above 0.3s |
 | 4 | Multiplicative interactions visible | ✅ +0.63s interaction |
 | 5 | Code quality affects reliability (glitch system) | ✅ Built (Sprint 27) |
-| 6 | Viewer shows code executing with glitch indicators | ❌ Phase 4 |
-| 7 | Player can fork car, change function, see difference | ❌ Phase 3 |
+| 6 | Viewer shows code executing with glitch indicators | ❌ Phase 4b |
+| 7 | Player can fork car, change function, see difference | ✅ Phase 3 (Sprint 29) |
 | 8 | Physics confirmed mechanically sound | ✅ All physics-emergent |
 | 9 | Sensitivity test shows per-part impact | ✅ Sprint 28 final |
 | 10 | 5-lap compound spread ≥ 15s | ✅ 17.77s |

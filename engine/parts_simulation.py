@@ -182,6 +182,8 @@ class PartsRaceSim:
 
             # Copy back
             self.car_states[i] = new_state
+            for entry in log:
+                entry["car_name"] = state["name"]
             tick_logs.extend(log)
 
         self.call_logs.append(tick_logs)
@@ -255,10 +257,46 @@ class PartsRaceSim:
         return get_results(self._to_legacy_states(), len(self.cars))
 
     def export_replay(self):
-        """Export replay data."""
-        return export_replay(
+        """Export replay data with sampled call logs and reliability."""
+        replay = export_replay(
             track=self.track, track_width=self.TRACK_WIDTH,
             track_name=self.track_name, laps=self.laps,
             ticks_per_sec=self.TICKS_PER_SEC, history=self.history,
             states=self._to_legacy_states(), num_cars=len(self.cars),
             track_curvatures=self.curvatures, track_headings=self.headings)
+        replay["call_logs"] = self._build_sampled_call_logs()
+        replay["reliability"] = {
+            s["name"]: round(self.car_reliability[i], 3)
+            for i, s in enumerate(self.car_states)
+        }
+        return replay
+
+    def _build_sampled_call_logs(self):
+        """Build per-car call logs sampled at 1Hz (every 30th tick)."""
+        per_car = {}
+        for tick_idx, tick_entries in enumerate(self.call_logs):
+            if tick_idx % self.TICKS_PER_SEC != 0:
+                continue
+            # Group entries by car name
+            car_parts = {}
+            for entry in tick_entries:
+                car_name = entry.get("car_name", "Unknown")
+                if car_name not in car_parts:
+                    car_parts[car_name] = []
+                part_data = {
+                    "name": entry["part"],
+                    "output": entry["output"],
+                    "status": entry["status"],
+                }
+                eff = entry.get("efficiency", 1.0)
+                if eff != 1.0:
+                    part_data["efficiency"] = round(eff, 3)
+                car_parts[car_name].append(part_data)
+            for car_name, parts in car_parts.items():
+                if car_name not in per_car:
+                    per_car[car_name] = []
+                per_car[car_name].append({
+                    "tick": tick_idx,
+                    "parts": parts,
+                })
+        return per_car
