@@ -5,7 +5,7 @@ INTERLAGOS = {
     "name": "Interlagos",
     "country": "Brazil",
     "character": "character",
-    "laps_default": 6,
+    "laps_default": 71,
     "real_length_m": 4309,
     "real_laps": 71,
     "control_points": [
@@ -30,7 +30,7 @@ IMOLA = {
     "name": "Imola",
     "country": "Italy",
     "character": "character",
-    "laps_default": 6,
+    "laps_default": 63,
     "real_length_m": 4909,
     "real_laps": 63,
     "control_points": [
@@ -56,7 +56,7 @@ MELBOURNE = {
     "name": "Melbourne",
     "country": "Australia",
     "character": "character",
-    "laps_default": 5,
+    "laps_default": 58,
     "real_length_m": 5278,
     "real_laps": 58,
     "control_points": [
@@ -81,7 +81,7 @@ MONTREAL = {
     "name": "Montreal",
     "country": "Canada",
     "character": "character",
-    "laps_default": 6,
+    "laps_default": 70,
     "real_length_m": 4361,
     "real_laps": 70,
     "control_points": [
@@ -106,7 +106,7 @@ MUGELLO = {
     "name": "Mugello",
     "country": "Italy",
     "character": "character",
-    "laps_default": 5,
+    "laps_default": 59,
     "real_length_m": 5245,
     "real_laps": 59,
     "control_points": [
@@ -130,7 +130,7 @@ LUSAIL = {
     "name": "Lusail",
     "country": "Qatar",
     "character": "character",
-    "laps_default": 5,
+    "laps_default": 57,
     "real_length_m": 5380,
     "real_laps": 57,
     "control_points": [
@@ -154,7 +154,7 @@ HUNGARORING = {
     "name": "Hungaroring",
     "country": "Hungary",
     "character": "character",
-    "laps_default": 7,
+    "laps_default": 70,
     "real_length_m": 4381,
     "real_laps": 70,
     "control_points": [
@@ -180,7 +180,7 @@ SHANGHAI = {
     "name": "Shanghai",
     "country": "China",
     "character": "character",
-    "laps_default": 5,
+    "laps_default": 56,
     "real_length_m": 5451,
     "real_laps": 56,
     "control_points": [

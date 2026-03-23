@@ -43,29 +43,30 @@
 ## Sprint 35 — Full Grid + Real Distances (21 Cx)
 
 ### Wave 1 (parallel)
-- T35.1: Archetype template factory (3 Cx)
-- T35.2: Track real-laps update (2 Cx)
+- T35.1: Archetype template factory (3 Cx) -- DONE
+- T35.2: Track real-laps update (2 Cx) -- DONE
 
 ### Wave 2 (parallel)
-- T35.3: Frontrunner rivals — 3 cars (3 Cx) — depends T35.1
-- T35.4: Midfield rivals — 4 cars (3 Cx) — depends T35.1
-- T35.5: Backmarker rivals — 4 cars (3 Cx) — depends T35.1
-- T35.6: Wildcard rivals — 3 cars (3 Cx) — depends T35.1
+- T35.3: Frontrunner rivals — 3 cars (3 Cx) — depends T35.1 -- DONE
+- T35.4: Midfield rivals — 4 cars (3 Cx) — depends T35.1 -- DONE
+- T35.5: Backmarker rivals — 4 cars (3 Cx) — depends T35.1 -- DONE
+- T35.6: Wildcard rivals — 3 cars (3 Cx) — depends T35.1 -- DONE
 
 ### Wave 3-4
-- T35.7: 20-car integration test (2 Cx) — depends T35.2-T35.6
-- T35.8: Race summary dashboard (2 Cx) — depends T35.7
+- T35.7: 20-car integration test (2 Cx) — depends T35.2-T35.6 -- DONE
+- T35.8: Race summary dashboard (2 Cx) — depends T35.7 -- DONE
 
 ## What Was Just Done
 
-- **T34.8**: Grid export + race integration + CLI pipeline (INTEGRATION GATE). New `cli/race_commands.py` with `cmd_qualify` and `cmd_race`. Added `qualify` and `race` subparsers to `cli/main.py`. Added `_reorder_by_grid()` and `grid_file` parameter to `run_race()` in `engine/race_runner.py`. Extracted `_apply_grid_file()` and `_print_race_banner()` helpers to keep `run_race` under 50 lines. 11 new tests in `tests/test_race_pipeline.py` covering: cmd_qualify grid export, grid JSON sorting, qualifying output printing, run_race grid_file parameter, cmd_race with/without --qualify flag, grid position ordering (P1 at front with offset 0, last car at -30), and CLI parser wiring for qualify/race subcommands. Sprint 34 complete -- all 82 Sprint 34 tests pass.
+- **T35.8**: Race summary dashboard (integration gate). Created `engine/race_dashboard.py` (200 lines) with 4 sections: standings table with gaps/pit counts/best laps, lap chart (every 5th lap), pit stop summary with compound transitions, and key moments (fastest lap + winning margin). Wired into `engine/race_runner.py` so dashboard prints after every race. Fast mode shows all 4 sections; live mode shows standings + key moments only. 11 tests in `tests/test_race_dashboard.py`. Gate verified: real 3-lap Monza race produces RACE RESULTS, LAP CHART, KEY MOMENTS output. Ruff clean, arch check clean.
 
 ## What's Next
 
-- Sprint 35: Full Grid + Real Distances (T35.1 through T35.8)
+- Sprint 35 complete. All tasks done.
 
 ## Key Metrics
 
 - **~2,000 tests** | CI green | Zero tech debt
+- **Monza 3-lap, 20 cars**: ~17s wall time
 - **Monza 5-lap, 6 cars**: 35s wall time, 113 MB replay
 - **Target**: Monza 53-lap, 20 cars under 10 min

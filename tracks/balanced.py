@@ -5,7 +5,7 @@ SILVERSTONE = {
     "name": "Silverstone",
     "country": "United Kingdom",
     "character": "balanced",
-    "laps_default": 5,
+    "laps_default": 52,
     "real_length_m": 5891,
     "real_laps": 52,
     "control_points": [
@@ -33,7 +33,7 @@ SUZUKA = {
     "name": "Suzuka",
     "country": "Japan",
     "character": "balanced",
-    "laps_default": 5,
+    "laps_default": 53,
     "real_length_m": 5807,
     "real_laps": 53,
     "control_points": [
@@ -59,7 +59,7 @@ AUSTIN = {
     "name": "Austin",
     "country": "United States",
     "character": "balanced",
-    "laps_default": 5,
+    "laps_default": 56,
     "real_length_m": 5513,
     "real_laps": 56,
     "control_points": [
@@ -84,7 +84,7 @@ BARCELONA = {
     "name": "Barcelona",
     "country": "Spain",
     "character": "balanced",
-    "laps_default": 5,
+    "laps_default": 66,
     "real_length_m": 4675,
     "real_laps": 66,
     "control_points": [
@@ -109,7 +109,7 @@ BAHRAIN = {
     "name": "Bahrain",
     "country": "Bahrain",
     "character": "balanced",
-    "laps_default": 5,
+    "laps_default": 57,
     "real_length_m": 5412,
     "real_laps": 57,
     "control_points": [
