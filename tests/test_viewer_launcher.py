@@ -81,6 +81,7 @@ class TestLaunchViewerGuards:
         from viewer.launcher import launch_viewer
 
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.delenv("CI", raising=False)
 
         replay = tmp_path / "replay.json"
         replay.write_text("{}")
@@ -92,9 +93,11 @@ class TestLaunchViewerGuards:
              patch("viewer.launcher.webbrowser") as mock_wb, \
              patch("viewer.launcher.socketserver.TCPServer") as mock_tcp:
             # Make the context manager work
-            mock_tcp.return_value.__enter__ = lambda s: s
-            mock_tcp.return_value.__exit__ = lambda s, *a: None
-            mock_tcp.return_value.serve_forever.side_effect = KeyboardInterrupt
+            mock_server = mock_tcp.return_value
+            mock_server.__enter__ = lambda s: s
+            mock_server.__exit__ = lambda s, *a: None
+            mock_server.server_address = ("", 9999)
+            mock_server.serve_forever.side_effect = KeyboardInterrupt
             launch_viewer(str(replay))
 
         mock_wb.open.assert_called_once()

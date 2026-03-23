@@ -10,7 +10,6 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.simulation import RaceSim
-from engine.replay import _compute_positions
 from engine.track_gen import generate_track, interpolate_track
 
 
