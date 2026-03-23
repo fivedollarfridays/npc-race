@@ -545,24 +545,43 @@ League definitions with part restrictions. Quality gate enforcement. Auto-detect
 - Quality gate enforcement (advisory F3/F2, enforced F1+)
 - `--league` CLI flag
 
-### Phase 4b: Viewer Enhancements (Future)
+### Phase 4b: Viewer Enhancements (Sprint 31) -- DONE
 
-Live code terminal in viewer. TRON car diagnostic. Glitch visualization. Quality grade display.
+Live code terminal in viewer. Code grade card. Call log export at 1Hz in replay JSON.
 
 **Deliverables:**
-- `viewer/js/code-terminal.js`
-- `viewer/js/car-diagnostic.js`
+- `viewer/js/code-terminal.js` (code terminal + grade card)
+- Call log export in replay format
 - Updated dashboard layout
 
-### Phase 5: Race Infrastructure (Future)
+### Phase 5a: Local Submission Pipeline (Sprint 32) -- DONE
 
-Submission pipeline. Email signup. API key management. Race scheduling. Results delivery. Leaderboards.
+Results summary format with SHA-256 integrity hash. CLI submit command validates results locally.
 
 **Deliverables:**
-- Submission API
-- Evaluation pipeline
-- Results dashboard
-- Leaderboard system
+- `engine/results.py` (results summary + integrity hash)
+- `npcrace submit` CLI command
+- Automatic results.json export alongside replay.json
+
+### Phase 5b: Leaderboard + Onboarding (Sprint 33) -- NEXT
+
+Local leaderboard that accumulates results across races. Player onboarding materials.
+
+**Deliverables:**
+- `engine/leaderboard.py` (local standings from results files)
+- `npcrace leaderboard` CLI command
+- `GETTING_STARTED.md` player onboarding guide
+- Polished `npcrace init` flow
+
+### Phase 6: Hosted Infrastructure (Future — when players exist)
+
+Server-side race execution, hosted leaderboard, multiplayer seasons. Not needed until local product loop is validated with real users.
+
+**Deliverables:**
+- Submission API (accepts results, validates integrity)
+- Hosted leaderboard web dashboard
+- Race scheduling + season management
+- Player accounts (email signup, API keys)
 
 ---
 
@@ -649,8 +668,10 @@ Gate criteria: spread 3-6s, ≥6 parts above 0.3s, no part above 1.5s, no part a
 | 3 | 6+ parts individually contribute 0.3s+ | ✅ 6/9 above 0.3s |
 | 4 | Multiplicative interactions visible | ✅ +0.63s interaction |
 | 5 | Code quality affects reliability (glitch system) | ✅ Built (Sprint 27) |
-| 6 | Viewer shows code executing with glitch indicators | ❌ Phase 4b |
+| 6 | Viewer shows code executing with glitch indicators | ✅ Code terminal + grade card (Sprint 31) |
 | 7 | Player can fork car, change function, see difference | ✅ Phase 3 (Sprint 29) |
 | 8 | Physics confirmed mechanically sound | ✅ All physics-emergent |
 | 9 | Sensitivity test shows per-part impact | ✅ Sprint 28 final |
 | 10 | 5-lap compound spread ≥ 15s | ✅ 17.77s |
+| 11 | Player can submit results with integrity verification | ✅ Sprint 32 |
+| 12 | Local leaderboard tracks standings across races | ❌ Sprint 33 |
