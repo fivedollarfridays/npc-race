@@ -101,9 +101,9 @@ class TestSimulationSandbox:
 
     def test_strategy_exception_handled(self):
         """Verify simulation handles strategy exceptions gracefully."""
-        import engine.simulation as mod
+        import engine.sim_step as mod
         source = open(mod.__file__).read()
-        # Strategy calls guarded by try/except; full sandbox at load time
+        # Strategy calls guarded by try/except in sim_step (extracted from simulation)
         assert "except Exception" in source
 
 

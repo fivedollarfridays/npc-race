@@ -25,7 +25,7 @@ class TestPrepareViewer:
         viewer_dir = tmp_path / "viewer"
         viewer_dir.mkdir()
 
-        url = _prepare_viewer(str(replay), str(viewer_dir))
+        url = _prepare_viewer(str(replay), str(viewer_dir), 8765)
 
         copied = viewer_dir / "replay.json"
         assert copied.is_file()
@@ -42,7 +42,7 @@ class TestPrepareViewer:
         viewer_dir = tmp_path / "viewer"
         viewer_dir.mkdir()
 
-        url = _prepare_viewer(str(replay), str(viewer_dir))
+        url = _prepare_viewer(str(replay), str(viewer_dir), 8765)
 
         assert "localhost" in url
         assert "dashboard.html" in url
@@ -54,7 +54,7 @@ class TestPrepareViewer:
         replay = tmp_path / "replay.json"
         replay.write_text("{}")
 
-        url = _prepare_viewer(str(replay), str(tmp_path / "nope"))
+        url = _prepare_viewer(str(replay), str(tmp_path / "nope"), 8765)
 
         assert url is None
         out = capsys.readouterr().out
