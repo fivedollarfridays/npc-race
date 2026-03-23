@@ -22,6 +22,7 @@ from .simulation import RaceSim
 from .narrative import detect_events
 from .commentary import format_events
 from .race_report import generate_report
+from .fast_export import export_lap_summary
 
 
 def _resolve_track(track_name, track_seed, laps):
@@ -100,6 +101,7 @@ def _apply_league_gates(
 
         # Quality report (only enforce gates when league is explicitly specified)
         qr = generate_quality_report(car, effective)
+        car["reliability_score"] = qr.reliability_score
         _print_car_league_status(name, parts, qr, effective)
 
         if league is not None and not qr.passed:
@@ -152,6 +154,23 @@ def _export_results(replay: dict, cars: list[dict], league: str, output: str) ->
     print(f"Results saved to {results_path}")
 
 
+def _export_fast(sim, results, output, track_name, cars, league):
+    """Export results.json + lap_summary.json only (no replay.json)."""
+    # Build minimal replay-like dict for generate_results_summary
+    replay_stub = {
+        "results": results,
+        "track_name": track_name or "unknown",
+        "laps": sim.laps,
+    }
+    _export_results(replay_stub, cars, league, output)
+
+    # Write lap_summary.json alongside the output path
+    out_dir = os.path.dirname(output) or "."
+    lap_summary_path = os.path.join(out_dir, "lap_summary.json")
+    export_lap_summary(sim, lap_summary_path)
+    print(f"Lap summary saved to {lap_summary_path}")
+
+
 def _export_replay(sim, results, output, track_name, cars, league):
     """Build narrative, export replay JSON and results, and print report."""
     replay = sim.export_replay()
@@ -195,6 +214,53 @@ def _load_and_filter_cars(car_dir, car_data_dir, league):
     return cars, effective_league
 
 
+def _reorder_by_grid(cars: list[dict], grid: list[dict]) -> list[dict]:
+    """Reorder cars list by qualifying grid positions.
+
+    P1 gets _grid_offset=0, P2 gets -15, P3 gets -30, etc.
+    Cars not in the grid are appended at the back.
+    """
+    car_map = {c["CAR_NAME"]: c for c in cars}
+
+    ordered: list[dict] = []
+    for entry in sorted(grid, key=lambda g: g["grid_position"]):
+        name = entry["name"]
+        if name in car_map:
+            car = car_map.pop(name)
+            pos = entry["grid_position"]
+            car["_grid_offset"] = -(pos - 1) * 15
+            ordered.append(car)
+
+    # Append any cars not in grid at the back
+    next_pos = len(ordered) + 1
+    for car in car_map.values():
+        car["_grid_offset"] = -(next_pos - 1) * 15
+        ordered.append(car)
+        next_pos += 1
+
+    return ordered
+
+
+def _apply_grid_file(cars: list[dict], grid_file: str | None) -> list[dict]:
+    """Load grid.json and reorder cars if grid file exists."""
+    if grid_file and os.path.isfile(grid_file):
+        with open(grid_file) as f:
+            grid = json.load(f)
+        cars = _reorder_by_grid(cars, grid)
+        print("Grid order from qualifying applied")
+    return cars
+
+
+def _print_race_banner(
+    effective_laps: int, car_dir: str, num_cars: int,
+    track_name: str | None, track_seed: int,
+) -> None:
+    """Print the race start banner with track and car info."""
+    print(f"\n🏁 NPC RACE -- {effective_laps} laps")
+    print(f"{'─' * 40}")
+    print(f"Loading cars from: {car_dir}/\n")
+
+
 def run_race(
     car_dir: str = "cars",
     laps: int | None = None,
@@ -204,17 +270,18 @@ def run_race(
     car_data_dir: str | None = None,
     race_number: int = 1,
     league: str | None = None,
+    fast_mode: bool = False,
+    grid_file: str | None = None,
 ) -> list[dict]:
     """Load cars, apply league gates, run simulation, and export replay."""
     track, effective_laps, real_length_m, drs_zones = _resolve_track(
         track_name, track_seed, laps
     )
 
-    print(f"\n🏁 NPC RACE -- {effective_laps} laps")
-    print(f"{'─' * 40}")
-    print(f"Loading cars from: {car_dir}/\n")
+    _print_race_banner(effective_laps, car_dir, 0, track_name, track_seed)
 
     cars, effective_league = _load_and_filter_cars(car_dir, car_data_dir, league)
+    cars = _apply_grid_file(cars, grid_file)
 
     print(f"\n{len(cars)} cars on the grid")
     if track_name:
@@ -226,10 +293,14 @@ def run_race(
     sim = RaceSim(cars, track, laps=effective_laps, seed=track_seed,
                   track_name=track_name, real_length_m=real_length_m,
                   car_data_dir=car_data_dir, race_number=race_number,
-                  drs_zones=drs_zones)
+                  drs_zones=drs_zones, fast_mode=fast_mode)
     results = sim.run()
 
     _print_results(results)
-    _export_replay(sim, results, output, track_name, cars, effective_league)
+
+    if fast_mode:
+        _export_fast(sim, results, output, track_name, cars, effective_league)
+    else:
+        _export_replay(sim, results, output, track_name, cars, effective_league)
 
     return results

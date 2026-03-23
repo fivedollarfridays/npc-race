@@ -48,7 +48,7 @@ def _run_race(race_dir, tmp_path, output_name="replay.json"):
     out_dir.mkdir(exist_ok=True)
     replay_path = str(out_dir / output_name)
     main(["run", "--car-dir", race_dir, "--track", "monza",
-          "--laps", "1", "--output", replay_path])
+          "--laps", "1", "--output", replay_path, "--live"])
     results_path = str(out_dir / "results.json")
     return replay_path, results_path
 

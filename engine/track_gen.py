@@ -5,6 +5,7 @@ Generates closed-loop tracks from random control points using
 Catmull-Rom spline interpolation.
 """
 
+import bisect
 import math
 import random
 
@@ -113,3 +114,30 @@ def get_curvature_at(distance, distances, curvatures, track_length):
         if distances[i] <= d <= distances[i + 1]:
             return curvatures[i]
     return 0.0
+
+
+class CurvatureLookup:
+    """O(log n) curvature lookup using bisect, replacing linear scan."""
+
+    def __init__(self, distances, curvatures, track_length):
+        self._distances = distances
+        self._curvatures = curvatures
+        self._track_length = track_length
+
+    def __getitem__(self, distance):
+        """Get curvature at distance using binary search."""
+        if self._track_length > 0:
+            d = distance % self._track_length
+        else:
+            d = distance
+        n = len(self._distances)
+        pos = bisect.bisect_left(self._distances, d)
+        # Match linear-scan behavior: find i where distances[i] <= d <= distances[i+1]
+        idx = pos - 1
+        if idx < 0:
+            idx = 0
+        # If beyond last segment boundary, return last curvature that has a segment
+        if idx >= n - 1 and n >= 2 and d > self._distances[-1]:
+            return 0.0
+        idx = min(idx, len(self._curvatures) - 1)
+        return self._curvatures[idx]

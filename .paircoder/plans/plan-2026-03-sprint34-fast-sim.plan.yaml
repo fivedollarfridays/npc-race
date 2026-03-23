@@ -1,0 +1,12 @@
+id: plan-2026-03-sprint34-fast-sim
+title: Sprint 34 — Fast Sim + Qualifying
+type: feature
+status: planned
+created_at: '2026-03-23T11:33:44.524943'
+skills:
+- planning-with-pm
+goals:
+- 53-lap/20-car Monza under 10 min
+- Sparse frame storage (1fps, ~113MB replay)
+- Strategy throttle 1Hz, spatial O(1) neighbor lookup
+- Single flying lap qualifying with grid.json

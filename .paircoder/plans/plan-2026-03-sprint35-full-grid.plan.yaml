@@ -1,0 +1,11 @@
+id: plan-2026-03-sprint35-full-grid
+title: Sprint 35 — Full Grid + Real Distances
+type: feature
+status: planned
+created_at: '2026-03-23T11:33:46.404461'
+skills:
+- planning-with-pm
+goals:
+- 20 cars on grid from 4 archetype templates
+- Real F1 lap counts on all 20 tracks
+- Race summary dashboard (terminal)

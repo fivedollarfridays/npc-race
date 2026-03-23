@@ -11,6 +11,7 @@ import shutil
 from engine import run_race
 from security.bot_scanner import scan_car_file
 from tracks import TRACKS, list_tracks
+from viewer.launcher import launch_viewer
 
 from engine.championship import F1_POINTS
 
@@ -54,13 +55,15 @@ def cmd_init(args) -> int:
 
 
 def cmd_run(args) -> None:
-    """Run a race, mirroring play.py behavior (no auto-browser)."""
+    """Run a race and optionally open the replay viewer in a browser."""
     if not os.path.isdir(args.car_dir):
         print(f"Car directory not found: {args.car_dir}")
         return
 
     track_name = _resolve_track(args)
     league = getattr(args, "league", None)
+    live = getattr(args, "live", False)
+    fast_mode = not live
     run_race(
         car_dir=args.car_dir,
         laps=args.laps,
@@ -68,7 +71,11 @@ def cmd_run(args) -> None:
         output=args.output,
         track_name=track_name,
         league=league,
+        fast_mode=fast_mode,
     )
+
+    if live and not getattr(args, "no_browser", False):
+        launch_viewer(args.output)
 
 
 def cmd_wizard(_args) -> None:
