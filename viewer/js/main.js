@@ -185,6 +185,7 @@ function loadReplay(data) {
 
   initTimingTower(replay);
   initTelemetryPanel(replay);
+  initCodeTerminal(replay);
   initDiagnostic(replay, replay.frames[0][0].name);
 
   resizeAllCanvases();
@@ -360,6 +361,9 @@ function render() {
     const prevData = prevFrame ? prevFrame.find(c => c.name === _selectedCar) : null;
     updateTelemetryPanel(selectedData, prevData, _panelFrameCars);
   }
+
+  // Code terminal: update with current tick
+  updateCodeTerminal(frame, replay);
 
   // Telemetry strip: feed selected car data each frame
   const _stripFrameCars = replay.frames[frame];

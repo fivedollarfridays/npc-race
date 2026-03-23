@@ -1,0 +1,12 @@
+id: plan-2026-03-sprint31-viewer
+title: Sprint 31 — Viewer Additions (Phase 4b)
+type: feature
+status: in_progress
+created_at: '2026-03-22T18:29:58.105641'
+skills:
+- planning-with-pm
+goals:
+- Update v3.1 proposal with final numbers
+- Call log export to replay format
+- Live code terminal in viewer
+- Code grade card

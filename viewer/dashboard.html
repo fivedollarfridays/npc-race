@@ -336,6 +336,42 @@
   }
   .diag-table .purple { color: var(--accent-purple); font-weight: 600; }
   .diag-best td { background: rgba(168, 85, 247, 0.08); }
+
+  /* ── Code terminal (T31.3) ──────────────── */
+
+  #codeTerminal {
+    padding: 8px 12px;
+    font-size: 11px;
+    border-top: 1px solid var(--border);
+    overflow-y: auto;
+    max-height: 260px;
+  }
+  .term-header { font-weight: 700; color: var(--text-secondary); padding-bottom: 4px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+  .term-empty { color: var(--text-muted); font-style: italic; }
+  .term-call { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+  .term-name { color: var(--accent-blue); font-weight: 600; min-width: 90px; }
+  .term-arrow { color: var(--text-muted); }
+  .term-output { color: var(--text-primary); min-width: 50px; }
+  .term-ok .term-output { color: var(--accent-green); }
+  .term-clamped .term-output { color: var(--accent-yellow); }
+  .term-glitch .term-output { color: var(--accent-red); }
+  .term-error .term-output { color: var(--accent-red); }
+  .term-badge { font-size: 9px; padding: 1px 4px; border-radius: 2px; font-weight: 600; }
+  .term-badge.term-clamped { background: rgba(234, 179, 8, 0.2); color: var(--accent-yellow); }
+  .term-badge.term-glitch { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+  .term-badge.term-error { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+
+  /* ── Code grade card (T31.4) ──────────────── */
+
+  .grade-card { display: flex; align-items: center; gap: 8px; padding: 4px 0 6px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+  .grade-letter { font-size: 18px; font-weight: 800; font-family: var(--font-sans); min-width: 24px; text-align: center; }
+  .grade-A { color: var(--accent-green); }
+  .grade-B { color: var(--accent-blue); }
+  .grade-C { color: var(--accent-yellow); }
+  .grade-D { color: var(--accent-red); }
+  .grade-bar { flex: 1; height: 6px; background: var(--bg-primary); border-radius: 2px; overflow: hidden; }
+  .grade-fill { height: 100%; transition: width 0.3s; border-radius: 2px; }
+  .grade-pct { font-size: 11px; font-weight: 600; color: var(--text-secondary); min-width: 32px; text-align: right; }
 </style>
 </head>
 <body>
@@ -376,6 +412,7 @@
   <div id="liveReadouts"></div>
   <div id="sectorComparison"></div>
   <div id="alertsPanel"></div>
+  <div id="codeTerminal"></div>
 </div>
 
 <!-- TELEMETRY STRIP -->
@@ -415,6 +452,7 @@
 <script src="js/telemetry-panel.js"></script>
 <script src="js/telemetry-strip.js"></script>
 <script src="js/diagnostic.js"></script>
+<script src="js/code-terminal.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -15,12 +15,11 @@ class TestLeagueAutoDetection:
     """League detection from loaded cars."""
 
     def test_default_project_auto_detected(self):
-        """default_project with engine_map+gearbox+strategy -> F1 (engine_map is F1-only)."""
+        """default_project with gearbox+cooling+strategy -> F3 (all F3 parts)."""
         cars = load_all_cars("cars")
         project_car = next(c for c in cars if c["CAR_NAME"] == "DefaultProject")
         league = determine_league(project_car)
-        # engine_map is not in F3 or F2 part lists, so it's beyond F2 -> F1
-        assert league == "F1"
+        assert league == "F3"
 
     def test_seed_cars_all_load_with_league(self):
         """All seed cars load and get a league assignment."""

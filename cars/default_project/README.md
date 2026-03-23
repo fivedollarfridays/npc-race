@@ -14,7 +14,7 @@ python -m npc_race race cars/default_project/
 | File | Part | What It Does |
 |------|------|-------------|
 | car.py | Metadata | Name, color, stat allocation (100 point budget) |
-| engine_map.py | Engine | Controls torque and fuel delivery per tick |
+| cooling.py | Cooling | Balances engine temperature vs aerodynamic drag |
 | gearbox.py | Transmission | Decides when to shift up or down |
 | strategy.py | Pit Wall | Pit stops, tire compound, engine mode |
 

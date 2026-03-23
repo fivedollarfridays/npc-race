@@ -20,7 +20,7 @@ def _load_module(name: str):
 # -- Cycle 1: Directory structure --
 
 @pytest.mark.parametrize("filename", [
-    "car.py", "engine_map.py", "gearbox.py", "strategy.py", "README.md",
+    "car.py", "cooling.py", "gearbox.py", "strategy.py", "README.md",
 ])
 def test_template_file_exists(filename):
     """All template files must exist."""
@@ -48,13 +48,13 @@ def test_car_py_metadata():
     assert car.BRAKES == 20
 
 
-# -- Cycle 3: engine_map.py --
+# -- Cycle 3: cooling.py --
 
-def test_engine_map_signature_and_default():
-    """engine_map must accept (rpm, throttle_demand, engine_temp) and return (1.0, 1.0)."""
-    mod = _load_module("engine_map")
-    result = mod.engine_map(10000, 0.8, 90.0)
-    assert result == (1.0, 1.0)
+def test_cooling_signature_and_default():
+    """cooling must accept (engine_temp, brake_temp, battery_temp, speed)."""
+    mod = _load_module("cooling")
+    result = mod.cooling(100.0, 400.0, 30.0, 200.0)
+    assert 0.0 <= result <= 1.0
 
 
 # -- Cycle 4: gearbox.py --
@@ -102,11 +102,11 @@ def test_readme_under_50_lines():
     assert len(lines) <= 50, f"README has {len(lines)} lines (max 50)"
 
 
-def test_only_three_part_files():
-    """Template should have exactly 3 part files (engine_map, gearbox, strategy)."""
+def test_only_three_f3_part_files():
+    """Template should have exactly 3 F3 part files (gearbox, cooling, strategy)."""
     from engine.parts_api import CAR_PARTS
     part_files = [f for f in PROJECT_DIR.glob("*.py")
                   if f.stem in CAR_PARTS]
     assert len(part_files) == 3
     part_names = sorted(f.stem for f in part_files)
-    assert part_names == ["engine_map", "gearbox", "strategy"]
+    assert part_names == ["cooling", "gearbox", "strategy"]
