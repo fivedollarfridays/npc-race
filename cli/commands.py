@@ -188,6 +188,49 @@ def _print_final_standings(standings):
         print(f"  {rank}. {name:20s}  {pts} pts{marker}")
 
 
+def cmd_submit(args) -> int:
+    """Validate a results file and print submission summary."""
+    path = args.results_file
+    if not os.path.isfile(path):
+        print(f"Error: File not found: {path}")
+        return 1
+
+    try:
+        with open(path) as f:
+            results = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON: {e}")
+        return 1
+
+    from engine.results import verify_integrity
+
+    if not verify_integrity(results):
+        print("Integrity check FAILED -- results may have been tampered with")
+        return 1
+
+    _print_submit_summary(results)
+    return 0
+
+
+def _print_submit_summary(results: dict) -> None:
+    """Print a human-readable submission summary."""
+    print("Results verified")
+    print(f"  Track: {results.get('track', 'unknown')}")
+    print(f"  Laps: {results.get('laps', '?')}")
+    print(f"  League: {results.get('league', '?')}")
+    print()
+    for car in results.get("cars", []):
+        print(
+            f"  P{car['position']}  {car['name']:<20}  "
+            f"{car['total_time_s']:.2f}s  "
+            f"(best: {car.get('best_lap_s', 0):.2f}s)  "
+            f"reliability: {car.get('reliability_score', 1.0):.2f}"
+        )
+    print()
+    print(f"  Hash: {results.get('integrity', 'none')}")
+    print("  Ready for leaderboard submission.")
+
+
 def cmd_season(args) -> None:
     """Run a championship season."""
     from engine.season_runner import run_season

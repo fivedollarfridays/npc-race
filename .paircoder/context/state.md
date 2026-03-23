@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-03-22 Sprint 30 in progress. Phase 4 league system.
+> Last updated: 2026-03-22 Sprint 32 in progress. Submission pipeline integration gate done.
 
 ## Active Plan
 
@@ -29,6 +29,16 @@ AST metrics, reliability score (0.50-1.00), glitch engine with reliability_scale
 - Phase 5: Infrastructure (submission pipeline, onboarding)
 
 ## What Was Just Done
+
+- **T32.5**: Integration gate for submission pipeline. Created `tests/test_submission_pipeline.py` with 9 end-to-end tests across 5 test classes: run produces results file + all required fields + small size (3 tests), integrity valid on fresh results + tamper breaks hash (2 tests), cmd_submit validates pipeline results + rejects tampered (2 tests), tournament produces per-race results with valid integrity (1 test), existing run_race behavior unchanged (1 test). All 9 tests passing. Ruff clean, arch check clean.
+
+- **T32.4**: CLI submit command (`npcrace submit`). Added `cmd_submit()` to `cli/commands.py` (validates results.json via `verify_integrity()`, prints summary with track/laps/league/positions/hash) and `_print_submit_summary()` helper. Added `submit` subparser to `cli/main.py` with `results_file` positional arg. Handles missing file, invalid JSON, and tampered integrity gracefully (returns 1). 6 tests in `tests/test_submit_command.py`: CLI parser accepts submit, missing file error, invalid JSON error, valid results passes, tampered results rejected, summary output verified. All passing. Ruff clean. commands.py at 244 lines (under 400 limit).
+
+- **T32.3**: CLI results export alongside replay. Modified `engine/race_runner.py` (235 lines): added `_compute_results_path()` to derive results filename from replay path (replay.json -> results.json, race_monza.json -> race_monza_results.json), added `_export_results()` to generate and save lightweight summary via `generate_results_summary()`, updated `_export_replay()` signature to accept `cars` and `league`, updated `_load_and_filter_cars()` to return effective_league. Results file is ADDITIONAL output alongside replay, not a replacement. Console prints "Results saved to {path}". 7 tests in `tests/test_results_export.py`: produces results file (default and custom names), valid JSON, required fields, car positions, integrity hash present, replay still exists. All passing. Ruff clean.
+
+- **T32.2**: Integrity hash for results summary. Added `compute_integrity_hash()` and `verify_integrity()` to `engine/results.py`. Hash is SHA-256 over deterministic JSON serialization of results data, excluding `timestamp` and `integrity` fields. Wired into `generate_results_summary()` so every summary includes an `integrity` field. 5 new tests in `tests/test_results.py`: hash present, verifies on unmodified, fails on tamper, ignores timestamp changes, deterministic. 11 total results tests passing. Ruff clean, arch check clean.
+
+- **T32.1**: Results summary format. Created `engine/results.py` (64 lines) with `generate_results_summary()` that extracts a lightweight JSON-serializable summary (~10KB) from a full replay (10MB+). Includes version, track, laps, league, ISO 8601 timestamp, and per-car entries (name, position, total_time_s, best_lap_s, lap_times, finished, reliability_score, league, loaded_parts). Helper `_match_car()` links replay results to car dicts by name. 6 tests in `tests/test_results.py`: required fields, car fields, size < 50KB, no frames key, ISO timestamp, real 1-lap race integration. All passing. Ruff clean, arch check clean.
 
 - **T31.5**: Integration gate for viewer pipeline. Created `tests/test_viewer_pipeline.py` with 22 tests across 7 test classes: race produces call_logs in replay (3 tests), call logs sampled at 1Hz with 30-tick spacing (2 tests), call log entry structure with valid statuses (3 tests), reliability scores in range (3 tests), replay file size reasonable and call logs not dominant (2 tests), viewer JS/HTML files exist with expected functions and wiring (7 tests), backward compat for old replays without call_logs/reliability (2 tests). All 22 tests passing. Ruff clean, arch check clean.
 

@@ -12,6 +12,7 @@ from .commands import (
     cmd_list_tracks,
     cmd_run,
     cmd_season,
+    cmd_submit,
     cmd_tournament,
     cmd_validate,
     cmd_wizard,
@@ -64,6 +65,11 @@ def _build_parser() -> argparse.ArgumentParser:
     subs.add_parser("list-tracks", help="Print available tracks")
     subs.add_parser("wizard", help="Interactive car wizard (coming soon)")
 
+    submit_p = subs.add_parser(
+        "submit", help="Validate and prepare results for submission",
+    )
+    submit_p.add_argument("results_file", help="Path to results.json")
+
     _add_tournament_parser(subs)
     _add_season_parser(subs)
 
@@ -99,6 +105,7 @@ _DISPATCH = {
     "wizard": cmd_wizard,
     "tournament": cmd_tournament,
     "season": cmd_season,
+    "submit": cmd_submit,
 }
 
 

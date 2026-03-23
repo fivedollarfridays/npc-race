@@ -16,6 +16,7 @@ from .league_system import (
     generate_quality_report,
     validate_car_for_league,
 )
+from .results import generate_results_summary
 from .track_gen import generate_track, interpolate_track
 from .simulation import RaceSim
 from .narrative import detect_events
@@ -134,8 +135,25 @@ def _print_car_league_status(
         )
 
 
-def _export_replay(sim, results, output, track_name):
-    """Build narrative, export replay JSON, and print report."""
+def _compute_results_path(output: str) -> str:
+    """Derive the results file path from the replay output path."""
+    base, ext = os.path.splitext(output)
+    if os.path.basename(output) == "replay.json":
+        return os.path.join(os.path.dirname(output), "results.json")
+    return f"{base}_results{ext}"
+
+
+def _export_results(replay: dict, cars: list[dict], league: str, output: str) -> None:
+    """Generate and save a lightweight results summary alongside the replay."""
+    results_path = _compute_results_path(output)
+    summary = generate_results_summary(replay, cars, league=league)
+    with open(results_path, "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+    print(f"Results saved to {results_path}")
+
+
+def _export_replay(sim, results, output, track_name, cars, league):
+    """Build narrative, export replay JSON and results, and print report."""
     replay = sim.export_replay()
 
     events = detect_events(replay["frames"], replay.get("ticks_per_sec", 30), results)
@@ -154,11 +172,14 @@ def _export_replay(sim, results, output, track_name):
         json.dump(replay, f)
     print(f"\nReplay saved: {output}")
     print(f"Total frames: {len(replay['frames'])}")
+
+    _export_results(replay, cars, league, output)
+
     print(f"\n{report}")
 
 
 def _load_and_filter_cars(car_dir, car_data_dir, league):
-    """Load cars from directory, apply league gates, return filtered list."""
+    """Load cars from directory, apply league gates, return filtered list and league."""
     if car_data_dir:
         os.makedirs(car_data_dir, exist_ok=True)
         os.makedirs("cars/data", exist_ok=True)
@@ -167,11 +188,11 @@ def _load_and_filter_cars(car_dir, car_data_dir, league):
     if len(cars) < 2:
         raise ValueError("Need at least 2 cars to race!")
 
-    cars, _effective_league = _apply_league_gates(cars, league)
+    cars, effective_league = _apply_league_gates(cars, league)
     if len(cars) < 2:
         raise ValueError("Need at least 2 cars after league validation!")
 
-    return cars
+    return cars, effective_league
 
 
 def run_race(
@@ -193,7 +214,7 @@ def run_race(
     print(f"{'─' * 40}")
     print(f"Loading cars from: {car_dir}/\n")
 
-    cars = _load_and_filter_cars(car_dir, car_data_dir, league)
+    cars, effective_league = _load_and_filter_cars(car_dir, car_data_dir, league)
 
     print(f"\n{len(cars)} cars on the grid")
     if track_name:
@@ -209,6 +230,6 @@ def run_race(
     results = sim.run()
 
     _print_results(results)
-    _export_replay(sim, results, output, track_name)
+    _export_replay(sim, results, output, track_name, cars, effective_league)
 
     return results
