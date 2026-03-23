@@ -66,23 +66,9 @@ Each is a Python function the player writes. The physics engine calls it every s
 
 ### 3.3 The Multiplicative Model
 
-Each part's decision is evaluated against the theoretical optimum for the current conditions. The evaluation produces an efficiency factor (0.85 to 1.00). All factors multiply together.
+Parts affect lap time through two channels: an efficiency product (3 parts that scale acceleration force) and direct physics consequences (6 parts that change forces, grip, and energy through real physical chains). The two channels combine multiplicatively — better decisions compound across parts and across laps.
 
-**Why multiplication, not addition:**
-
-Six parts each at 95% efficiency:
-- Additive: 1.0 - 6×0.05 = 0.70 total efficiency
-- Multiplicative: 0.95⁶ = 0.735 total efficiency
-
-Six parts each at 90%:
-- Additive: 1.0 - 6×0.10 = 0.40
-- Multiplicative: 0.90⁶ = 0.531
-
-The multiplicative model means:
-- No single part dominates (improving one from 0.90→1.00 gives less than improving all from 0.90→0.95)
-- Parts optimized together produce compound gains (synergy)
-- The gap between "pretty good everywhere" and "excellent everywhere" is meaningful
-- A beginner who optimizes one part well but neglects others still loses to someone who's decent at everything
+The spread between naive defaults and optimized code is 5.80 seconds on a single Monza lap. Over 5 laps, compound effects push this to 17.77 seconds. No artificial amplification or prescribed optimals — the differences emerge from physics.
 
 **Measured spreads (Monza, Sprint 28):**
 
