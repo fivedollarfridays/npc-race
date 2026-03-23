@@ -9,9 +9,11 @@ import sys
 
 from .commands import (
     cmd_init,
+    cmd_leaderboard,
     cmd_list_tracks,
     cmd_run,
     cmd_season,
+    cmd_submit,
     cmd_tournament,
     cmd_validate,
     cmd_wizard,
@@ -55,8 +57,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
     _add_run_parser(subs)
 
-    init_p = subs.add_parser("init", help="Create cars/ directory with template")
-    init_p.add_argument("--dir", default="cars", help="Target directory (default: cars)")
+    init_p = subs.add_parser("init", help="Create a project from the F3 template")
+    init_p.add_argument("dir", nargs="?", default="cars",
+                        help="Target directory (default: cars)")
 
     val_p = subs.add_parser("validate", help="Validate car file(s)")
     val_p.add_argument("car_files", nargs="+", help="Car .py files to validate")
@@ -64,10 +67,27 @@ def _build_parser() -> argparse.ArgumentParser:
     subs.add_parser("list-tracks", help="Print available tracks")
     subs.add_parser("wizard", help="Interactive car wizard (coming soon)")
 
+    submit_p = subs.add_parser(
+        "submit", help="Validate and prepare results for submission",
+    )
+    submit_p.add_argument("results_file", help="Path to results.json")
+
     _add_tournament_parser(subs)
     _add_season_parser(subs)
+    _add_leaderboard_parser(subs)
 
     return parser
+
+
+def _add_leaderboard_parser(subs) -> None:
+    """Add the 'leaderboard' subparser."""
+    lb_p = subs.add_parser("leaderboard", help="View or update leaderboard")
+    lb_p.add_argument("--add", default=None,
+                       help="Path to results.json to add")
+    lb_p.add_argument("--reset", action="store_true",
+                       help="Reset the leaderboard")
+    lb_p.add_argument("--file", default="leaderboard.json",
+                       help="Leaderboard file path")
 
 
 def _add_tournament_parser(subs) -> None:
@@ -99,6 +119,8 @@ _DISPATCH = {
     "wizard": cmd_wizard,
     "tournament": cmd_tournament,
     "season": cmd_season,
+    "submit": cmd_submit,
+    "leaderboard": cmd_leaderboard,
 }
 
 

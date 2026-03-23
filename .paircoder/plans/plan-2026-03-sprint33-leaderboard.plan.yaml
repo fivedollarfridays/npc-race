@@ -1,0 +1,11 @@
+id: plan-2026-03-sprint33-leaderboard
+title: Sprint 33 — Leaderboard + Onboarding (Final)
+type: feature
+status: planned
+created_at: '2026-03-22T21:41:57.312948'
+skills:
+- planning-with-pm
+goals:
+- Local leaderboard with standings persistence
+- Player onboarding with before/after moment
+- 'Complete product loop: init → run → submit → leaderboard'
