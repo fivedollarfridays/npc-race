@@ -8,8 +8,12 @@ import json
 import os
 import tempfile
 
+import pytest
+
 from tracks import get_track
 from engine.race_runner import run_race
+
+pytestmark = pytest.mark.smoke
 
 
 # ---------------------------------------------------------------------------
@@ -59,6 +63,7 @@ class TestNamedTrackIntegration:
 class TestLapsDefault:
     """When laps is not specified, use the track's laps_default."""
 
+    @pytest.mark.integration
     def test_laps_default_from_track(self):
         monza = get_track("monza")
         expected_laps = monza["laps_default"]
@@ -162,7 +167,6 @@ class TestInvalidTrackName:
     """Invalid track_name should raise a clear error."""
 
     def test_invalid_track_name_raises_key_error(self):
-        import pytest
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             out = f.name
         try:
@@ -176,7 +180,6 @@ class TestInvalidTrackName:
                 os.unlink(out)
 
     def test_error_message_is_helpful(self):
-        import pytest
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             out = f.name
         try:

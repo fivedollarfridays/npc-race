@@ -1,8 +1,11 @@
 """Tests for T6.5: Timing + gaps enrichment in replay frames and results."""
 
 import json
+import pytest
 
 from engine import run_race
+
+pytestmark = pytest.mark.smoke
 
 
 def _run_short_race(tmp_path, **kwargs):

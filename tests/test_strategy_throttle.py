@@ -12,6 +12,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from engine.simulation import RaceSim
 from engine.track_gen import generate_track, interpolate_track
 
+import pytest
+pytestmark = pytest.mark.smoke
+
 
 def _make_procedural_track():
     control = generate_track(seed=42)

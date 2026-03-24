@@ -7,7 +7,7 @@ from engine.parts_simulation import PartsRaceSim
 from tracks import get_track
 from engine.track_gen import interpolate_track
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.smoke
 
 CARS_DIR = "cars"
 

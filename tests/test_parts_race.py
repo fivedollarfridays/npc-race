@@ -7,7 +7,7 @@ import pytest
 from engine.parts_api import get_defaults, HARDWARE_SPECS, CAR_PARTS
 from engine.parts_runner import create_initial_state, run_parts_tick
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.smoke
 
 
 def _run_laps(n_ticks=3000):

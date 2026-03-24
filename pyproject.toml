@@ -23,7 +23,9 @@ include = ["cli*", "engine*", "security*", "tracks*", "viewer*"]
 
 [tool.pytest.ini_options]
 markers = [
-    "slow: full-race integration tests (skip with -m 'not slow')",
+    "slow: legacy alias for integration (deprecated)",
+    "smoke: short simulation tests (1-2 laps, few cars)",
+    "integration: full simulation tests (multi-lap, 20 cars, pipelines)",
 ]
 
 [project.scripts]

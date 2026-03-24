@@ -1,17 +1,25 @@
-"""Tests for fast mode export: lap_summary.json and fast-mode run_race."""
+"""Tests for fast mode export: lap_summary.json and fast-mode run_race.
+
+Unit tests (no mark) use FakeSim/mocks. Integration tests use @pytest.mark.smoke.
+"""
 
 import json
 import os
 
 from engine.fast_export import export_lap_summary
-from engine.race_runner import run_race
 from cli.main import _build_parser
+
+import pytest
+
+from tests.fixtures.race_data import SAMPLE_LAP_SUMMARIES
 
 
 # --- Helpers ---
 
 def _run_fast(tmp_path, fast_mode=True):
     """Run a minimal 1-lap race into tmp_path, return output dir."""
+    from engine.race_runner import run_race
+
     output = str(tmp_path / "replay.json")
     run_race(
         car_dir="cars",
@@ -34,10 +42,7 @@ class TestExportLapSummary:
 
         class FakeSim:
             def get_lap_summaries(self):
-                return {
-                    "CarA": [{"lap": 1, "time_s": 80.5}],
-                    "CarB": [{"lap": 1, "time_s": 81.2}],
-                }
+                return SAMPLE_LAP_SUMMARIES
 
         path = str(tmp_path / "lap_summary.json")
         export_lap_summary(FakeSim(), path)
@@ -46,10 +51,10 @@ class TestExportLapSummary:
         with open(path) as f:
             data = json.load(f)
 
-        assert "CarA" in data
-        assert "CarB" in data
-        assert data["CarA"][0]["lap"] == 1
-        assert data["CarA"][0]["time_s"] == 80.5
+        assert "TestCar1" in data
+        assert "TestCar2" in data
+        assert data["TestCar1"][0]["lap"] == 1
+        assert data["TestCar1"][0]["time_s"] == 85.2
 
     def test_empty_summaries(self, tmp_path):
         """export_lap_summary handles empty summaries gracefully."""
@@ -69,6 +74,7 @@ class TestExportLapSummary:
 # --- Cycle 2: fast mode integration ---
 
 
+@pytest.mark.smoke
 class TestFastModeRunRace:
     """run_race(fast_mode=True) writes results + lap_summary, skips replay."""
 
@@ -100,6 +106,7 @@ class TestFastModeRunRace:
 # --- Cycle 3: normal mode unchanged ---
 
 
+@pytest.mark.smoke
 class TestNormalModeUnchanged:
     """run_race(fast_mode=False) still writes replay.json as before."""
 

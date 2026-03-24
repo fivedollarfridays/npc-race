@@ -11,7 +11,7 @@ from engine import safe_call
 from tracks import get_track
 from engine.track_gen import interpolate_track
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.smoke
 
 CARS_DIR = "cars"
 

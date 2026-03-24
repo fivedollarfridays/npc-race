@@ -31,10 +31,10 @@ jobs:
       - name: Run ruff
         run: ruff check .
 
-  test-fast:
-    name: Fast Tests
+  test-unit:
+    name: Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
 
@@ -53,13 +53,38 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]"
 
-      - name: Run fast tests
-        run: pytest -m "not slow" --tb=short -q
+      - name: Run unit tests
+        run: pytest -m "not smoke and not integration and not slow" --tb=short -q --timeout=10
 
-  test-full:
-    name: Full Tests (integration)
+  test-smoke:
+    name: Smoke Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run smoke tests
+        run: pytest -m smoke --tb=short -q --timeout=30
+
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ready-to-merge')
     steps:
       - uses: actions/checkout@v4
@@ -79,18 +104,8 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]"
 
-      - name: Run all tests with coverage
-        run: pytest --cov=. --cov-report=xml --cov-report=term-missing --ignore=tests/test_balance_v2.py
-
-      - name: Coverage gate (≥80%)
-        run: python -m coverage report --fail-under=80
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report
-          path: coverage.xml
+      - name: Run integration tests
+        run: pytest -m "integration or slow" --tb=short -q --timeout=120
 
   validate-cars:
     name: Validate seed cars

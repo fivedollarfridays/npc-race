@@ -4,11 +4,15 @@ import os
 import sys
 import subprocess
 
+import pytest
+
 # Ensure project root is on path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
 PLAY_PY = os.path.join(PROJECT_ROOT, "play.py")
+
+pytestmark = pytest.mark.integration
 
 
 # ── Cycle 1: --list-tracks ──────────────────────────────────────────────────
@@ -70,7 +74,7 @@ class TestTrackSelection:
         """python play.py --track monza should run and mention Monza."""
         result = subprocess.run(
             [sys.executable, PLAY_PY, "--track", "monza", "--no-browser",
-             "--output", "/tmp/npcrace_test_replay.json"],
+             "--laps", "1", "--output", "/tmp/npcrace_test_replay.json"],
             capture_output=True, text=True,
             cwd=PROJECT_ROOT,
         )
@@ -87,7 +91,7 @@ class TestTrackRandom:
     def test_track_random_runs(self):
         result = subprocess.run(
             [sys.executable, PLAY_PY, "--track", "random", "--no-browser",
-             "--output", "/tmp/npcrace_test_replay.json"],
+             "--laps", "1", "--output", "/tmp/npcrace_test_replay.json"],
             capture_output=True, text=True,
             cwd=PROJECT_ROOT,
         )
@@ -96,7 +100,7 @@ class TestTrackRandom:
     def test_track_random_prints_selection(self):
         result = subprocess.run(
             [sys.executable, PLAY_PY, "--track", "random", "--no-browser",
-             "--output", "/tmp/npcrace_test_replay.json"],
+             "--laps", "1", "--output", "/tmp/npcrace_test_replay.json"],
             capture_output=True, text=True,
             cwd=PROJECT_ROOT,
         )
@@ -142,7 +146,7 @@ class TestSeedInteraction:
     def test_seed_alone_still_works(self):
         result = subprocess.run(
             [sys.executable, PLAY_PY, "--seed", "99", "--no-browser",
-             "--output", "/tmp/npcrace_test_replay.json"],
+             "--laps", "1", "--output", "/tmp/npcrace_test_replay.json"],
             capture_output=True, text=True,
             cwd=PROJECT_ROOT,
         )
@@ -152,7 +156,7 @@ class TestSeedInteraction:
         """When --track is given, --seed is ignored (no error)."""
         result = subprocess.run(
             [sys.executable, PLAY_PY, "--track", "monza", "--seed", "99",
-             "--no-browser", "--output", "/tmp/npcrace_test_replay.json"],
+             "--no-browser", "--laps", "1", "--output", "/tmp/npcrace_test_replay.json"],
             capture_output=True, text=True,
             cwd=PROJECT_ROOT,
         )

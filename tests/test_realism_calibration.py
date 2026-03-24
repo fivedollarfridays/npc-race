@@ -18,7 +18,7 @@ from engine.simulation import RaceSim
 from engine.track_gen import interpolate_track
 from tracks import get_track
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.integration
 
 
 def _make_balanced_cars(n=5):

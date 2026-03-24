@@ -12,6 +12,8 @@ import textwrap
 
 import pytest
 
+pytestmark = pytest.mark.smoke
+
 from engine import run_race, load_car, load_all_cars
 from security.bot_scanner import scan_car_file, scan_car_source
 from tracks import get_track, list_tracks, random_track, TRACKS

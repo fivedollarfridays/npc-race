@@ -14,6 +14,9 @@ from engine.replay import _compute_positions
 from engine.track_gen import generate_track, interpolate_track
 from tracks import get_track
 
+import pytest
+pytestmark = pytest.mark.smoke
+
 
 def _default_strategy(s):
     """Default balanced strategy for test cars."""
