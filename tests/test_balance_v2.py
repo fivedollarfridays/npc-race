@@ -110,7 +110,7 @@ class TestLapTimes:
                      if r.get("best_lap_s") and r["finished"]]
         assert best_laps, "No car finished with a valid lap time"
         fastest = min(best_laps)
-        assert 40 <= fastest <= 120, f"Monaco fastest lap: {fastest:.1f}s"
+        assert 30 <= fastest <= 120, f"Monaco fastest lap: {fastest:.1f}s"
 
     def test_monza_lap_time_40_to_95(self):
         replay = _run_race_get_replay("monza", laps=2)

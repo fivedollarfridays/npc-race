@@ -165,10 +165,12 @@ class TestRunCommand:
     """Test the run subcommand."""
 
     def test_run_missing_car_dir(self, capsys):
-        """run with nonexistent car dir should print error."""
+        """run with nonexistent car dir should print error and exit 1."""
         from cli.main import main
 
-        main(["run", "--car-dir", "/nonexistent/path"])
+        with pytest.raises(SystemExit) as exc_info:
+            main(["run", "--car-dir", "/nonexistent/path"])
+        assert exc_info.value.code == 1
         captured = capsys.readouterr()
         assert "not found" in captured.out.lower()
 
@@ -212,13 +214,13 @@ class TestRunCommand:
         assert called_with["track_name"] == "monza"
 
 
-class TestWizardStub:
-    """Test that wizard subcommand is registered but stubbed."""
+class TestWizardRemoved:
+    """Wizard command was removed (stub had no implementation)."""
 
-    def test_wizard_prints_stub(self, capsys):
-        """wizard should print a 'not yet implemented' message."""
-        from cli.main import main
+    def test_wizard_not_in_parser(self):
+        """wizard should not be a valid subcommand."""
+        from cli.main import _build_parser
 
-        main(["wizard"])
-        captured = capsys.readouterr()
-        assert "not yet implemented" in captured.out.lower() or "coming soon" in captured.out.lower()
+        parser = _build_parser()
+        with pytest.raises(SystemExit):
+            parser.parse_args(["wizard"])

@@ -6,7 +6,7 @@ A starter car for NPC Race. Fork this directory and make it faster.
 
 ```bash
 # Run a race with your car
-python -m npc_race race cars/default_project/
+npcrace run --car-dir cars --track monza --laps 1
 ```
 
 ## What's Inside

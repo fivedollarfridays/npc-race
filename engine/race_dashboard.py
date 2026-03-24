@@ -10,8 +10,8 @@ def _format_time_hms(total_s: float) -> str:
     mins = int(remainder // 60)
     secs = remainder - mins * 60
     if hours > 0:
-        return f"{hours}:{mins:02d}:{secs:04.1f}"
-    return f"{mins}:{secs:04.1f}"
+        return f"{hours}:{mins:02d}:{secs:06.3f}"
+    return f"{mins}:{secs:06.3f}"
 
 
 def _format_lap_time(lap_s: float | None) -> str:
@@ -20,7 +20,7 @@ def _format_lap_time(lap_s: float | None) -> str:
         return "---"
     mins = int(lap_s // 60)
     secs = lap_s - mins * 60
-    return f"{mins}:{secs:04.1f}"
+    return f"{mins}:{secs:06.3f}"
 
 
 def _format_standings(
@@ -29,7 +29,7 @@ def _format_standings(
     """Build the standings table section."""
     title = track_name.upper() if track_name else "UNKNOWN"
     lines = [
-        f"   RACE RESULTS — {title} ({laps} laps)",
+        f"   RACE RESULTS — {title} ({laps} {'lap' if laps == 1 else 'laps'})",
         "   " + "=" * 70,
     ]
     leader_time: float | None = None
@@ -188,9 +188,10 @@ def generate_dashboard(
     """
     sections = [_format_standings(results, laps, track_name)]
     if lap_summaries:
-        chart = _format_lap_chart(lap_summaries, results)
-        if chart:
-            sections.append(chart)
+        if laps >= 5:
+            chart = _format_lap_chart(lap_summaries, results)
+            if chart:
+                sections.append(chart)
         pits = _format_pit_stops(lap_summaries)
         if pits:
             sections.append(pits)

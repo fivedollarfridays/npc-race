@@ -16,14 +16,13 @@ from .commands import (
     cmd_submit,
     cmd_tournament,
     cmd_validate,
-    cmd_wizard,
 )
 from .race_commands import cmd_qualify, cmd_race
 
 
 def _add_run_parser(subs) -> None:
     """Add the 'run' subparser with race and league options."""
-    run_p = subs.add_parser("run", help="Run a race")
+    run_p = subs.add_parser("run", help="Run a single race (default: fast mode)")
     run_p.add_argument("--car-dir", default="cars",
                        help="Directory containing car .py files")
     run_p.add_argument("--laps", type=int, default=None, help="Number of laps")
@@ -72,8 +71,6 @@ def _build_parser() -> argparse.ArgumentParser:
     val_p.add_argument("car_files", nargs="+", help="Car .py files to validate")
 
     subs.add_parser("list-tracks", help="Print available tracks")
-    subs.add_parser("wizard", help="Interactive car wizard (coming soon)")
-
     submit_p = subs.add_parser(
         "submit", help="Validate and prepare results for submission",
     )
@@ -132,7 +129,10 @@ def _add_qualify_parser(subs) -> None:
 
 def _add_race_parser(subs) -> None:
     """Add the 'race' subparser for qualify+race pipeline."""
-    r_p = subs.add_parser("race", help="Run a race (optionally with qualifying)")
+    r_p = subs.add_parser(
+        "race",
+        help="Run a full race weekend (qualifying + race + leaderboard)",
+    )
     r_p.add_argument("--car-dir", default="cars",
                      help="Directory containing car .py files")
     r_p.add_argument("--track", default=None, help="Named track")
@@ -156,7 +156,6 @@ _DISPATCH = {
     "init": cmd_init,
     "validate": cmd_validate,
     "list-tracks": cmd_list_tracks,
-    "wizard": cmd_wizard,
     "tournament": cmd_tournament,
     "season": cmd_season,
     "submit": cmd_submit,
@@ -171,4 +170,6 @@ def main(argv: list[str] | None = None) -> None:
     parser = _build_parser()
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
     handler = _DISPATCH[args.command]
-    handler(args)
+    result = handler(args)
+    if result is not None and result != 0:
+        sys.exit(result)

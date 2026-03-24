@@ -5,7 +5,7 @@ NPC Race is a competitive coding game where you write Python functions that cont
 ## Prerequisites
 
 - Python 3.11+
-- `pip install -e .` (from the repo root)
+- `pip install -e .` (from the repo root; the generated `*.egg-info/` directory is gitignored)
 
 ## Quick Start
 
@@ -13,8 +13,8 @@ NPC Race is a competitive coding game where you write Python functions that cont
 # Create your car project
 npcrace init my_car
 
-# Run a race on Monza
-npcrace run --car-dir my_car --track monza --laps 1
+# Run a race on Monza (--car-dir defaults to cars/)
+npcrace run --track monza --laps 1
 
 # Check your results
 npcrace submit results.json
@@ -25,10 +25,10 @@ npcrace submit results.json
 Run with the default gearbox and note your lap time:
 
 ```bash
-npcrace run --car-dir my_car --track monza --laps 1
+npcrace run --track monza --laps 1
 ```
 
-Now open `my_car/gearbox.py`. The default shifts at 12,800 RPM — past the engine's peak torque band (10,800-12,500 RPM). Change it:
+Now open `cars/my_car/gearbox.py`. The default shifts at 12,800 RPM — past the engine's peak torque band (10,800-12,500 RPM). Change it:
 
 ```python
 # Before (default — shifts too late):
