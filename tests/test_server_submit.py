@@ -1,5 +1,8 @@
 """Tests for POST /api/submit-car endpoint."""
 
+import pytest
+pytest.importorskip("fastapi")
+
 import sqlite3
 
 import pytest

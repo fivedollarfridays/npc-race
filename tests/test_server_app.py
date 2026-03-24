@@ -1,5 +1,8 @@
 """Tests for server app skeleton, config, CORS, and static mount."""
 
+import pytest
+pytest.importorskip("fastapi")
+
 
 def test_app_exists():
     """Import server.app and verify app object exists."""

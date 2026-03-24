@@ -1,5 +1,8 @@
 """Tests for GET /api/health endpoint."""
 
+import pytest
+pytest.importorskip("fastapi")
+
 from fastapi.testclient import TestClient
 
 from server.app import app

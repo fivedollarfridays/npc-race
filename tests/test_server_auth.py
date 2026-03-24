@@ -1,5 +1,8 @@
 """Tests for server.auth — API key authentication."""
 
+import pytest
+pytest.importorskip("fastapi")
+
 import sqlite3
 
 import pytest

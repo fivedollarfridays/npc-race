@@ -1,5 +1,8 @@
 """Tests for cars and tracks API endpoints."""
 
+import pytest
+pytest.importorskip("fastapi")
+
 import sqlite3
 
 import pytest
