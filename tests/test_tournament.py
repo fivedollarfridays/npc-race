@@ -3,7 +3,6 @@
 import json
 import os
 
-import pytest
 
 
 # ── Cycle 1: F1_POINTS constant ──
