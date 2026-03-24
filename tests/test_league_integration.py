@@ -16,8 +16,12 @@ class TestLeagueAutoDetection:
 
     def test_default_project_auto_detected(self):
         """default_project with gearbox+cooling+strategy -> F3 (all F3 parts)."""
-        cars = load_all_cars("cars")
-        project_car = next(c for c in cars if c["CAR_NAME"] == "DefaultProject")
+        import os
+        from engine.car_project_loader import load_car_project
+        project_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "cars", "default_project")
+        project_car = load_car_project(project_dir)
         league = determine_league(project_car)
         assert league == "F3"
 
