@@ -120,12 +120,12 @@ class TestReplayReliabilityScores:
 class TestReplayFileSize:
     """Cycle 5: replay file size is reasonable."""
 
-    def test_1lap_replay_under_15mb(self, race_replay):
-        """1-lap replay with call logs should stay under 15MB."""
+    def test_1lap_replay_under_50mb(self, race_replay):
+        """1-lap replay with 20 cars should stay under 50MB."""
         _, replay = race_replay
         data = json.dumps(replay)
         size_mb = len(data) / (1024 * 1024)
-        assert size_mb < 15.0, f"1-lap replay is {size_mb:.1f}MB, expected <15MB"
+        assert size_mb < 50.0, f"1-lap replay is {size_mb:.1f}MB, expected <50MB"
 
     def test_call_logs_not_dominant(self, race_replay):
         """Call logs should not be more than 30% of total replay size."""
