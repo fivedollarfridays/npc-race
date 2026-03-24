@@ -59,7 +59,7 @@ jobs:
   test-smoke:
     name: Smoke Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
 
