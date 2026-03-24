@@ -36,6 +36,8 @@ def _add_run_parser(subs) -> None:
                        help="Don't auto-open the viewer in a browser")
     run_p.add_argument("--live", action="store_true", default=False,
                        help="Enable live replay mode (full replay.json export)")
+    run_p.add_argument("--verbose", "-v", action="store_true", default=False,
+                       help="Show per-car league validation details")
 
 
 def _add_season_parser(subs) -> None:
@@ -145,6 +147,8 @@ def _add_race_parser(subs) -> None:
     r_p.add_argument("--league", default=None, help="League tier")
     r_p.add_argument("--live", action="store_true", default=False,
                      help="Enable live replay mode")
+    r_p.add_argument("--verbose", "-v", action="store_true", default=False,
+                     help="Show per-car league validation details")
 
 
 _DISPATCH = {

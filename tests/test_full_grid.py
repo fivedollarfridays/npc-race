@@ -1,6 +1,6 @@
-"""T35.7 — 20-car grid integration tests.
+"""T35.7 — 19-car grid integration tests.
 
-Verify all 20 cars load, have unique names, valid stats,
+Verify all 19 cars load, have unique names, valid stats,
 and can race together without errors.
 """
 
@@ -37,8 +37,8 @@ def monza_track():
 
 
 def test_load_all_cars_returns_20(all_cars):
-    """load_all_cars('cars') returns exactly 20 cars."""
-    assert len(all_cars) == 20
+    """load_all_cars('cars') returns exactly 19 cars."""
+    assert len(all_cars) == 19
 
 
 def test_all_car_names_unique(all_cars):
@@ -60,7 +60,7 @@ def test_all_stats_sum_to_100(all_cars):
 
 @pytest.fixture(scope="module")
 def race_results(all_cars, monza_track):
-    """Run a 3-lap Monza race with all 20 cars, return (results, elapsed_s)."""
+    """Run a 3-lap Monza race with all 19 cars, return (results, elapsed_s)."""
     points, track_data = monza_track
     sim = RaceSim(
         cars=all_cars,
@@ -78,17 +78,17 @@ def race_results(all_cars, monza_track):
 
 
 def test_3_lap_race_completes(race_results):
-    """3-lap Monza with 20 cars finishes without crash."""
+    """3-lap Monza with 19 cars finishes without crash."""
     results, _ = race_results
     assert results is not None
-    assert len(results) == 20
+    assert len(results) == 19
 
 
 def test_all_positions_assigned(race_results):
     """Results have positions 1 through 20."""
     results, _ = race_results
     positions = sorted(r["position"] for r in results)
-    assert positions == list(range(1, 21))
+    assert positions == list(range(1, 20))
 
 
 def test_performance_under_30s(race_results):

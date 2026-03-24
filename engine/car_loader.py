@@ -248,7 +248,7 @@ def load_all_cars(directory):
                 print(f"  FAILED: {f} -- {e}")
 
         # Project directory: subdirectory containing car.py
-        elif os.path.isdir(full_path) and not f.startswith("_"):
+        elif os.path.isdir(full_path) and not f.startswith("_") and f != "default_project":
             car_py = os.path.join(full_path, "car.py")
             if os.path.isfile(car_py):
                 try:

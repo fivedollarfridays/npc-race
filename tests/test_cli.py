@@ -116,36 +116,47 @@ class TestValidateCommand:
 
 
 class TestInitCommand:
-    """Test the init subcommand."""
+    """Test the init subcommand creates inside cars/ with PascalCase name."""
 
-    def test_init_creates_cars_dir(self, tmp_path, capsys):
-        """init should create a project directory with F3 template files."""
-        from cli.main import main
+    def test_init_creates_inside_cars(self, capsys):
+        """init my_car creates cars/my_car/ with F3 template files."""
+        import os
+        import shutil
 
-        target = tmp_path / "my_car"
-        main(["init", str(target)])
-        assert target.is_dir()
-        assert (target / "car.py").is_file()
-        assert (target / "gearbox.py").is_file()
-        assert (target / "cooling.py").is_file()
-        assert (target / "strategy.py").is_file()
+        name = "_test_cli_init"
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        target = os.path.join(root, "cars", name)
+        try:
+            from cli.main import main
 
-    def test_init_default_dir(self, capsys, monkeypatch, tmp_path):
-        """init with no dir should create cars/ in cwd."""
-        monkeypatch.chdir(tmp_path)
-        from cli.main import main
+            main(["init", name])
+            assert os.path.isdir(target)
+            assert os.path.isfile(os.path.join(target, "car.py"))
+            assert os.path.isfile(os.path.join(target, "gearbox.py"))
+            assert os.path.isfile(os.path.join(target, "cooling.py"))
+            assert os.path.isfile(os.path.join(target, "strategy.py"))
+        finally:
+            if os.path.isdir(target):
+                shutil.rmtree(target)
 
-        main(["init"])
-        assert (tmp_path / "cars").is_dir()
-
-    def test_init_existing_dir_no_overwrite(self, tmp_path, capsys):
-        """init on existing dir should return error code 1."""
-        target = tmp_path / "my_car"
-        target.mkdir()
+    def test_init_rejects_absolute_path(self, capsys):
+        """init with absolute path returns error code 1."""
         from cli.commands import cmd_init
 
         import types
-        args = types.SimpleNamespace(dir=str(target))
+        args = types.SimpleNamespace(dir="/tmp/foo")
+        result = cmd_init(args)
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "simple directory name" in captured.out
+
+    def test_init_existing_dir_no_overwrite(self, capsys):
+        """init on existing dir should return error code 1."""
+        from cli.commands import cmd_init
+
+        import types
+        # "default_project" already exists in cars/
+        args = types.SimpleNamespace(dir="default_project")
         result = cmd_init(args)
         assert result == 1
 
