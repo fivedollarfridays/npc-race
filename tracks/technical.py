@@ -5,7 +5,7 @@ MONACO = {
     "name": "Monaco",
     "country": "Monaco",
     "character": "technical",
-    "laps_default": 7,
+    "laps_default": 78,
     "real_length_m": 3337,
     "real_laps": 78,
     "control_points": [
@@ -32,7 +32,7 @@ SINGAPORE = {
     "name": "Singapore",
     "country": "Singapore",
     "character": "technical",
-    "laps_default": 6,
+    "laps_default": 62,
     "real_length_m": 5063,
     "real_laps": 62,
     "control_points": [
@@ -58,7 +58,7 @@ ZANDVOORT = {
     "name": "Zandvoort",
     "country": "Netherlands",
     "character": "technical",
-    "laps_default": 6,
+    "laps_default": 72,
     "real_length_m": 4259,
     "real_laps": 72,
     "control_points": [

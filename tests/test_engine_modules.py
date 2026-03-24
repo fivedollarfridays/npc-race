@@ -7,8 +7,12 @@ under 400 lines each, with backward-compatible imports.
 import os
 import sys
 
+import pytest
+
 # Ensure project root is on path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+pytestmark = pytest.mark.smoke
 
 
 # ── Cycle 1: Track generation spoke ─────────────────────────────────────────

@@ -23,6 +23,7 @@ from .narrative import detect_events
 from .commentary import format_events
 from .race_report import generate_report
 from .fast_export import export_lap_summary
+from .race_dashboard import generate_dashboard
 
 
 def _resolve_track(track_name, track_seed, laps):
@@ -297,6 +298,12 @@ def run_race(
     results = sim.run()
 
     _print_results(results)
+
+    lap_sums = sim.get_lap_summaries() if fast_mode else None
+    dashboard = generate_dashboard(
+        results, lap_sums, track_name=track_name or "", laps=effective_laps,
+    )
+    print(dashboard)
 
     if fast_mode:
         _export_fast(sim, results, output, track_name, cars, effective_league)

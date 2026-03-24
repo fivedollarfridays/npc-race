@@ -13,6 +13,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.track_gen import generate_track, interpolate_track
 
+import pytest
+pytestmark = pytest.mark.smoke
+
 
 def _default_strategy(s):
     return {"throttle": 1.0, "boost": False, "tire_mode": "balanced"}

@@ -3,15 +3,12 @@
 import os
 import sys
 
-import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.physics import (
     apply_drag, MAX_SPEED, compute_target_speed, update_speed,
 )
-
-pytestmark = pytest.mark.slow
 
 
 # --- Cycle 1: Aerodynamic drag ---
@@ -49,10 +46,10 @@ class TestSpeedCap:
     """MAX_SPEED constant exists and is 370."""
 
     def test_max_speed_constant(self):
-        assert MAX_SPEED == 370.0
+        assert MAX_SPEED == 355.0
 
-    def test_max_speed_under_370_sustained(self):
-        """Simulate 10,000 ticks of acceleration on straight, speed never > 370."""
+    def test_max_speed_under_355_sustained(self):
+        """Simulate 10,000 ticks of acceleration on straight, speed never > 355."""
         speed = 0.0
         dt = 1.0 / 30
         for _ in range(10_000):

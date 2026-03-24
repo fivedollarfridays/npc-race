@@ -10,7 +10,7 @@ import os
 
 import pytest
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.smoke
 
 VIEWER_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "viewer"

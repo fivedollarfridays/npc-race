@@ -2,6 +2,8 @@
 
 import pytest
 
+pytestmark = pytest.mark.smoke
+
 
 # --- Fix 1: car_loader wires bot_scanner ---
 

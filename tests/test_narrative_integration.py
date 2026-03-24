@@ -8,7 +8,7 @@ import pytest
 
 from engine.race_runner import run_race
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.integration
 
 CARS_DIR = str(pathlib.Path(__file__).resolve().parent.parent / "cars")
 

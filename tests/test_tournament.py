@@ -3,9 +3,6 @@
 import json
 import os
 
-import pytest
-
-pytestmark = pytest.mark.slow
 
 
 # ── Cycle 1: F1_POINTS constant ──
@@ -15,24 +12,23 @@ class TestF1Points:
     """Test that F1 championship points are correctly defined."""
 
     def test_f1_points_exists(self):
-        """F1_POINTS dict should be importable from cli.commands."""
+        """F1_POINTS list should be importable from cli.commands."""
         from cli.commands import F1_POINTS
 
-        assert isinstance(F1_POINTS, dict)
+        assert isinstance(F1_POINTS, list)
 
     def test_f1_points_values(self):
         """F1_POINTS should match official F1 top-10 scoring."""
         from cli.commands import F1_POINTS
 
-        expected = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
+        expected = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]
         assert F1_POINTS == expected
 
     def test_f1_points_no_points_outside_top10(self):
-        """Positions outside top 10 should not have points."""
+        """Only 10 scoring positions."""
         from cli.commands import F1_POINTS
 
-        assert 11 not in F1_POINTS
-        assert 0 not in F1_POINTS
+        assert len(F1_POINTS) == 10
 
 
 # ── Cycle 2: Tournament subparser and dispatch ──

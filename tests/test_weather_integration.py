@@ -10,7 +10,7 @@ from engine.track_gen import interpolate_track
 from engine.tire_model import get_compound_names
 from tracks import get_track
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.integration
 
 CARS_DIR = str(pathlib.Path(__file__).resolve().parent.parent / "cars")
 

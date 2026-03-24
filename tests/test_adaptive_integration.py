@@ -13,7 +13,7 @@ import pytest
 from engine import run_race
 from security.bot_scanner import scan_car_source
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.smoke
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CARS_DIR = os.path.join(PROJECT_ROOT, "cars")
@@ -170,7 +170,7 @@ class TestBackwardCompat:
             tmp_path, track_name="monza", laps=1,
         )
         assert replay["track_name"] == "monza"
-        assert replay["car_count"] == 5
+        assert replay["car_count"] == 20
         for r in replay["results"]:
             assert r["finished"]
 

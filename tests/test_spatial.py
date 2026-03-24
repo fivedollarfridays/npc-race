@@ -7,6 +7,9 @@ with identical results to O(n^2) brute-force loops.
 import os
 import sys
 
+import pytest
+pytestmark = pytest.mark.smoke
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 

@@ -16,6 +16,8 @@ from engine import run_race, load_car, load_all_cars
 from security.bot_scanner import scan_car_file, scan_car_source
 from tracks import get_track, list_tracks, random_track, TRACKS
 
+pytestmark = pytest.mark.smoke
+
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CARS_DIR = os.path.join(PROJECT_ROOT, "cars")
 

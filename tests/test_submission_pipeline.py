@@ -7,6 +7,9 @@ import tempfile
 from engine.race_runner import run_race
 from engine.results import verify_integrity
 
+import pytest
+pytestmark = pytest.mark.smoke
+
 
 class TestRunProducesResults:
     """Cycle 1: run_race() produces results alongside replay."""

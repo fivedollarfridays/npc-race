@@ -7,7 +7,7 @@ import pytest
 
 from engine.season_runner import run_season
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.smoke
 
 CARS_DIR = str(pathlib.Path(__file__).resolve().parent.parent / "cars")
 

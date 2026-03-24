@@ -11,7 +11,7 @@ from engine.brake_model import get_brake_efficiency
 from engine.ers_model import get_ers_speed_bonus
 from tracks import get_track
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.smoke
 
 CARS_DIR = str(pathlib.Path(__file__).resolve().parent.parent / "cars")
 

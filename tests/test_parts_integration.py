@@ -9,7 +9,7 @@ from engine.car_attributes import compute_attributes
 from engine.track_performance import get_track_performance
 from engine.parts_catalog import DEFAULTS, BUDGET_CAP, get_total_cost
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.smoke
 
 CARS_DIR = str(pathlib.Path(__file__).resolve().parent.parent / "cars")
 

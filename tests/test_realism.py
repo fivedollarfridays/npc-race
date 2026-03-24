@@ -11,7 +11,7 @@ import pytest
 
 from engine import run_race
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.integration
 
 CARS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cars")
 

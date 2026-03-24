@@ -2,6 +2,9 @@
 
 from engine.simulation import RaceSim
 
+import pytest
+pytestmark = pytest.mark.smoke
+
 
 # ---------------------------------------------------------------------------
 # Helpers

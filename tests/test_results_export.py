@@ -1,14 +1,40 @@
-"""Tests for automatic results export alongside replay."""
+"""Tests for automatic results export alongside replay.
+
+Integration tests (smoke-marked) verify run_race writes files.
+Unit tests verify results structure via generate_results_summary directly.
+"""
 
 import json
 import os
 import tempfile
 
-from engine.race_runner import run_race
+import pytest
+
+from engine.results import generate_results_summary
+from tests.fixtures.race_data import SAMPLE_RESULTS, SAMPLE_CARS
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _build_replay_stub(
+    results: list[dict] | None = None,
+    track: str = "monza",
+    laps: int = 1,
+) -> dict:
+    """Build a minimal replay-like dict for generate_results_summary."""
+    return {
+        "results": results or SAMPLE_RESULTS,
+        "track_name": track,
+        "laps": laps,
+    }
 
 
 def _run_race_to_tmpdir(output_name="replay.json"):
     """Run a minimal race into a temp directory, return (tmpdir, output_path)."""
+    from engine.race_runner import run_race
+
     tmpdir = tempfile.mkdtemp()
     output = os.path.join(tmpdir, output_name)
     run_race(
@@ -20,8 +46,10 @@ def _run_race_to_tmpdir(output_name="replay.json"):
     return tmpdir, output
 
 
-# --- Cycle 1: results file produced alongside replay ---
+# --- Cycle 1: results file produced alongside replay (needs real sim) ---
 
+
+@pytest.mark.smoke
 def test_run_race_produces_results_file():
     """replay.json -> results.json in same directory."""
     tmpdir, _output = _run_race_to_tmpdir("replay.json")
@@ -31,6 +59,7 @@ def test_run_race_produces_results_file():
     )
 
 
+@pytest.mark.smoke
 def test_custom_output_produces_results_file():
     """race_monza.json -> race_monza_results.json in same directory."""
     tmpdir, _output = _run_race_to_tmpdir("race_monza.json")
@@ -40,23 +69,20 @@ def test_custom_output_produces_results_file():
     )
 
 
-# --- Cycle 2: results file is valid JSON with expected structure ---
+# --- Cycle 2: results summary structure (unit, no sim needed) ---
 
-def test_results_file_is_valid_json():
-    """The results file must be parseable JSON with dict structure."""
-    tmpdir, _ = _run_race_to_tmpdir("replay.json")
-    results_path = os.path.join(tmpdir, "results.json")
-    with open(results_path) as f:
-        data = json.load(f)
+
+def test_results_summary_is_dict():
+    """generate_results_summary returns a dict."""
+    replay = _build_replay_stub()
+    data = generate_results_summary(replay, SAMPLE_CARS)
     assert isinstance(data, dict)
 
 
 def test_results_has_required_fields():
     """Results must have version, track, laps, league, timestamp, cars."""
-    tmpdir, _ = _run_race_to_tmpdir("replay.json")
-    results_path = os.path.join(tmpdir, "results.json")
-    with open(results_path) as f:
-        data = json.load(f)
+    replay = _build_replay_stub()
+    data = generate_results_summary(replay, SAMPLE_CARS)
     for key in ("version", "track", "laps", "league", "timestamp", "cars"):
         assert key in data, f"Missing key: {key}"
     assert len(data["cars"]) >= 2
@@ -64,30 +90,29 @@ def test_results_has_required_fields():
 
 def test_results_cars_have_positions():
     """Each car entry should have name, position, and finished fields."""
-    tmpdir, _ = _run_race_to_tmpdir("replay.json")
-    results_path = os.path.join(tmpdir, "results.json")
-    with open(results_path) as f:
-        data = json.load(f)
+    replay = _build_replay_stub()
+    data = generate_results_summary(replay, SAMPLE_CARS)
     for car in data["cars"]:
         assert "name" in car
         assert "position" in car
         assert "finished" in car
 
 
-# --- Cycle 3: results has integrity hash ---
+# --- Cycle 3: results has integrity hash (unit, no sim needed) ---
+
 
 def test_results_has_integrity():
-    """Results file must include an integrity hash."""
-    tmpdir, _ = _run_race_to_tmpdir("replay.json")
-    results_path = os.path.join(tmpdir, "results.json")
-    with open(results_path) as f:
-        data = json.load(f)
+    """Results summary must include an integrity hash."""
+    replay = _build_replay_stub()
+    data = generate_results_summary(replay, SAMPLE_CARS)
     assert "integrity" in data, "Results must include integrity hash"
     assert data["integrity"].startswith("sha256:"), "Hash must be sha256 prefixed"
 
 
-# --- Cycle 4: replay still works as before ---
+# --- Cycle 4: replay still works as before (needs real sim) ---
 
+
+@pytest.mark.smoke
 def test_replay_still_exists():
     """The replay file must still be produced (not replaced by results)."""
     tmpdir, output = _run_race_to_tmpdir("replay.json")

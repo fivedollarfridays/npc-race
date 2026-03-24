@@ -5,7 +5,7 @@ MONZA = {
     "name": "Monza",
     "country": "Italy",
     "character": "power",
-    "laps_default": 5,
+    "laps_default": 53,
     "real_length_m": 5793,
     "real_laps": 53,
     "control_points": [
@@ -37,7 +37,7 @@ BAKU = {
     "name": "Baku",
     "country": "Azerbaijan",
     "character": "power",
-    "laps_default": 5,
+    "laps_default": 51,
     "real_length_m": 6003,
     "real_laps": 51,
     "control_points": [
@@ -63,7 +63,7 @@ JEDDAH = {
     "name": "Jeddah",
     "country": "Saudi Arabia",
     "character": "power",
-    "laps_default": 5,
+    "laps_default": 50,
     "real_length_m": 6174,
     "real_laps": 50,
     "control_points": [
@@ -89,7 +89,7 @@ SPA = {
     "name": "Spa",
     "country": "Belgium",
     "character": "power",
-    "laps_default": 5,
+    "laps_default": 44,
     "real_length_m": 7004,
     "real_laps": 44,
     "control_points": [

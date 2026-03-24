@@ -7,7 +7,7 @@ import pytest
 
 from engine.season_runner import run_season
 
-pytestmark = pytest.mark.slow
+pytestmark = pytest.mark.integration
 
 CARS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cars")
 

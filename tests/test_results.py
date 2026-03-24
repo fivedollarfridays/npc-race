@@ -3,11 +3,15 @@
 import json
 from datetime import datetime
 
+import pytest
+
 from engine.results import (
     compute_integrity_hash,
     generate_results_summary,
     verify_integrity,
 )
+
+pytestmark = pytest.mark.smoke
 
 
 def _make_replay():
