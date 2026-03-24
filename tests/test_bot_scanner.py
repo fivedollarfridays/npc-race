@@ -517,3 +517,40 @@ class TestSeedCars:
         assert os.path.exists(path), f"Seed car not found: {path}"
         result = scan_car_file(path)
         assert result.passed is True, f"{filename} failed: {result.violations}"
+
+
+# --- Tuple assignment support ---
+
+
+class TestTupleAssignment:
+    def test_scanner_handles_tuple_assignment(self):
+        """Bug #1: default_project/car.py uses tuple unpacking for stats."""
+        src = textwrap.dedent("""\
+            CAR_NAME = "Test"
+            CAR_COLOR = "#ff0000"
+            POWER, GRIP, WEIGHT, AERO, BRAKES = 20, 20, 20, 20, 20
+            def strategy(state):
+                return {"throttle": 1.0, "boost": False, "tire_mode": "balanced"}
+        """)
+        result = scan_car_source(src)
+        assert result.passed is True, f"Violations: {result.violations}"
+
+    def test_tuple_assignment_validates_budget(self):
+        """Tuple stats still enforce budget limit."""
+        src = textwrap.dedent("""\
+            CAR_NAME = "Test"
+            CAR_COLOR = "#ff0000"
+            POWER, GRIP, WEIGHT, AERO, BRAKES = 30, 30, 30, 30, 30
+            def strategy(state):
+                return {"throttle": 1.0, "boost": False, "tire_mode": "balanced"}
+        """)
+        result = scan_car_source(src)
+        assert result.passed is False
+        assert any("budget" in v.lower() for v in result.violations)
+
+    def test_default_project_car_passes(self):
+        """The default_project template must pass the scanner."""
+        path = os.path.join(CARS_DIR, "default_project", "car.py")
+        assert os.path.exists(path), f"default_project/car.py not found"
+        result = scan_car_file(path)
+        assert result.passed is True, f"default_project failed: {result.violations}"

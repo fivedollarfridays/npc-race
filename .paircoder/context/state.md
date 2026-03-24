@@ -43,8 +43,9 @@ Wave 4 (GATE):      T36.6 (verify timing)                       [2 Cx]
 
 ## What Was Just Done
 
-- **T37.4**: Integration test -- full onboarding flow (GATE). Created `tests/test_onboarding_flow.py` with 4 smoke-marked tests: `test_init_creates_unique_car`, `test_full_onboarding_flow` (init -> run -> submit -> leaderboard end-to-end gate), `test_league_output_is_quiet`, `test_no_default_project_on_grid`. All 4 pass. Uses `zzz-test-flow*` car names (avoids `_` prefix which car_loader skips). Helpers extracted to stay under 50-line function limit. Arch check and ruff clean.
+- **T38.4**: Polish fixes (Low bugs #11-16). Bug 11: "1 laps" -> "1 lap" grammar fix in dashboard header. Bug 12: Lap chart skipped for races < 5 laps. Bug 13: Removed wizard stub subcommand from CLI entirely (parser, dispatch, import). Bug 14: Updated help text — `run` says "single race (default: fast mode)", `race` says "full race weekend (qualifying + race + leaderboard)". Bug 15: Template README now uses `npcrace run --car-dir cars --track monza --laps 1` instead of `python -m npc_race`. Bug 16: Time formatting changed from 1 to 3 decimal places (`_format_time_hms` and `_format_lap_time` both use `.3f`). 10 new tests in `tests/test_polish_fixes.py`. All pass. Ruff clean.
 
 ## What's Next
 
 - T36.6 (verify CI timing -- GATE)
+- T38.5 (remaining Sprint 38 task)

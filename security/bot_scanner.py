@@ -209,14 +209,19 @@ def _parse_top_level_assignments(tree: ast.Module) -> dict[str, object]:
         if not isinstance(node, ast.Assign):
             continue
         for target in node.targets:
-            if not isinstance(target, ast.Name):
-                continue
-            if isinstance(node.value, ast.Constant):
-                assignments[target.id] = node.value.value
-            elif (isinstance(node.value, ast.UnaryOp)
-                  and isinstance(node.value.op, ast.USub)
-                  and isinstance(node.value.operand, ast.Constant)):
-                assignments[target.id] = -node.value.operand.value
+            if isinstance(target, ast.Name):
+                if isinstance(node.value, ast.Constant):
+                    assignments[target.id] = node.value.value
+                elif (isinstance(node.value, ast.UnaryOp)
+                      and isinstance(node.value.op, ast.USub)
+                      and isinstance(node.value.operand, ast.Constant)):
+                    assignments[target.id] = -node.value.operand.value
+            elif (isinstance(target, ast.Tuple)
+                  and isinstance(node.value, ast.Tuple)):
+                for name_node, val_node in zip(target.elts, node.value.elts):
+                    if isinstance(name_node, ast.Name):
+                        if isinstance(val_node, ast.Constant):
+                            assignments[name_node.id] = val_node.value
     return assignments
 
 

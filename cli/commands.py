@@ -71,30 +71,37 @@ def cmd_init(args) -> int:
     return 0
 
 
-def cmd_run(args) -> None:
+def cmd_run(args) -> int | None:
     """Run a race and optionally open the replay viewer in a browser."""
     if not os.path.isdir(args.car_dir):
         print(f"Car directory not found: {args.car_dir}")
-        return
+        return 1
 
     track_name = _resolve_track(args)
+    if track_name is None and getattr(args, "track", None) is not None:
+        return 1  # Error already printed by _resolve_track
     league = getattr(args, "league", None)
     live = getattr(args, "live", False)
     fast_mode = not live
     verbose = getattr(args, "verbose", False)
-    run_race(
-        car_dir=args.car_dir,
-        laps=args.laps,
-        track_seed=args.seed,
-        output=args.output,
-        track_name=track_name,
-        league=league,
-        fast_mode=fast_mode,
-        verbose=verbose,
-    )
+    try:
+        run_race(
+            car_dir=args.car_dir,
+            laps=args.laps,
+            track_seed=args.seed,
+            output=args.output,
+            track_name=track_name,
+            league=league,
+            fast_mode=fast_mode,
+            verbose=verbose,
+        )
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}")
+        return 1
 
     if live and not getattr(args, "no_browser", False):
         launch_viewer(args.output)
+    return 0
 
 
 def cmd_wizard(_args) -> None:
@@ -234,6 +241,13 @@ def cmd_submit(args) -> int:
     return 0
 
 
+def _format_time_mmss(seconds: float) -> str:
+    """Format seconds as m:ss.fff for human-readable output."""
+    minutes = int(seconds // 60)
+    secs = seconds % 60
+    return f"{minutes}:{secs:06.3f}"
+
+
 def _print_submit_summary(results: dict) -> None:
     """Print a human-readable submission summary."""
     print("Results verified")
@@ -242,10 +256,12 @@ def _print_submit_summary(results: dict) -> None:
     print(f"  League: {results.get('league', '?')}")
     print()
     for car in results.get("cars", []):
+        total = _format_time_mmss(car["total_time_s"])
+        best = _format_time_mmss(car.get("best_lap_s", 0))
         print(
             f"  P{car['position']}  {car['name']:<20}  "
-            f"{car['total_time_s']:.2f}s  "
-            f"(best: {car.get('best_lap_s', 0):.2f}s)  "
+            f"{total}  "
+            f"(best: {best})  "
             f"reliability: {car.get('reliability_score', 1.0):.2f}"
         )
     print()

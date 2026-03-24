@@ -32,6 +32,35 @@ def test_getting_started_has_before_after():
     assert "12200" in content or "12,200" in content, "Missing improved shift RPM"
 
 
+def test_getting_started_run_command_uses_cars_dir():
+    """Run command should use --car-dir cars (not --car-dir my_car)."""
+    content = _read_getting_started()
+    assert "--car-dir my_car" not in content, (
+        "GETTING_STARTED.md has wrong --car-dir my_car; should omit or use cars"
+    )
+
+
+def test_gitignore_has_egg_info():
+    """*.egg-info/ must be in .gitignore for editable installs."""
+    gitignore = os.path.join(ROOT, ".gitignore")
+    with open(gitignore) as f:
+        content = f.read()
+    assert "*.egg-info/" in content, ".gitignore missing *.egg-info/"
+
+
+def test_getting_started_gearbox_path_under_cars():
+    """Gearbox reference should be cars/my_car/gearbox.py, not my_car/gearbox.py."""
+    content = _read_getting_started()
+    # Should NOT have bare my_car/gearbox.py without cars/ prefix
+    lines = content.splitlines()
+    for line in lines:
+        stripped = line.strip()
+        if "gearbox.py" in stripped and "my_car" in stripped:
+            assert "cars/my_car/gearbox.py" in stripped, (
+                f"Wrong gearbox path: {stripped!r}; should be cars/my_car/gearbox.py"
+            )
+
+
 # --- npcrace init tests ---
 
 

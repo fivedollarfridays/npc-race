@@ -72,6 +72,35 @@ def cmd_qualify(args) -> None:
     print(f"\nGrid exported to {args.output}")
 
 
+def _run_qualifying_phase(args) -> str | None:
+    """Run qualifying and return grid file path, or None if skipped/failed."""
+    track_name = args.track.lower() if args.track else None
+    if track_name and track_name not in TRACKS:
+        print(f"Unknown track: '{args.track}'")
+        return "ERROR"
+
+    cars = load_all_cars(args.car_dir)
+    if not cars:
+        print("No cars found")
+        return "ERROR"
+
+    td = _resolve_track_for_qualifying(track_name)
+    q_results = run_qualifying(
+        cars,
+        track_points=td["track_points"],
+        track_name=track_name,
+        real_length_m=td["real_length_m"],
+        drs_zones=td["drs_zones"],
+    )
+
+    grid_path = os.path.join(
+        os.path.dirname(args.output) or ".", "grid.json",
+    )
+    export_grid(q_results, grid_path)
+    _print_qualifying_results(q_results)
+    return grid_path
+
+
 def cmd_race(args) -> None:
     """Run a race, optionally with qualifying first."""
     if not os.path.isdir(args.car_dir):
@@ -79,33 +108,10 @@ def cmd_race(args) -> None:
         return
 
     grid_file = None
-
     if args.qualify:
-        track_name = args.track.lower() if args.track else None
-        if track_name and track_name not in TRACKS:
-            print(f"Unknown track: '{args.track}'")
+        grid_file = _run_qualifying_phase(args)
+        if grid_file == "ERROR":
             return
-
-        cars = load_all_cars(args.car_dir)
-        if not cars:
-            print("No cars found")
-            return
-
-        td = _resolve_track_for_qualifying(track_name)
-        q_results = run_qualifying(
-            cars,
-            track_points=td["track_points"],
-            track_name=track_name,
-            real_length_m=td["real_length_m"],
-            drs_zones=td["drs_zones"],
-        )
-
-        grid_path = os.path.join(
-            os.path.dirname(args.output) or ".", "grid.json",
-        )
-        export_grid(q_results, grid_path)
-        _print_qualifying_results(q_results)
-        grid_file = grid_path
 
     live = getattr(args, "live", False)
     fast_mode = not live
@@ -122,4 +128,5 @@ def cmd_race(args) -> None:
         fast_mode=fast_mode,
         grid_file=grid_file,
         verbose=verbose,
+        quiet=grid_file is not None,
     )
