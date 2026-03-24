@@ -38,19 +38,36 @@ def cmd_validate(args) -> None:
 
 
 def cmd_init(args) -> int:
-    """Create a project directory from the default F3 template."""
-    target = args.dir
-    if os.path.exists(target):
-        print(f"Error: directory already exists: {target}")
+    """Create a project directory inside cars/ from the default F3 template."""
+    name = args.dir
+    if os.path.isabs(name) or os.sep in name or (os.altsep and os.altsep in name):
+        print(f"Error: name must be a simple directory name, got: {name}")
         return 1
 
-    template_dir = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "cars",
-        "default_project",
-    )
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    target = os.path.join(repo_root, "cars", name)
+
+    if os.path.exists(target):
+        print(f"Error: directory already exists: cars/{name}")
+        return 1
+
+    template_dir = os.path.join(repo_root, "cars", "default_project")
     shutil.copytree(template_dir, target)
-    print(f"Created {target}/ with 3 F3 parts. Run: npcrace run --car-dir {target}")
+
+    pascal_name = "".join(
+        w.capitalize() for w in name.replace("-", "_").split("_")
+    )
+    car_py = os.path.join(target, "car.py")
+    with open(car_py) as f:
+        content = f.read()
+    content = content.replace(
+        'CAR_NAME = "DefaultProject"', f'CAR_NAME = "{pascal_name}"',
+    )
+    with open(car_py, "w") as f:
+        f.write(content)
+
+    print(f"Created cars/{name}/ with 3 F3 parts (gearbox, cooling, strategy)")
+    print("Run: npcrace run --car-dir cars --track monza --laps 1")
     return 0
 
 
@@ -64,6 +81,7 @@ def cmd_run(args) -> None:
     league = getattr(args, "league", None)
     live = getattr(args, "live", False)
     fast_mode = not live
+    verbose = getattr(args, "verbose", False)
     run_race(
         car_dir=args.car_dir,
         laps=args.laps,
@@ -72,6 +90,7 @@ def cmd_run(args) -> None:
         track_name=track_name,
         league=league,
         fast_mode=fast_mode,
+        verbose=verbose,
     )
 
     if live and not getattr(args, "no_browser", False):

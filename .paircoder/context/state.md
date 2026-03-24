@@ -37,13 +37,13 @@ Wave 4 (GATE):      T36.6 (verify timing)                       [2 Cx]
 
 ## Key Metrics
 
-- **2,310 tests** | **20 cars** | **20 tracks (real F1 laps)**
+- **2,310 tests** | **19 cars** | **20 tracks (real F1 laps)**
 - **462 tests call sim** — 246 short, 69 medium, 147 long
 - **CI target**: < 3 min on push, < 15 min integration
 
 ## What Was Just Done
 
-- **T36.4**: Converted CLI/export/dashboard tests to use fixtures from `tests.fixtures.race_data`. In `test_results_export.py`: replaced 4 tests that called `run_race` to test JSON structure with direct calls to `generate_results_summary` using `SAMPLE_RESULTS`/`SAMPLE_CARS` fixtures; kept 3 integration tests (file path + replay) as `@pytest.mark.smoke`. In `test_fast_export.py`: removed file-level `pytestmark = pytest.mark.smoke`; added class-level `@pytest.mark.smoke` to `TestFastModeRunRace` and `TestNormalModeUnchanged` (5 tests that need real sim); updated `TestExportLapSummary` to use `SAMPLE_LAP_SUMMARIES` fixture; moved `run_race` import to lazy (inside helper). `test_race_dashboard.py` already used local fixtures, no changes needed. Net: 4 tests converted from smoke to unit. All 22 unit tests run in 0.18s (previously ~63s via sim).
+- **T37.4**: Integration test -- full onboarding flow (GATE). Created `tests/test_onboarding_flow.py` with 4 smoke-marked tests: `test_init_creates_unique_car`, `test_full_onboarding_flow` (init -> run -> submit -> leaderboard end-to-end gate), `test_league_output_is_quiet`, `test_no_default_project_on_grid`. All 4 pass. Uses `zzz-test-flow*` car names (avoids `_` prefix which car_loader skips). Helpers extracted to stay under 50-line function limit. Arch check and ruff clean.
 
 ## What's Next
 

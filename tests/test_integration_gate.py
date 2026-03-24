@@ -5,12 +5,14 @@ T33.4 — Verify the complete local play loop works end-to-end.
 
 import json
 import os
+import shutil
 
 from cli.main import main
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GETTING_STARTED = os.path.join(ROOT, "GETTING_STARTED.md")
+TEMPLATE_DIR = os.path.join(ROOT, "cars", "default_project")
 
 _RIVAL_CAR = """\
 CAR_NAME = "Rival"
@@ -27,13 +29,13 @@ def strategy(state):
 
 
 def _setup_race_dir(tmp_path):
-    """Create a race directory with init'd player car + a rival."""
+    """Create a race directory with template player car + a rival."""
     race_dir = tmp_path / "race_cars"
     race_dir.mkdir()
 
-    # Init the player car as a subdirectory
+    # Copy the default template directly (avoids cmd_init path constraints)
     player_dir = str(race_dir / "player")
-    main(["init", player_dir])
+    shutil.copytree(TEMPLATE_DIR, player_dir)
 
     # Add a minimal rival car file
     rival_path = race_dir / "rival.py"
@@ -56,14 +58,18 @@ def _run_race(race_dir, tmp_path, output_name="replay.json"):
 # --- Cycle 1: init + run ---
 
 
-def test_init_creates_playable_project(tmp_path):
-    """npcrace init creates a dir with car.py, gearbox.py, cooling.py, strategy.py."""
-    target = str(tmp_path / "my_car")
-    main(["init", target])
-
-    assert os.path.isdir(target)
-    for name in ("car.py", "gearbox.py", "cooling.py", "strategy.py"):
-        assert os.path.isfile(os.path.join(target, name)), f"Missing {name}"
+def test_init_creates_playable_project():
+    """npcrace init creates cars/{name}/ with car.py, gearbox.py, cooling.py, strategy.py."""
+    proj_name = "_test_gate_init"
+    target = os.path.join(ROOT, "cars", proj_name)
+    try:
+        main(["init", proj_name])
+        assert os.path.isdir(target)
+        for fname in ("car.py", "gearbox.py", "cooling.py", "strategy.py"):
+            assert os.path.isfile(os.path.join(target, fname)), f"Missing {fname}"
+    finally:
+        if os.path.isdir(target):
+            shutil.rmtree(target)
 
 
 def test_run_produces_results(tmp_path, capsys):

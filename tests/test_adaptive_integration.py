@@ -170,7 +170,7 @@ class TestBackwardCompat:
             tmp_path, track_name="monza", laps=1,
         )
         assert replay["track_name"] == "monza"
-        assert replay["car_count"] == 20
+        assert replay["car_count"] == 19
         for r in replay["results"]:
             assert r["finished"]
 

@@ -109,6 +109,7 @@ def cmd_race(args) -> None:
 
     live = getattr(args, "live", False)
     fast_mode = not live
+    verbose = getattr(args, "verbose", False)
     track_name_arg = args.track if args.track else None
 
     run_race(
@@ -120,4 +121,5 @@ def cmd_race(args) -> None:
         league=getattr(args, "league", None),
         fast_mode=fast_mode,
         grid_file=grid_file,
+        verbose=verbose,
     )
