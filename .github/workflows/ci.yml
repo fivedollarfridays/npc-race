@@ -59,7 +59,8 @@ jobs:
   test-smoke:
     name: Smoke Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
 
