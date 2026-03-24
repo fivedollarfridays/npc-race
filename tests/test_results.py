@@ -204,7 +204,7 @@ def test_hash_deterministic():
 def test_reliability_score_persisted_after_league_gates():
     """After _apply_league_gates, car dict must contain reliability_score
     computed from its source code, not the default 1.0."""
-    from engine.race_runner import _apply_league_gates
+    from engine.league_gates import apply_league_gates as _apply_league_gates
 
     # Source with high CC (many branches) -> reliability < 1.0
     complex_source = (

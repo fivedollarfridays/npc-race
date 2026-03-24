@@ -121,12 +121,11 @@ def test_malicious_project_skipped(tmp_path, capsys):
 # -- Existing cars still load --
 
 def test_existing_cars_still_load():
-    """The 5 seed cars + default_project should still load."""
+    """The 19 rival cars (5 seed + 14 generated) should load."""
     cars_dir = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cars"
     )
     cars = load_all_cars(cars_dir)
-    # 5 single-file + 1 default_project = 6
-    assert len(cars) >= 6
+    assert len(cars) >= 19
     names = [c["CAR_NAME"] for c in cars]
-    assert "DefaultProject" in names
+    assert "GlassCanon" in names

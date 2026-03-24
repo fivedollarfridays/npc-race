@@ -82,7 +82,7 @@ class TestApplyLeagueGates:
 
     def test_auto_detect_league_f3(self):
         """Without league, cars with few parts get F3."""
-        from engine.race_runner import _apply_league_gates
+        from engine.league_gates import apply_league_gates as _apply_league_gates
 
         cars = [
             _make_car("CarA", ["gearbox"]),
@@ -95,7 +95,7 @@ class TestApplyLeagueGates:
 
     def test_auto_detect_uses_highest_tier(self):
         """Auto-detect picks the highest league among all cars."""
-        from engine.race_runner import _apply_league_gates
+        from engine.league_gates import apply_league_gates as _apply_league_gates
 
         cars = [
             _make_car("F3Car", ["gearbox"]),
@@ -106,7 +106,7 @@ class TestApplyLeagueGates:
 
     def test_specified_league_validates(self):
         """When league is specified, cars are validated against it."""
-        from engine.race_runner import _apply_league_gates
+        from engine.league_gates import apply_league_gates as _apply_league_gates
 
         cars = [
             _make_car("ValidCar", ["gearbox", "cooling"]),
@@ -122,7 +122,7 @@ class TestApplyLeagueGates:
 
     def test_enforced_gate_skips_bad_car(self):
         """Car failing F1 quality gate is skipped."""
-        from engine.race_runner import _apply_league_gates
+        from engine.league_gates import apply_league_gates as _apply_league_gates
 
         cars = [
             _make_car("GoodCar", list(CAR_PARTS), source=CLEAN_SOURCE),
@@ -136,7 +136,7 @@ class TestApplyLeagueGates:
 
     def test_advisory_league_keeps_all_cars(self):
         """F3 advisory gates don't reject cars."""
-        from engine.race_runner import _apply_league_gates
+        from engine.league_gates import apply_league_gates as _apply_league_gates
 
         cars = [
             _make_car("Car1", ["gearbox"], source=MESSY_SOURCE),
@@ -147,7 +147,7 @@ class TestApplyLeagueGates:
 
     def test_car_gets_league_field(self):
         """Each car dict gets a 'league' key after processing."""
-        from engine.race_runner import _apply_league_gates
+        from engine.league_gates import apply_league_gates as _apply_league_gates
 
         cars = [
             _make_car("CarA", ["gearbox"]),
@@ -163,7 +163,7 @@ class TestLeagueConsoleOutput:
 
     def test_prints_league_header(self, capsys):
         """Output includes league header line."""
-        from engine.race_runner import _apply_league_gates
+        from engine.league_gates import apply_league_gates as _apply_league_gates
 
         cars = [
             _make_car("CarA", ["gearbox"]),
@@ -175,7 +175,7 @@ class TestLeagueConsoleOutput:
 
     def test_auto_detect_shows_auto_detected(self, capsys):
         """Auto-detected league says so in output."""
-        from engine.race_runner import _apply_league_gates
+        from engine.league_gates import apply_league_gates as _apply_league_gates
 
         cars = [
             _make_car("CarA", ["gearbox"]),
@@ -187,13 +187,13 @@ class TestLeagueConsoleOutput:
 
     def test_rejected_car_prints_reason(self, capsys):
         """Rejected car shows REJECTED with reason."""
-        from engine.race_runner import _apply_league_gates
+        from engine.league_gates import apply_league_gates as _apply_league_gates
 
         cars = [
             _make_car("GoodCar", list(CAR_PARTS), source=CLEAN_SOURCE),
             _make_car("BadCar", list(CAR_PARTS), source=MESSY_SOURCE),
         ]
-        _apply_league_gates(cars, league="F1")
+        _apply_league_gates(cars, league="F1", verbose=True)
         out = capsys.readouterr().out
         assert "REJECTED" in out
         assert "BadCar" in out
