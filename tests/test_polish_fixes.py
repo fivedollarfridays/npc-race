@@ -119,7 +119,10 @@ def test_help_distinguishes_run_race():
 
 def test_template_readme_correct_command():
     """Template README should use the npcrace CLI, not python -m."""
-    readme_path = "/home/kmasty/projects/npc-race/cars/default_project/README.md"
+    import os
+    readme_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "cars", "default_project", "README.md")
     with open(readme_path) as f:
         content = f.read()
     assert "python -m npc_race" not in content

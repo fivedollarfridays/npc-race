@@ -62,13 +62,14 @@ def test_leaderboard_add_results(tmp_path, capsys):
 
 
 def test_leaderboard_missing_file(tmp_path, capsys):
-    """--add with nonexistent file prints error."""
+    """--add with nonexistent file prints error and exits non-zero."""
+    import pytest
     lb_path = str(tmp_path / "lb.json")
-    # Should not raise, just print error
-    main(["leaderboard", "--add", "/no/such/file.json", "--file", lb_path])
+    with pytest.raises(SystemExit) as exc:
+        main(["leaderboard", "--add", "/no/such/file.json", "--file", lb_path])
+    assert exc.value.code == 1
     out = capsys.readouterr().out
-    assert "Error" in out
-    assert "not found" in out
+    assert "Error" in out or "not found" in out
 
 
 # --- Cycle 3: invalid results, reset, accumulates ---
@@ -85,8 +86,11 @@ def test_leaderboard_add_invalid_results(tmp_path, capsys):
     with open(results_path, "w") as f:
         json.dump(data, f)
 
+    import pytest
     lb_path = str(tmp_path / "lb.json")
-    main(["leaderboard", "--add", results_path, "--file", lb_path])
+    with pytest.raises(SystemExit) as exc:
+        main(["leaderboard", "--add", results_path, "--file", lb_path])
+    assert exc.value.code == 1
     out = capsys.readouterr().out
     assert "integrity" in out.lower()
 

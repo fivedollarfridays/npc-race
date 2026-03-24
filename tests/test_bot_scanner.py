@@ -551,6 +551,6 @@ class TestTupleAssignment:
     def test_default_project_car_passes(self):
         """The default_project template must pass the scanner."""
         path = os.path.join(CARS_DIR, "default_project", "car.py")
-        assert os.path.exists(path), f"default_project/car.py not found"
+        assert os.path.exists(path), "default_project/car.py not found"
         result = scan_car_file(path)
         assert result.passed is True, f"default_project failed: {result.violations}"
