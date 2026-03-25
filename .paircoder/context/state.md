@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-03-24. Sprint 39 in progress.
+> Last updated: 2026-03-24. Sprint 40 in progress.
 
 ## Active Plan
 
@@ -41,15 +41,26 @@ Wave 3: T39.5 (submit-car) ✅, T39.6 (cars+tracks) ✅      [8 Cx]
 - T39.2: SQLite DB layer with players, api_keys, cars tables. All CRUD ops (create/get player, API keys, store/get cars). 9 tests passing.
 
 ### What's Next
-- Sprint 39 complete. Ready for Sprint 40 (Lobby + Landing + Editor).
+- Sprint 40 complete. Next: Sprint 41 Wave 1 (T41.1 race orchestrator).
+
+## Sprint 40 — Progress
+
+### What Was Just Done
+
+- **T40.6 done**: Car analysis endpoint (server/routes/analysis.py) + editor sidebar panels. POST /api/car-analysis detects 10 known parts via AST, determines league tier (F3/F2/Championship), computes code quality (cyclomatic complexity + reliability score). Editor.html updated with parts grid, league badge, quality meter bar, and debounced auto-analyze on typing (300ms). 16 new tests (9 endpoint + 5 editor + 2 existing updated), 85 total server tests green.
+- **T40.5 done**: Car editor page (server/static/editor.html) with Monaco editor from CDN, car template pre-populated, submit flow (POST /api/submit-car + auto-join lobby), lobby status polling every 2s, dark theme matching landing page. 273 lines, 11 new tests passing.
+- **T40.3 done**: Fill cars module (server/fill_cars.py). Loads rival cars from cars/ directory, shuffles with optional seed, excludes player car names, returns lobby-compatible dicts with car_id=None, player_id="ai". 6 new tests passing.
+- **T40.2 done**: Lobby API routes (server/routes/lobby.py). POST /api/lobby/join validates car ownership, maps Lobby errors to HTTP 404/403/409. GET /api/lobby/status returns public lobby state. Global lobby with reset_lobby() for testing. Wired into app.py. 5 new tests passing, 60 total server tests green.
+- **T40.1 done**: Lobby class (server/lobby.py) with join/status/check_trigger/fill. Thread-safe with lock. Validates full lobby, duplicate players, closed lobby. Triggers on timeout or full grid, generates race_id. 9 new tests passing, 49 total server tests green.
+- **T40.4 done**: Landing page (server/static/index.html) — F1-themed dark page with CODE CIRCUIT header, tagline, BUILD YOUR CAR button linking to editor, How It Works section, Tracks section. Pure HTML/CSS with JetBrains Mono, purple/green accents, responsive layout. Editor stub (editor.html) created. 7 new tests passing, 45 total server tests green.
 
 ## Sprint 40 — Lobby + Landing + Editor (24 Cx)
 
 ```
-Wave 1: T40.1 (lobby), T40.4 (landing page)               [8 Cx]
-Wave 2: T40.2 (lobby routes), T40.3 (fill cars)            [6 Cx]
-Wave 3: T40.5 (editor with Monaco)                         [5 Cx]
-Wave 4: T40.6 (analysis panels)                            [5 Cx]
+Wave 1: T40.1 (lobby) ✅, T40.4 (landing page) ✅           [8 Cx]
+Wave 2: T40.2 (lobby routes) ✅, T40.3 (fill cars) ✅        [6 Cx]
+Wave 3: T40.5 (editor with Monaco) ✅                        [5 Cx]
+Wave 4: T40.6 (analysis panels) ✅                          [5 Cx]
 ```
 
 ## Sprint 41 — Grid + Dashboard + Results (19 Cx)

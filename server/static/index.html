@@ -1,2 +1,198 @@
 <!DOCTYPE html>
-<html><body><h1>Code Circuit</h1></body></html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Circuit</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --text: #e0e0e0;
+            --accent: #7c3aed;
+            --success: #22c55e;
+            --muted: #666;
+            --font: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 4rem 0 2rem;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, var(--accent), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            color: var(--muted);
+            margin-top: 0.5rem;
+        }
+
+        /* CTA */
+        .cta {
+            text-align: center;
+            padding: 3rem 0;
+        }
+
+        .cta a {
+            display: inline-block;
+            background: var(--accent);
+            color: #fff;
+            text-decoration: none;
+            padding: 1rem 3rem;
+            font-size: 1.3rem;
+            font-family: var(--font);
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .cta a:hover {
+            background: #6d28d9;
+        }
+
+        .steps {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .steps span {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .steps .num {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        /* Sections */
+        section {
+            padding: 2rem 0;
+            border-top: 1px solid #1a1a2e;
+        }
+
+        section h2 {
+            font-size: 1.3rem;
+            color: var(--success);
+            margin-bottom: 1rem;
+            letter-spacing: 0.1em;
+        }
+
+        section p {
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        section p code {
+            color: var(--text);
+            background: #1a1a2e;
+            padding: 0.1em 0.4em;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        /* Tracks */
+        .track-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .track-list span {
+            background: #1a1a2e;
+            padding: 0.3rem 0.8rem;
+            border-radius: 3px;
+            font-size: 0.85rem;
+            color: var(--text);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem 0 2rem;
+            color: var(--muted);
+            font-size: 0.8rem;
+            border-top: 1px solid #1a1a2e;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; letter-spacing: 0.15em; }
+            .steps { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CODE CIRCUIT</h1>
+            <p class="tagline">Write Python. Build a race car. Compete.</p>
+        </header>
+
+        <div class="cta">
+            <a href="/static/editor.html">BUILD YOUR CAR</a>
+            <div class="steps">
+                <span><span class="num">1</span> Write code</span>
+                <span><span class="num">2</span> Submit</span>
+                <span><span class="num">3</span> Race</span>
+            </div>
+        </div>
+
+        <section>
+            <h2>How It Works</h2>
+            <p>Your Python functions control a real F1 car.</p>
+            <p><code>10 parts</code>: gearbox, cooling, strategy, suspension, diff, aero, tyres, brakes, ERS, engine map.</p>
+            <p>Simpler code = more reliable = fewer glitches.</p>
+        </section>
+
+        <section>
+            <h2>Tracks</h2>
+            <p>20 real F1 circuits</p>
+            <div class="track-list">
+                <span>Monza</span>
+                <span>Spa</span>
+                <span>Silverstone</span>
+                <span>Monaco</span>
+                <span>Suzuka</span>
+                <span>Interlagos</span>
+                <span>+ 14 more</span>
+            </div>
+        </section>
+
+        <footer>
+            Powered by agentgrounds.ai
+        </footer>
+    </div>
+</body>
+</html>
