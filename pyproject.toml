@@ -16,10 +16,11 @@ dev = [
     "pytest-timeout>=2.0",
     "ruff>=0.4",
 ]
+server = ["fastapi>=0.110", "uvicorn>=0.29"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["cli*", "engine*", "security*", "tracks*", "viewer*"]
+include = ["cli*", "engine*", "security*", "server*", "tracks*", "viewer*"]
 
 [tool.pytest.ini_options]
 markers = [
