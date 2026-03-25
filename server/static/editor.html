@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Circuit — Car Editor</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --editor-bg: #1e1e2e;
+            --text: #e0e0e0;
+            --accent: #7c3aed;
+            --success: #22c55e;
+            --error: #ef4444;
+            --muted: #666;
+            --font: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            line-height: 1.6;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1.5rem;
+            border-bottom: 1px solid #222;
+        }
+
+        header h1 { font-size: 1.1rem; color: var(--accent); }
+        header a { color: var(--muted); text-decoration: none; font-size: 0.85rem; }
+        header a:hover { color: var(--text); }
+
+        .workspace {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .editor-pane {
+            flex: 7;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #222;
+        }
+
+        #editor-container {
+            flex: 1;
+            min-height: 0;
+        }
+
+        .status-pane {
+            flex: 3;
+            padding: 1.25rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .status-pane h2 {
+            font-size: 0.9rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        #submit-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-family: var(--font);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        #submit-btn:hover { opacity: 0.85; }
+        #submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .errors {
+            color: var(--error);
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+        }
+
+        .success {
+            color: var(--success);
+            font-size: 0.85rem;
+        }
+
+        .parts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.3rem;
+        }
+
+        .part-item {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.4rem;
+            border-radius: 4px;
+            background: #1a1a2e;
+        }
+
+        .part-item.detected { color: var(--success); }
+        .part-item.missing { color: var(--muted); }
+
+        .league-badge {
+            display: inline-block;
+            padding: 0.3rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            background: #1a1a2e;
+        }
+
+        .league-F3 { border-left: 3px solid var(--muted); }
+        .league-F2 { border-left: 3px solid #3b82f6; }
+        .league-Championship { border-left: 3px solid #f59e0b; }
+
+        .quality-bar-track {
+            width: 100%;
+            height: 8px;
+            background: #1a1a2e;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .quality-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s, background 0.3s;
+        }
+
+        .quality-label {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 0.2rem;
+        }
+
+        .lobby-section { margin-top: auto; }
+
+        .lobby-info {
+            background: var(--editor-bg);
+            border-radius: 6px;
+            padding: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .lobby-info p { margin-bottom: 0.4rem; }
+        .lobby-players { color: var(--muted); font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>CODE CIRCUIT &mdash; Car Editor</h1>
+        <a href="/static/index.html">&larr; Back</a>
+    </header>
+
+    <div class="workspace">
+        <div class="editor-pane">
+            <div id="editor-container"></div>
+        </div>
+        <div class="status-pane">
+            <h2>Status</h2>
+            <button id="submit-btn" onclick="submitCar()">Submit Car</button>
+            <div id="errors" class="errors"></div>
+            <div id="success" class="success"></div>
+
+            <div id="parts-panel">
+                <h2>Parts Detected</h2>
+                <div class="parts-grid" id="parts-grid"></div>
+            </div>
+
+            <div id="league-panel">
+                <h2>League</h2>
+                <span id="league-badge" class="league-badge">F3</span>
+            </div>
+
+            <div id="quality-panel">
+                <h2>Code Quality</h2>
+                <div class="quality-bar-track">
+                    <div class="quality-bar-fill" id="quality-bar" style="width:100%;background:var(--success)"></div>
+                </div>
+                <div class="quality-label" id="quality-label">Reliability: 100%</div>
+            </div>
+
+            <div class="lobby-section">
+                <h2>Lobby</h2>
+                <div id="lobby-status" class="lobby-info">
+                    <p>Submit your car to join the lobby.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs/loader.js"></script>
+    <script>
+        const CAR_TEMPLATE = `"""My race car."""
+
+CAR_NAME = "MyRacer"
+CAR_COLOR = "#ff6600"
+
+POWER = 20
+GRIP = 20
+WEIGHT = 20
+AERO = 20
+BRAKES = 20
+
+
+def strategy(state):
+    """Decide what to do each tick."""
+    decision = {}
+    # Pit when tires are worn
+    if state.get("tire_wear", 0) > 0.7:
+        decision["pit_request"] = True
+    return decision
+`;
+
+        let editor = null;
+        let lobbyInterval = null;
+        let analyzeTimeout = null;
+
+        // Initialise Monaco
+        require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+            editor = monaco.editor.create(document.getElementById('editor-container'), {
+                value: CAR_TEMPLATE,
+                language: 'python',
+                theme: 'vs-dark',
+                minimap: { enabled: false },
+                fontSize: 14,
+                fontFamily: "'JetBrains Mono', monospace",
+                automaticLayout: true,
+                scrollBeyondLastLine: false,
+            });
+            editor.onDidChangeModelContent(function () {
+                document.getElementById('errors').textContent = '';
+                clearTimeout(analyzeTimeout);
+                analyzeTimeout = setTimeout(analyzeCode, 300);
+            });
+            analyzeCode();
+        });
+
+        function showErrors(messages) {
+            const el = document.getElementById('errors');
+            el.textContent = Array.isArray(messages) ? messages.join('\n') : String(messages);
+            document.getElementById('success').textContent = '';
+        }
+
+        function showSuccess(msg) {
+            document.getElementById('success').textContent = msg;
+            document.getElementById('errors').textContent = '';
+        }
+
+        function updateLobbyStatus(data) {
+            const el = document.getElementById('lobby-status');
+            if (data.triggered) {
+                el.innerHTML = '<p style="color:var(--success);font-weight:bold">Race starting!</p>';
+                clearInterval(lobbyInterval);
+                lobbyInterval = null;
+                return;
+            }
+            const names = (data.players || []).map(function (p) { return p.name; }).join(', ');
+            el.innerHTML =
+                '<p>Players: <strong>' + (data.player_count || 0) + '/' + (data.grid_size || '?') + '</strong></p>' +
+                '<p>Timer: ' + (data.timer_remaining != null ? data.timer_remaining + 's' : 'waiting') + '</p>' +
+                (names ? '<p class="lobby-players">' + names + '</p>' : '');
+        }
+
+        function startLobbyPolling() {
+            if (lobbyInterval) return;
+            lobbyInterval = setInterval(async function () {
+                try {
+                    const r = await fetch('/api/lobby/status');
+                    if (r.ok) updateLobbyStatus(await r.json());
+                } catch (e) { /* ignore poll errors */ }
+            }, 2000);
+        }
+
+        async function submitCar() {
+            if (!editor) return;
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            try {
+                const source = editor.getValue();
+                const apiKey = localStorage.getItem('cc_api_key');
+                const headers = { 'Content-Type': 'application/json' };
+                if (apiKey) headers['X-API-Key'] = apiKey;
+
+                const resp = await fetch('/api/submit-car', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ source: source }),
+                });
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    showErrors(data.detail && data.detail.errors ? data.detail.errors : [data.detail || 'Submit failed']);
+                    return;
+                }
+
+                if (data.api_key) localStorage.setItem('cc_api_key', data.api_key);
+
+                const joinResp = await fetch('/api/lobby/join', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': localStorage.getItem('cc_api_key'),
+                    },
+                    body: JSON.stringify({ car_id: data.car_id }),
+                });
+
+                if (joinResp.ok) {
+                    showSuccess(data.name + ' joined lobby!');
+                    startLobbyPolling();
+                } else {
+                    const err = await joinResp.json();
+                    showErrors(err.detail || 'Failed to join lobby');
+                }
+            } catch (e) {
+                showErrors('Network error: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit Car';
+            }
+        }
+
+        async function analyzeCode() {
+            if (!editor) return;
+            try {
+                var source = editor.getValue();
+                var resp = await fetch('/api/car-analysis', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({source: source}),
+                });
+                if (!resp.ok) return;
+                var data = await resp.json();
+                updatePartsPanel(data.parts);
+                updateLeagueIndicator(data.league);
+                updateQualityMeter(data.quality);
+            } catch (e) { /* ignore analysis errors */ }
+        }
+
+        function updatePartsPanel(parts) {
+            var grid = document.getElementById('parts-grid');
+            grid.innerHTML = parts.map(function (p) {
+                var cls = p.detected ? 'detected' : 'missing';
+                var icon = p.detected ? '&#10003;' : '&#10007;';
+                return '<span class="part-item ' + cls + '">' + icon + ' ' + p.name + '</span>';
+            }).join('');
+        }
+
+        function updateLeagueIndicator(league) {
+            var badge = document.getElementById('league-badge');
+            badge.textContent = league;
+            badge.className = 'league-badge league-' + league;
+        }
+
+        function updateQualityMeter(quality) {
+            var pct = Math.round((quality.reliability || 1) * 100);
+            var bar = document.getElementById('quality-bar');
+            var label = document.getElementById('quality-label');
+            bar.style.width = pct + '%';
+            bar.style.background = pct >= 90 ? 'var(--success)' : pct >= 70 ? '#f59e0b' : 'var(--error)';
+            label.textContent = 'Reliability: ' + pct + '%';
+        }
+    </script>
+</body>
+</html>
