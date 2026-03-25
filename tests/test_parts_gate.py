@@ -11,6 +11,8 @@ import subprocess
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CARS_DIR = os.path.join(REPO_ROOT, "cars")
 GATE_CAR = "zzz-gate"
