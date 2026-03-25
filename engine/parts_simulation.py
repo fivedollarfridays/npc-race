@@ -14,6 +14,8 @@ from .efficiency_engine import run_efficiency_tick
 from .hybrid_physics import reset_ers_lap
 from .driver_model import create_driver, compute_driver_inputs
 from .glitch import GlitchEngine
+from .timing import create_timing, update_timing
+from .lap_accumulator import LapAccumulator
 
 
 class PartsRaceSim:
@@ -23,12 +25,17 @@ class PartsRaceSim:
     TRACK_WIDTH = 50
 
     def __init__(self, cars, track_points, laps=3, seed=42, track_name=None,
-                 real_length_m=None):
+                 real_length_m=None, car_data_dir=None, race_number=1,
+                 drs_zones=None, fast_mode=False):
         self.cars = cars
         self.track = track_points
         self.laps = laps
         self.rng = random.Random(seed)
         self.track_name = track_name
+        self.car_data_dir = car_data_dir
+        self.race_number = race_number
+        self.drs_zones = drs_zones
+        self.fast_mode = fast_mode
         self.distances, self.curvatures, self.track_length = compute_track_data(track_points)
         self.curvature_lookup = CurvatureLookup(
             self.distances, self.curvatures, self.track_length)
@@ -94,6 +101,14 @@ class PartsRaceSim:
         self.history = []
         self.tick = 0
         self.race_over = False
+        self.timings = create_timing([s["name"] for s in self.car_states])
+        self.sector_boundaries = (0.333, 0.666, 1.0)
+        self.accumulator = LapAccumulator() if fast_mode else None
+
+    @property
+    def states(self):
+        """Compatibility alias — RaceSim uses self.states."""
+        return self.car_states
 
     def step(self):
         """Advance simulation by one tick."""
@@ -189,13 +204,34 @@ class PartsRaceSim:
 
         self.call_logs.append(tick_logs)
 
-        # Record frame for replay
-        positions = _compute_positions(self._to_legacy_states())
-        self.history.append(record_frame(
-            states=self._to_legacy_states(), positions=positions,
-            track=self.track, distances=self.distances,
-            track_length=self.track_length, track_width=self.TRACK_WIDTH,
-            tick=self.tick, ticks_per_sec=self.TICKS_PER_SEC))
+        # Update timing for each car
+        for s in self.car_states:
+            dist_in_lap = s["distance"] % self.track_length
+            dist_pct = dist_in_lap / self.track_length if self.track_length > 0 else 0
+            update_timing(
+                self.timings, s["name"], dist_pct, s.get("lap", 0),
+                self.tick, self.TICKS_PER_SEC, self.sector_boundaries,
+            )
+
+        # Record frame for replay (1Hz in fast_mode, every tick otherwise)
+        legacy = self._to_legacy_states()
+        positions = _compute_positions(legacy)
+        if self.fast_mode:
+            name_pos = {s["name"]: positions[s["car_idx"]] for s in legacy}
+            self.accumulator.on_tick(legacy, name_pos, self.tick)
+            self._detect_lap_completions()
+            if self.tick % self.TICKS_PER_SEC == 0:
+                self.history.append(record_frame(
+                    states=legacy, positions=positions,
+                    track=self.track, distances=self.distances,
+                    track_length=self.track_length, track_width=self.TRACK_WIDTH,
+                    tick=self.tick, ticks_per_sec=self.TICKS_PER_SEC))
+        else:
+            self.history.append(record_frame(
+                states=legacy, positions=positions,
+                track=self.track, distances=self.distances,
+                track_length=self.track_length, track_width=self.TRACK_WIDTH,
+                tick=self.tick, ticks_per_sec=self.TICKS_PER_SEC))
 
         self.tick += 1
         if all(s["finished"] for s in self.car_states):
@@ -246,6 +282,24 @@ class PartsRaceSim:
                 "_timing": {},
             })
         return legacy
+
+    def _detect_lap_completions(self):
+        """Feed lap completions to accumulator (fast_mode only)."""
+        for s in self.car_states:
+            ct = self.timings[s["name"]]
+            n_laps = len(ct.lap_times)
+            prev = s.get("_acc_laps_reported", 0)
+            if n_laps > prev:
+                for lap_i in range(prev, n_laps):
+                    self.accumulator.on_lap_complete(
+                        s["name"], lap_i + 1, ct.lap_times[lap_i])
+                s["_acc_laps_reported"] = n_laps
+
+    def get_lap_summaries(self) -> dict[str, list[dict]]:
+        """Return per-car lap summaries (fast_mode only)."""
+        if self.accumulator is None:
+            return {}
+        return self.accumulator.get_lap_summaries()
 
     def run(self, max_ticks=36000):
         """Run the full race."""

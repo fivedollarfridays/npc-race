@@ -185,7 +185,7 @@ class TestRunRaceDataDir:
         mock_cars = _make_cars(2)
         with tempfile.TemporaryDirectory() as d:
             with patch("engine.race_runner.load_all_cars", return_value=mock_cars), \
-                 patch("engine.race_runner.RaceSim") as mock_sim:
+                 patch("engine.race_runner.PartsRaceSim") as mock_sim:
                 mock_sim.return_value.run.return_value = []
                 mock_sim.return_value.export_replay.return_value = {"frames": []}
                 run_race(car_dir="cars", laps=1, track_seed=42,
@@ -203,7 +203,7 @@ class TestPlayDataDir:
 
     def test_play_passes_data_dir_to_run_race(self):
         with patch("engine.race_runner.load_all_cars", return_value=_make_cars(2)), \
-             patch("engine.race_runner.RaceSim") as mock_sim:
+             patch("engine.race_runner.PartsRaceSim") as mock_sim:
             mock_sim.return_value.run.return_value = []
             mock_sim.return_value.export_replay.return_value = {"frames": []}
             with tempfile.TemporaryDirectory() as d:
@@ -223,7 +223,7 @@ class TestPlayDataDir:
     def test_play_default_no_data_dir(self):
         """Without --data-dir, car_data_dir is None."""
         with patch("engine.race_runner.load_all_cars", return_value=_make_cars(2)), \
-             patch("engine.race_runner.RaceSim") as mock_sim:
+             patch("engine.race_runner.PartsRaceSim") as mock_sim:
             mock_sim.return_value.run.return_value = []
             mock_sim.return_value.export_replay.return_value = {"frames": []}
             with tempfile.TemporaryDirectory() as d:

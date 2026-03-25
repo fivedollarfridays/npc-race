@@ -257,7 +257,7 @@ def _print_submit_summary(results: dict) -> None:
     print()
     for car in results.get("cars", []):
         total = _format_time_mmss(car["total_time_s"])
-        best = _format_time_mmss(car.get("best_lap_s", 0))
+        best = _format_time_mmss(car.get("best_lap_s") or 0)
         print(
             f"  P{car['position']}  {car['name']:<20}  "
             f"{total}  "

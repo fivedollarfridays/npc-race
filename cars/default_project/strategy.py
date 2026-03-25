@@ -1,16 +1,36 @@
 """Strategy — pit wall decisions each tick.
 
-Receives: state (dict) with fields including:
-  tire_wear (float 0-1), pit_stops (int), lap (int), total_laps (int),
-  fuel_remaining (float kg), position (int), gap_ahead_s (float),
-  speed (float km/h), curvature (float), tire_compound (str)
+Called every tick with a state dict containing:
+    tire_wear        (float 0-1)   how worn tires are (1.0 = destroyed)
+    position         (int)         current race position
+    lap              (int)         current lap number
+    total_laps       (int)         total laps in the race
+    gap_ahead_s      (float)       gap to car ahead in seconds
+    gap_behind_s     (float)       gap to car behind in seconds
+    fuel_remaining   (float)       fuel remaining in kg
+    tire_compound    (str)         current compound: soft/medium/hard
+    engine_mode      (str)         current mode: push/standard/conserve
+    elapsed_s        (float)       elapsed race time in seconds
+    speed            (float)       current speed in km/h
+    curvature        (float)       track curvature at current position
+    pit_stops        (int)         number of pit stops so far
 
-Returns: dict with decisions. Only include fields you want to change:
-  pit_request (bool), tire_compound_request (str),
-  engine_mode (str: "push"/"standard"/"conserve")
+Return: dict with any of these decision fields (omit fields to keep
+current values):
+    pit_request             (bool)   request a pit stop
+    tire_compound_request   (str)    soft / medium / hard
+    engine_mode             (str)    push / standard / conserve
+    boost                   (bool)   activate short-term power boost
+    tire_mode               (str)    push / balanced / conserve
+    throttle                (float)  override throttle 0.0-1.0
+    lateral_target          (float)  lateral position -1.0 to 1.0
+    drs_request             (bool)   request DRS activation
+    ers_deploy_mode         (str)    attack / balanced / harvest
 
-Better code would plan pit windows based on tire degradation rate,
-switch to conserve mode when fuel is low, and push when gaps are small.
+Improvement ideas:
+- Plan pit windows based on tire degradation rate
+- Switch to conserve mode when fuel is low
+- Push when the gap to the car ahead is small
 """
 
 

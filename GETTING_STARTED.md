@@ -28,17 +28,23 @@ Run with the default gearbox and note your lap time:
 npcrace run --track monza --laps 1
 ```
 
-Now open `cars/my_car/gearbox.py`. The default shifts at 12,800 RPM — past the engine's peak torque band (10,800-12,500 RPM). Change it:
+Now open `cars/my_car/gearbox.py`. The default shifts at 12,800 RPM -- past the engine's peak torque band (10,800-12,500 RPM). Change the upshift threshold:
 
 ```python
-# Before (default — shifts too late):
+# Before (default -- shifts too late, ~80.4s on Monza):
 if rpm > 12800 and current_gear < 8:
 
-# After (shifts at peak torque):
-if rpm > 12200 and current_gear < 8:
+# After (shifts near peak torque, ~79.3s on Monza):
+if rpm > 11000 and current_gear < 8:
 ```
 
-Run again. Your lap time drops. That is the game — your code makes the car faster.
+Run again:
+
+```bash
+npcrace run --track monza --laps 1
+```
+
+Your lap time drops by about 1 second. That is the game -- your code makes the car faster. Read the docstrings in each part file for more ideas.
 
 ## How It Works
 

@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-03-24. Sprint 40 in progress.
+> Last updated: 2026-03-24. Sprint 39 in progress.
 
 ## Active Plan
 
@@ -30,6 +30,12 @@ Wave 3: T39.5 (submit-car) ✅, T39.6 (cars+tracks) ✅      [8 Cx]
 
 ### What Was Just Done
 
+- **T42.3 done**: Verified core feedback loop -- edit code, see lap time change. Created tests/test_feedback_loop.py with 3 smoke tests. Gearbox shift point: 12800rpm=80.400s vs 11000rpm=81.530s (diff 1.130s). Cooling effort: 1.0=82.430s vs 0.1=83.200s (diff 0.770s). Both PASS. Strategy engine_mode: push vs conserve = identical times (0.000s diff) -- KNOWN GAP: efficiency_engine calls strategy but never applies engine_mode to physics (xfail with strict=True). 2 passed, 1 xfail.
+
+- **T42.2 done**: Swapped RaceSim -> PartsRaceSim in engine/race_runner.py. Changed import from .simulation to .parts_simulation, replaced RaceSim instantiation with PartsRaceSim. Updated 3 mock patches in tests/test_data_persistence.py (RaceSim -> PartsRaceSim). Added 6 new tests in tests/test_parts_sim_swap.py (import verification, integration with 2-3 cars, results fields, all-finish, results.json export). All tests pass including existing test_simulation_v2 and test_data_persistence. Player part functions now affect race results.
+
+- **T42.1 done**: Added fast_mode, car_data_dir, race_number, drs_zones params to PartsRaceSim. Added timings system (create_timing + update_timing per tick), states property alias, LapAccumulator integration in fast_mode (1Hz frame recording), _detect_lap_completions, and get_lap_summaries. 15 new tests in test_parts_sim_compat.py, all passing. No regressions in existing test_parts_sim.py.
+
 - **T39.6 done** (auto-updated by hook)
 
 - **T39.6 done**: GET /api/cars + GET /api/tracks endpoints. Cars route lists player's cars (auth required) and gets car detail by ID (404 if not found). Tracks route returns all 20 tracks with metadata. 6 new tests passing, 33 total server tests green.
@@ -41,26 +47,15 @@ Wave 3: T39.5 (submit-car) ✅, T39.6 (cars+tracks) ✅      [8 Cx]
 - T39.2: SQLite DB layer with players, api_keys, cars tables. All CRUD ops (create/get player, API keys, store/get cars). 9 tests passing.
 
 ### What's Next
-- Sprint 40 complete. Next: Sprint 41 Wave 1 (T41.1 race orchestrator).
-
-## Sprint 40 — Progress
-
-### What Was Just Done
-
-- **T40.6 done**: Car analysis endpoint (server/routes/analysis.py) + editor sidebar panels. POST /api/car-analysis detects 10 known parts via AST, determines league tier (F3/F2/Championship), computes code quality (cyclomatic complexity + reliability score). Editor.html updated with parts grid, league badge, quality meter bar, and debounced auto-analyze on typing (300ms). 16 new tests (9 endpoint + 5 editor + 2 existing updated), 85 total server tests green.
-- **T40.5 done**: Car editor page (server/static/editor.html) with Monaco editor from CDN, car template pre-populated, submit flow (POST /api/submit-car + auto-join lobby), lobby status polling every 2s, dark theme matching landing page. 273 lines, 11 new tests passing.
-- **T40.3 done**: Fill cars module (server/fill_cars.py). Loads rival cars from cars/ directory, shuffles with optional seed, excludes player car names, returns lobby-compatible dicts with car_id=None, player_id="ai". 6 new tests passing.
-- **T40.2 done**: Lobby API routes (server/routes/lobby.py). POST /api/lobby/join validates car ownership, maps Lobby errors to HTTP 404/403/409. GET /api/lobby/status returns public lobby state. Global lobby with reset_lobby() for testing. Wired into app.py. 5 new tests passing, 60 total server tests green.
-- **T40.1 done**: Lobby class (server/lobby.py) with join/status/check_trigger/fill. Thread-safe with lock. Validates full lobby, duplicate players, closed lobby. Triggers on timeout or full grid, generates race_id. 9 new tests passing, 49 total server tests green.
-- **T40.4 done**: Landing page (server/static/index.html) — F1-themed dark page with CODE CIRCUIT header, tagline, BUILD YOUR CAR button linking to editor, How It Works section, Tracks section. Pure HTML/CSS with JetBrains Mono, purple/green accents, responsive layout. Editor stub (editor.html) created. 7 new tests passing, 45 total server tests green.
+- T42.4+ (remaining Sprint 42 tasks) or next sprint. Note: strategy engine_mode needs wiring in efficiency_engine.py (future task).
 
 ## Sprint 40 — Lobby + Landing + Editor (24 Cx)
 
 ```
-Wave 1: T40.1 (lobby) ✅, T40.4 (landing page) ✅           [8 Cx]
-Wave 2: T40.2 (lobby routes) ✅, T40.3 (fill cars) ✅        [6 Cx]
-Wave 3: T40.5 (editor with Monaco) ✅                        [5 Cx]
-Wave 4: T40.6 (analysis panels) ✅                          [5 Cx]
+Wave 1: T40.1 (lobby), T40.4 (landing page)               [8 Cx]
+Wave 2: T40.2 (lobby routes), T40.3 (fill cars)            [6 Cx]
+Wave 3: T40.5 (editor with Monaco)                         [5 Cx]
+Wave 4: T40.6 (analysis panels)                            [5 Cx]
 ```
 
 ## Sprint 41 — Grid + Dashboard + Results (19 Cx)
