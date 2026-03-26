@@ -1,5 +1,6 @@
 cli
 engine
 security
+server
 tracks
 viewer

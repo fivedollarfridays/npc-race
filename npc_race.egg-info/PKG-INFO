@@ -9,3 +9,6 @@ Requires-Dist: pytest>=8.0; extra == "dev"
 Requires-Dist: pytest-cov>=5.0; extra == "dev"
 Requires-Dist: pytest-timeout>=2.0; extra == "dev"
 Requires-Dist: ruff>=0.4; extra == "dev"
+Provides-Extra: server
+Requires-Dist: fastapi>=0.110; extra == "server"
+Requires-Dist: uvicorn>=0.29; extra == "server"

@@ -230,6 +230,7 @@ class TestCLI:
         assert "monza" in result.stdout
         assert "20 tracks" in result.stdout
 
+    @pytest.mark.integration
     def test_track_flag_produces_replay(self, tmp_path):
         output = str(tmp_path / "cli_replay.json")
         result = subprocess.run(

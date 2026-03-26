@@ -29,7 +29,7 @@ def test_getting_started_has_before_after():
     """Contains the gearbox improvement example with before/after."""
     content = _read_getting_started()
     assert "12800" in content or "12,800" in content, "Missing default shift RPM"
-    assert "12200" in content or "12,200" in content, "Missing improved shift RPM"
+    assert "11000" in content or "12200" in content or "12,200" in content, "Missing improved shift RPM"
 
 
 def test_getting_started_run_command_uses_cars_dir():

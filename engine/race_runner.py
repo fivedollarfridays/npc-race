@@ -13,7 +13,7 @@ from .car_loader import load_all_cars
 from .league_gates import apply_league_gates
 from .results import generate_results_summary
 from .track_gen import generate_track, interpolate_track
-from .simulation import RaceSim
+from .parts_simulation import PartsRaceSim
 from .narrative import detect_events
 from .commentary import format_events
 from .race_report import generate_report
@@ -226,10 +226,10 @@ def run_race(
     if not quiet:
         _print_grid_info(cars, track_name, track_seed)
 
-    sim = RaceSim(cars, track, laps=effective_laps, seed=track_seed,
-                  track_name=track_name, real_length_m=real_length_m,
-                  car_data_dir=car_data_dir, race_number=race_number,
-                  drs_zones=drs_zones, fast_mode=fast_mode)
+    sim = PartsRaceSim(cars, track, laps=effective_laps, seed=track_seed,
+                       track_name=track_name, real_length_m=real_length_m,
+                       car_data_dir=car_data_dir, race_number=race_number,
+                       drs_zones=drs_zones, fast_mode=fast_mode)
     results = sim.run()
 
     lap_sums = sim.get_lap_summaries() if fast_mode else None

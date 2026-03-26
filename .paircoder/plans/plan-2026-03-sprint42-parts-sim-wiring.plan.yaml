@@ -1,0 +1,12 @@
+id: plan-2026-03-sprint42-parts-sim-wiring
+title: Sprint 42 — Wire Parts Simulation (Game-Breaking Fix)
+type: bugfix
+status: planned
+created_at: '2026-03-25T10:41:47.132662'
+skills:
+- planning-with-pm
+goals:
+- PartsRaceSim becomes the active simulation in npcrace run
+- Player part functions (gearbox, cooling, etc.) affect race results
+- Fast mode support in PartsRaceSim
+- 'Core feedback loop works: edit code → see lap time change'
