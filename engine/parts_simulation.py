@@ -280,6 +280,9 @@ class PartsRaceSim:
                 "_last_sector_idx": None,
                 "_spin_risk": 0,
                 "_timing": {},
+                "efficiency_product": s.get("efficiency_product", 1.0),
+                "gearbox_efficiency": s.get("gearbox_efficiency", 1.0),
+                "cooling_efficiency": s.get("cooling_efficiency", 1.0),
             })
         return legacy
 

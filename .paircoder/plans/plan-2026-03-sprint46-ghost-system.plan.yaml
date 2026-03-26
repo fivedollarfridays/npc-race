@@ -1,0 +1,11 @@
+id: plan-2026-03-sprint46-ghost-system
+title: Sprint 46 — Ghost System + Viewer HUD
+type: feature
+status: planned
+created_at: '2026-03-26T14:17:19.765407'
+skills:
+- planning-with-pm
+goals:
+- 5-level adversarial ghost with calibrated flaws
+- Ghost visible in viewer (translucent + split telemetry)
+- Live efficiency HUD in dashboard

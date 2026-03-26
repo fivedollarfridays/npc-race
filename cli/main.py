@@ -17,6 +17,7 @@ from .commands import (
     cmd_tournament,
     cmd_validate,
 )
+from .trial_command import cmd_trial
 from .race_commands import cmd_qualify, cmd_race
 
 
@@ -81,6 +82,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_leaderboard_parser(subs)
     _add_qualify_parser(subs)
     _add_race_parser(subs)
+    _add_trial_parser(subs)
 
     return parser
 
@@ -115,6 +117,18 @@ def _add_tournament_parser(subs) -> None:
                          help="Data directory for car persistence")
     tourn_p.add_argument("--output-dir", default="tournaments",
                          help="Output directory for replays")
+
+
+def _add_trial_parser(subs) -> None:
+    """Add the 'trial' subparser for quick solo time trials."""
+    trial_p = subs.add_parser("trial", help="Run a quick time trial (solo, no rivals)")
+    trial_p.add_argument(
+        "--track", default="monza", help="Track name (default: monza)",
+    )
+    trial_p.add_argument(
+        "--car-dir", default=None,
+        help="Car project directory (auto-detect if not set)",
+    )
 
 
 def _add_qualify_parser(subs) -> None:
@@ -162,6 +176,7 @@ _DISPATCH = {
     "leaderboard": cmd_leaderboard,
     "qualify": cmd_qualify,
     "race": cmd_race,
+    "trial": cmd_trial,
 }
 
 

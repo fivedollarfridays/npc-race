@@ -392,6 +392,10 @@ def run_efficiency_tick(car_parts, car_state, physics_state, hardware_specs,
         (s,), defaults["strategy"], tick, g_ctx)
     log.append(entry)
 
+    # Store individual efficiencies for frame export
+    s["gearbox_efficiency"] = gb_eff
+    s["cooling_efficiency"] = cool_eff
+
     if glitch_engine:
         glitch_engine.tick_glitches(car_idx)
 

@@ -138,6 +138,7 @@ tests/test_ers_model.py
 tests/test_f1_validation.py
 tests/test_fast_export.py
 tests/test_fast_mode.py
+tests/test_feedback_loop.py
 tests/test_fixtures.py
 tests/test_frontrunner_rivals.py
 tests/test_fuel_model.py
@@ -169,10 +170,13 @@ tests/test_overlay.py
 tests/test_overlay_integration.py
 tests/test_parts_api.py
 tests/test_parts_catalog.py
+tests/test_parts_gate.py
 tests/test_parts_integration.py
 tests/test_parts_race.py
 tests/test_parts_runner.py
 tests/test_parts_sim.py
+tests/test_parts_sim_compat.py
+tests/test_parts_sim_swap.py
 tests/test_physics.py
 tests/test_physics_fx.py
 tests/test_pit_lane.py

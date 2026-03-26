@@ -100,6 +100,9 @@ def record_frame(states, positions, track, distances, track_length,
             "track_wetness": round(state.get("_track_wetness", 0.0), 3),
             "ers_energy": round(state.get("ers", {}).get("energy", 4.0), 2),
             "brake_temp": round(state.get("brake_state", {}).get("temp", 20.0), 1),
+            "efficiency_product": round(state.get("efficiency_product", 1.0), 3),
+            "gearbox_efficiency": round(state.get("gearbox_efficiency", 1.0), 3),
+            "cooling_efficiency": round(state.get("cooling_efficiency", 1.0), 3),
         })
 
     return frame
