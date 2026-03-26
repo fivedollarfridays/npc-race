@@ -1,0 +1,11 @@
+id: plan-2026-03-sprint47-tiered-grid
+title: Sprint 47 — Tiered Grid + Progression
+type: feature
+status: planned
+created_at: '2026-03-26T14:17:21.566027'
+skills:
+- planning-with-pm
+goals:
+- Rookie/midfield/full tier system
+- Progression tracking (beat Ghost → unlock grid)
+- Ghost optional after first track completion
