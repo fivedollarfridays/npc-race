@@ -1,0 +1,28 @@
+environments:
+  dev:
+    base_url: "http://localhost:8000"
+    api_url: "http://localhost:8000/api"
+    restrictions:
+      read_only: false
+    variables:
+      TRACK: monza
+      LAPS: "1"
+
+  staging:
+    base_url: "${STAGING_URL}"
+    api_url: "${STAGING_URL}/api"
+    restrictions:
+      read_only: false
+      skip_tags: [destructive]
+
+  prod:
+    base_url: "${PROD_URL}"
+    api_url: "${PROD_URL}/api"
+    restrictions:
+      read_only: true
+      skip_tags: [destructive, write]
+
+defaults:
+  environment: dev
+  timeout_s: 10
+  tags: [critical]

@@ -1,0 +1,25 @@
+name: API Health
+description: Verify all API endpoints are accessible and return correct responses
+tags: [critical, smoke]
+preconditions:
+  - "Server running at ${base_url}"
+
+scenarios:
+  - name: Health endpoint
+    steps:
+      - navigate: "${api_url}/health"
+      - verify: "Response contains 'ok' status"
+
+  - name: Tracks endpoint
+    steps:
+      - navigate: "${api_url}/tracks"
+      - verify: "Response lists 20 tracks"
+      - verify: "Monza appears in track list"
+
+  - name: Register endpoint
+    tags: [write]
+    steps:
+      - navigate: "${api_url}/docs"
+      - verify: "Swagger UI loads with all endpoints listed"
+      - verify: "/api/register endpoint visible"
+      - verify: "/api/submit-car endpoint visible"

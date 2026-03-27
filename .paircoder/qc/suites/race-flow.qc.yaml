@@ -1,0 +1,34 @@
+name: Race Flow (Browser)
+description: Full browser flow — editor → lobby → grid → race → results
+tags: [critical, integration]
+preconditions:
+  - "Server running at ${base_url}"
+  - "Sprint 41 (dashboard wiring) complete"
+
+scenarios:
+  - name: Complete player journey
+    steps:
+      - navigate: "${base_url}/static/index.html"
+      - click: "BUILD YOUR CAR button"
+      - verify: "Editor page loads"
+      - verify: "Monaco editor contains car template"
+      - click: "Submit button"
+      - verify: "Lobby status appears showing player count"
+      - wait: "5"
+      - verify: "Lobby shows at least 1 player"
+      # After lobby triggers:
+      - verify: "Grid view or race dashboard loads"
+      - verify: "Race is running or results are shown"
+
+  - name: Results show after race
+    steps:
+      - verify: "Race results visible with positions"
+      - verify: "Race Again button visible"
+      - click: "Race Again"
+      - verify: "Returns to editor with previous car code"
+
+  - name: Viewer shows efficiency HUD
+    steps:
+      - verify: "Efficiency panel visible during race"
+      - verify: "Gearbox efficiency bar shown"
+      - verify: "Cooling efficiency bar shown"
