@@ -861,6 +861,11 @@ function renderCar(ctx, car, prevCar, replay, transform) {
   // Braking detection
   const isBraking = prevCar != null && (car.speed < prevCar.speed - 2);
 
+  // Ghost cars render translucent
+  if (isGhostCar(car)) {
+    ctx.globalAlpha = 0.5;
+  }
+
   ctx.save();
   ctx.translate(sx, sy);
   ctx.rotate(heading);
@@ -899,10 +904,22 @@ function renderCar(ctx, car, prevCar, replay, transform) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
   ctx.fillText(getCarAbbrev(car.name), sx, sy - bodyWid / 2 - 4);
+
+  // Reset alpha after ghost rendering
+  if (isGhostCar(car)) {
+    ctx.globalAlpha = 1.0;
+  }
 }
 
 function getCarAbbrev(name) {
   return (name || '???').substring(0, 3).toUpperCase();
+}
+
+/**
+ * Detect whether a car object represents a ghost car.
+ */
+function isGhostCar(car) {
+  return car.name === 'Ghost' || car.name === 'Tortoise' || car.color === '#555555';
 }
 </script>
 <script>
@@ -1988,6 +2005,7 @@ function handleWsFrame(msg) {
     renderBackground();
     initTimingTower(replay);
     initTelemetryPanel(replay);
+    initEfficiencyPanel(replay);
     initTelemetryStrip(replay);
     initDiagnostic(replay, msg.cars[0].name);
   }
@@ -2034,6 +2052,7 @@ function loadReplay(data) {
 
   initTimingTower(replay);
   initTelemetryPanel(replay);
+  initEfficiencyPanel(replay);
   initCodeTerminal(replay);
   initDiagnostic(replay, replay.frames[0][0].name);
 
@@ -2209,6 +2228,7 @@ function render() {
     const prevFrame = frame > 0 ? replay.frames[frame - 1] : null;
     const prevData = prevFrame ? prevFrame.find(c => c.name === _selectedCar) : null;
     updateTelemetryPanel(selectedData, prevData, _panelFrameCars);
+    if (selectedData) updateEfficiencyPanel(selectedData, _panelFrameCars);
   }
 
   // Code terminal: update with current tick

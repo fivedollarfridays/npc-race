@@ -2,18 +2,21 @@
 
 import ast
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
 
+from server.rate_limit import limiter
 from server.auth import get_current_player, get_db
 from server.db import store_car
 from security.bot_scanner import scan_car_source
 
 router = APIRouter(prefix="/api", tags=["cars"])
 
+MAX_SOURCE_BYTES = 32768  # 32KB
+
 
 class CarSubmission(BaseModel):
-    source: str
+    source: str = Field(..., max_length=MAX_SOURCE_BYTES)
 
 
 class CarResponse(BaseModel):
@@ -21,11 +24,12 @@ class CarResponse(BaseModel):
     name: str
     color: str
     league: str
-    api_key: str | None = None
 
 
 @router.post("/submit-car", response_model=CarResponse)
+@limiter.limit("10/minute")
 async def submit_car(
+    request: Request,
     submission: CarSubmission,
     player=Depends(get_current_player),
     conn=Depends(get_db),
@@ -34,6 +38,8 @@ async def submit_car(
     source = submission.source.strip()
     if not source:
         raise HTTPException(400, detail="Empty source code")
+    if len(source) > MAX_SOURCE_BYTES:
+        raise HTTPException(400, detail="Source code too large (max 32KB)")
 
     # Security scan
     result = scan_car_source(source)
@@ -48,15 +54,12 @@ async def submit_car(
     # Store in DB
     car_id = store_car(conn, player["id"], name, color or "#ffffff", source)
 
-    response = {
+    return {
         "car_id": car_id,
         "name": name,
         "color": color or "#ffffff",
         "league": "F3",
     }
-    if player.get("_new"):
-        response["api_key"] = player["api_key"]
-    return response
 
 
 def _extract_car_metadata(source: str) -> tuple[str | None, str | None]:

@@ -1,8 +1,9 @@
-version: 2.16.0
+version: 2.17.1
 project:
   name: NPC Race
   description: Racing game where you upload a car file with stats and strategy AI
-  primary_goal: Build a complete racing game with track presets, physics engine, sandbox, CLI, and replay viewer
+  primary_goal: Build a complete racing game with track presets, physics engine, sandbox,
+    CLI, and replay viewer
   coverage_target: 80
 workflow:
   default_branch_type: feature
@@ -274,17 +275,20 @@ metrics:
 hooks:
   enabled: true
   on_task_ready:
-  - sync_trello
+  - sync_pm
   - update_state
+  - sync_trello
   on_task_start:
   - select_model
   - check_token_budget
   - start_timer
-  - sync_trello
+  - sync_pm
   - update_state
+  - sync_trello
   on_task_review:
-  - sync_trello
+  - sync_pm
   - update_state
+  - sync_trello
   on_task_complete:
   - arch_check_modified
   - contract_break_check
@@ -293,12 +297,14 @@ hooks:
   - telemetry_snapshot
   - calibration_update_incremental
   - feedback_calibrate
-  - sync_trello
+  - sync_pm
   - update_state
   - check_unblocked
-  on_task_block:
   - sync_trello
+  on_task_block:
+  - sync_pm
   - update_state
+  - sync_trello
 containment:
   enabled: false
   mode: advisory
@@ -332,3 +338,6 @@ architecture:
   test_max_function_lines: 50
   test_max_functions_per_file: 40
   test_max_imports: 30
+pm:
+  provider: none
+  workflow: simple

@@ -47,27 +47,41 @@ def client(_memory_db: sqlite3.Connection):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture()
+def auth_headers(_memory_db: sqlite3.Connection) -> dict:
+    """Create a player + API key and return auth headers dict."""
+    player = create_player(_memory_db)
+    key = create_api_key(_memory_db, player["id"])
+    return {"X-API-Key": key}
+
+
 # --- Validation tests ---
 
 
-def test_submit_empty_source(client: TestClient):
+def test_submit_empty_source(client: TestClient, auth_headers: dict):
     """Empty source string returns 400."""
-    resp = client.post("/api/submit-car", json={"source": "  "})
+    resp = client.post(
+        "/api/submit-car", json={"source": "  "}, headers=auth_headers
+    )
     assert resp.status_code == 400
     assert "Empty source" in resp.json()["detail"]
 
 
-def test_submit_missing_car_name(client: TestClient):
+def test_submit_missing_car_name(client: TestClient, auth_headers: dict):
     """Source without CAR_NAME returns 400."""
     source = 'CAR_COLOR = "#ff0000"\nPOWER, GRIP, WEIGHT, AERO, BRAKES = 20, 20, 20, 20, 20\ndef strategy(state): return {}'
-    resp = client.post("/api/submit-car", json={"source": source})
+    resp = client.post(
+        "/api/submit-car", json={"source": source}, headers=auth_headers
+    )
     assert resp.status_code == 400
 
 
-def test_submit_banned_import(client: TestClient):
+def test_submit_banned_import(client: TestClient, auth_headers: dict):
     """Source with disallowed import returns 400 with errors."""
     source = 'import os\nCAR_NAME = "Bad"\nCAR_COLOR = "#ff0000"\nPOWER, GRIP, WEIGHT, AERO, BRAKES = 20, 20, 20, 20, 20\ndef strategy(state): return {}'
-    resp = client.post("/api/submit-car", json={"source": source})
+    resp = client.post(
+        "/api/submit-car", json={"source": source}, headers=auth_headers
+    )
     assert resp.status_code == 400
     detail = resp.json()["detail"]
     assert "errors" in detail
@@ -77,9 +91,11 @@ def test_submit_banned_import(client: TestClient):
 # --- Happy path tests ---
 
 
-def test_submit_valid_car(client: TestClient):
+def test_submit_valid_car(client: TestClient, auth_headers: dict):
     """POST with valid source returns 200, car_id, and name."""
-    resp = client.post("/api/submit-car", json={"source": VALID_CAR})
+    resp = client.post(
+        "/api/submit-car", json={"source": VALID_CAR}, headers=auth_headers
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert data["car_id"] >= 1
@@ -88,13 +104,10 @@ def test_submit_valid_car(client: TestClient):
     assert data["league"] == "F3"
 
 
-def test_submit_returns_api_key_for_new_player(client: TestClient):
-    """No X-API-Key header means response includes api_key."""
+def test_submit_without_key_returns_401(client: TestClient):
+    """POST /api/submit-car without API key returns 401."""
     resp = client.post("/api/submit-car", json={"source": VALID_CAR})
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["api_key"] is not None
-    assert data["api_key"].startswith("cc_")
+    assert resp.status_code == 401
 
 
 def test_submit_existing_player(
@@ -111,5 +124,5 @@ def test_submit_existing_player(
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert data["api_key"] is None
+    assert "api_key" not in data
     assert data["car_id"] >= 1

@@ -16,7 +16,7 @@ from viewer.launcher import launch_viewer
 from engine.championship import F1_POINTS
 
 
-def cmd_list_tracks(_args) -> None:
+def cmd_list_tracks(_args) -> int:
     """Print all available tracks with name, country, and character."""
     print(f"\n{'Name':<16} {'Country':<20} {'Character':<12}")
     print(f"{'─' * 16} {'─' * 20} {'─' * 12}")
@@ -24,17 +24,21 @@ def cmd_list_tracks(_args) -> None:
         t = TRACKS[key]
         print(f"{key:<16} {t['country']:<20} {t['character']:<12}")
     print(f"\n{len(TRACKS)} tracks available")
+    return 0
 
 
-def cmd_validate(args) -> None:
+def cmd_validate(args) -> int:
     """Validate one or more car files using the bot scanner."""
+    any_failed = False
     for path in args.car_files:
         result = scan_car_file(path)
         status = "PASS" if result.passed else "FAIL"
         print(f"{status}: {path}")
         if not result.passed:
+            any_failed = True
             for v in result.violations:
                 print(f"  - {v}")
+    return 1 if any_failed else 0
 
 
 def cmd_init(args) -> int:
@@ -71,7 +75,7 @@ def cmd_init(args) -> int:
     return 0
 
 
-def cmd_run(args) -> int | None:
+def cmd_run(args) -> int:
     """Run a race and optionally open the replay viewer in a browser."""
     if not os.path.isdir(args.car_dir):
         print(f"Car directory not found: {args.car_dir}")
@@ -126,7 +130,7 @@ def _resolve_track(args) -> str | None:
     return name
 
 
-def cmd_tournament(args) -> None:
+def cmd_tournament(args) -> int:
     """Run multi-race tournament with F1 championship points."""
     tracks = [t.strip().lower() for t in args.tracks.split(",")]
 
@@ -135,7 +139,7 @@ def cmd_tournament(args) -> None:
     if invalid:
         print(f"Unknown track(s): {', '.join(invalid)}")
         print(f"Available tracks: {', '.join(sorted(TRACKS))}")
-        return
+        return 1
 
     races_per_track = args.races
     laps = args.laps
@@ -174,6 +178,7 @@ def cmd_tournament(args) -> None:
             _award_points(standings, replay["results"], race_num, track_name)
 
     _print_final_standings(standings)
+    return 0
 
 
 def _print_tournament_header(tracks, races_per_track, laps):
@@ -269,7 +274,7 @@ def _print_submit_summary(results: dict) -> None:
     print("  Ready for leaderboard submission.")
 
 
-def cmd_season(args) -> None:
+def cmd_season(args) -> int:
     """Run a championship season."""
     from engine.season_runner import run_season
     custom = [t.strip() for t in args.tracks.split(",")] if args.tracks else None
@@ -280,6 +285,7 @@ def cmd_season(args) -> None:
         laps=args.laps,
         output_dir=args.output_dir,
     )
+    return 0
 
 
 def cmd_leaderboard(args) -> int:

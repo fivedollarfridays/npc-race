@@ -29,13 +29,13 @@ git diff main...HEAD
 ### Summary
 Brief assessment.
 
-### Must Fix
+### P0 (blocks merge -- breaking state, auto-reject)
 1. **[File:Line]** - Issue and fix
 
-### Should Fix
+### P1 (fix before merge -- quality issue, not breaking)
 1. **[File:Line]** - Suggestion
 
-### Consider
+### P2 (signal -- improvement opportunity, enters SigInt pipeline)
 1. **[File:Line]** - Optional improvement
 
 ### Positive Notes

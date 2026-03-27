@@ -42,21 +42,21 @@ def _print_qualifying_results(results: list[dict]) -> None:
         print(f"  P{pos}  {name:<20s}  {mins}:{secs:06.3f}")
 
 
-def cmd_qualify(args) -> None:
+def cmd_qualify(args) -> int:
     """Run qualifying session and export grid.json."""
     if not os.path.isdir(args.car_dir):
         print(f"Car directory not found: {args.car_dir}")
-        return
+        return 1
 
     track_name = args.track.lower()
     if track_name not in TRACKS:
         print(f"Unknown track: '{args.track}'")
-        return
+        return 1
 
     cars = load_all_cars(args.car_dir)
     if not cars:
         print("No cars found")
-        return
+        return 1
 
     td = _resolve_track_for_qualifying(track_name)
     results = run_qualifying(
@@ -70,6 +70,7 @@ def cmd_qualify(args) -> None:
     export_grid(results, args.output)
     _print_qualifying_results(results)
     print(f"\nGrid exported to {args.output}")
+    return 0
 
 
 def _run_qualifying_phase(args) -> str | None:
@@ -101,17 +102,17 @@ def _run_qualifying_phase(args) -> str | None:
     return grid_path
 
 
-def cmd_race(args) -> None:
+def cmd_race(args) -> int:
     """Run a race, optionally with qualifying first."""
     if not os.path.isdir(args.car_dir):
         print(f"Car directory not found: {args.car_dir}")
-        return
+        return 1
 
     grid_file = None
     if args.qualify:
         grid_file = _run_qualifying_phase(args)
         if grid_file == "ERROR":
-            return
+            return 1
 
     live = getattr(args, "live", False)
     fast_mode = not live
@@ -130,3 +131,4 @@ def cmd_race(args) -> None:
         verbose=verbose,
         quiet=grid_file is not None,
     )
+    return 0

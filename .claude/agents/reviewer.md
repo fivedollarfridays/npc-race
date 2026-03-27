@@ -89,7 +89,7 @@ ruff check .
 
 Organize feedback by severity:
 
-### 🔴 Must Fix (Blocking)
+### P0 (blocks merge -- breaking state, auto-reject)
 ```markdown
 **[file.py:42]** Issue description
 
@@ -103,13 +103,13 @@ Problem: What's wrong and why it matters
 Suggestion: How to fix it
 ```
 
-### 🟡 Should Fix (Non-blocking)
+### P1 (fix before merge -- quality issue, not breaking)
 ```markdown
 **[file.py:67]** Issue description
 Suggestion: Improvement approach
 ```
 
-### 🟢 Consider (Optional)
+### P2 (signal -- improvement opportunity, enters SigInt pipeline)
 ```markdown
 **[file.py:89]** Optional improvement idea
 ```
@@ -128,9 +128,9 @@ End with a clear verdict:
 **Status**: Approve / Approve with comments / Request changes
 
 **Summary**: 
-- X must-fix issues
-- Y should-fix issues
-- Z suggestions
+- X P0 issues
+- Y P1 issues
+- Z P2 signals
 
 **Blocking items** (if any):
 1. Issue that must be resolved

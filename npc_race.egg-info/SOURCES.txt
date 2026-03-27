@@ -85,11 +85,13 @@ server/config.py
 server/db.py
 server/fill_cars.py
 server/lobby.py
+server/rate_limit.py
 server/routes/__init__.py
 server/routes/analysis.py
 server/routes/cars.py
 server/routes/health.py
 server/routes/lobby.py
+server/routes/register.py
 server/routes/submit.py
 server/routes/tracks.py
 tests/test_adaptive_integration.py
@@ -196,6 +198,7 @@ tests/test_pit_lane.py
 tests/test_play.py
 tests/test_polish_fixes.py
 tests/test_powertrain_physics.py
+tests/test_process_sandbox.py
 tests/test_pytest_marks.py
 tests/test_qualifying.py
 tests/test_race_dashboard.py
@@ -220,6 +223,7 @@ tests/test_seed_cars_v2.py
 tests/test_server_analysis.py
 tests/test_server_app.py
 tests/test_server_auth.py
+tests/test_server_car_security.py
 tests/test_server_db.py
 tests/test_server_editor.py
 tests/test_server_endpoints.py
@@ -228,6 +232,8 @@ tests/test_server_health.py
 tests/test_server_landing.py
 tests/test_server_lobby.py
 tests/test_server_lobby_routes.py
+tests/test_server_rate_limit.py
+tests/test_server_register.py
 tests/test_server_submit.py
 tests/test_setup_model.py
 tests/test_sim_step_extraction.py

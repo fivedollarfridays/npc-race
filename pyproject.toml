@@ -16,7 +16,7 @@ dev = [
     "pytest-timeout>=2.0",
     "ruff>=0.4",
 ]
-server = ["fastapi>=0.110", "uvicorn>=0.29"]
+server = ["fastapi>=0.110", "uvicorn>=0.29", "slowapi>=0.1.9"]
 
 [tool.setuptools.packages.find]
 where = ["."]
