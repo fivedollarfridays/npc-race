@@ -1,8 +1,10 @@
 pyproject.toml
 cli/__init__.py
 cli/commands.py
+cli/ghost_command.py
 cli/main.py
 cli/race_commands.py
+cli/trial_command.py
 engine/__init__.py
 engine/brake_model.py
 engine/car_attributes.py
@@ -11,6 +13,7 @@ engine/car_loader.py
 engine/car_project_loader.py
 engine/championship.py
 engine/chassis_physics.py
+engine/coaching.py
 engine/code_quality.py
 engine/collision.py
 engine/commentary.py
@@ -23,6 +26,8 @@ engine/efficiency_engine.py
 engine/ers_model.py
 engine/fast_export.py
 engine/fuel_model.py
+engine/ghost.py
+engine/ghost_race.py
 engine/glitch.py
 engine/hybrid_physics.py
 engine/incident.py
@@ -55,6 +60,7 @@ engine/sim_step.py
 engine/simulation.py
 engine/spatial.py
 engine/speed_profile.py
+engine/time_trial.py
 engine/timing.py
 engine/tire_model.py
 engine/tire_temperature.py
@@ -110,6 +116,7 @@ tests/test_championship_integration.py
 tests/test_chassis_physics.py
 tests/test_cli.py
 tests/test_cli_errors.py
+tests/test_coaching.py
 tests/test_code_quality.py
 tests/test_code_review_fixes.py
 tests/test_collision.py
@@ -129,6 +136,8 @@ tests/test_drama_replay.py
 tests/test_driver_model.py
 tests/test_drs_system.py
 tests/test_efficiency_engine.py
+tests/test_efficiency_frames.py
+tests/test_efficiency_hud.py
 tests/test_efficiency_wiring.py
 tests/test_engine_modules.py
 tests/test_engine_tracks.py
@@ -143,6 +152,10 @@ tests/test_fixtures.py
 tests/test_frontrunner_rivals.py
 tests/test_fuel_model.py
 tests/test_full_grid.py
+tests/test_ghost.py
+tests/test_ghost_cli.py
+tests/test_ghost_race.py
+tests/test_ghost_viewer.py
 tests/test_glitch.py
 tests/test_glitch_wiring.py
 tests/test_hybrid_physics.py
@@ -231,6 +244,7 @@ tests/test_telemetry_panel.py
 tests/test_telemetry_strip.py
 tests/test_tier2_integration.py
 tests/test_time_calibration.py
+tests/test_time_trial.py
 tests/test_timing.py
 tests/test_timing_enrichment.py
 tests/test_timing_tower.py
@@ -242,6 +256,7 @@ tests/test_track_performance.py
 tests/test_track_renderer.py
 tests/test_tracks.py
 tests/test_traction.py
+tests/test_trial_cli.py
 tests/test_verbose_league.py
 tests/test_viewer_code_terminal.py
 tests/test_viewer_integration_gate.py
