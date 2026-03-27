@@ -17,6 +17,7 @@ from .commands import (
     cmd_tournament,
     cmd_validate,
 )
+from .ghost_command import cmd_ghost
 from .trial_command import cmd_trial
 from .race_commands import cmd_qualify, cmd_race
 
@@ -83,6 +84,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_qualify_parser(subs)
     _add_race_parser(subs)
     _add_trial_parser(subs)
+    _add_ghost_parser(subs)
 
     return parser
 
@@ -131,6 +133,14 @@ def _add_trial_parser(subs) -> None:
     )
 
 
+def _add_ghost_parser(subs) -> None:
+    """Add the 'ghost' subparser for ghost race training."""
+    ghost_p = subs.add_parser("ghost", help="Race against a ghost opponent (training)")
+    ghost_p.add_argument("--track", default="monza", help="Track name")
+    ghost_p.add_argument("--level", type=int, default=1, help="Ghost level 1-5")
+    ghost_p.add_argument("--car-dir", default=None, help="Car project directory")
+
+
 def _add_qualify_parser(subs) -> None:
     """Add the 'qualify' subparser."""
     q_p = subs.add_parser("qualify", help="Run qualifying session")
@@ -177,6 +187,7 @@ _DISPATCH = {
     "qualify": cmd_qualify,
     "race": cmd_race,
     "trial": cmd_trial,
+    "ghost": cmd_ghost,
 }
 
 

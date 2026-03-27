@@ -139,6 +139,7 @@ function handleWsFrame(msg) {
     renderBackground();
     initTimingTower(replay);
     initTelemetryPanel(replay);
+    initEfficiencyPanel(replay);
     initTelemetryStrip(replay);
     initDiagnostic(replay, msg.cars[0].name);
   }
@@ -185,6 +186,7 @@ function loadReplay(data) {
 
   initTimingTower(replay);
   initTelemetryPanel(replay);
+  initEfficiencyPanel(replay);
   initCodeTerminal(replay);
   initDiagnostic(replay, replay.frames[0][0].name);
 
@@ -360,6 +362,7 @@ function render() {
     const prevFrame = frame > 0 ? replay.frames[frame - 1] : null;
     const prevData = prevFrame ? prevFrame.find(c => c.name === _selectedCar) : null;
     updateTelemetryPanel(selectedData, prevData, _panelFrameCars);
+    if (selectedData) updateEfficiencyPanel(selectedData, _panelFrameCars);
   }
 
   // Code terminal: update with current tick

@@ -372,6 +372,29 @@
   .grade-bar { flex: 1; height: 6px; background: var(--bg-primary); border-radius: 2px; overflow: hidden; }
   .grade-fill { height: 100%; transition: width 0.3s; border-radius: 2px; }
   .grade-pct { font-size: 11px; font-weight: 600; color: var(--text-secondary); min-width: 32px; text-align: right; }
+
+  /* ── Efficiency HUD (T46.4) ──────────────── */
+
+  #efficiency-panel {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(10, 10, 15, 0.9);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    min-width: 200px;
+    z-index: 100;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-primary);
+  }
+  .eff-header { font-weight: bold; margin-bottom: 8px; color: var(--accent-purple); }
+  .eff-row { display: flex; align-items: center; margin: 4px 0; gap: 8px; }
+  .eff-label { width: 70px; }
+  .eff-bar-bg { flex: 1; height: 12px; background: var(--bg-primary); border-radius: 4px; overflow: hidden; }
+  .eff-bar-fill { height: 100%; border-radius: 4px; transition: width 0.1s; }
+  .eff-value { width: 40px; text-align: right; }
 </style>
 </head>
 <body>
@@ -415,6 +438,9 @@
   <div id="codeTerminal"></div>
 </div>
 
+<!-- EFFICIENCY HUD (T46.4) -->
+<div id="efficiency-panel"></div>
+
 <!-- TELEMETRY STRIP -->
 <div id="telemetryStrip">
   <canvas id="speedTrace"></canvas>
@@ -453,6 +479,7 @@
 <script src="js/telemetry-strip.js"></script>
 <script src="js/diagnostic.js"></script>
 <script src="js/code-terminal.js"></script>
+<script src="js/efficiency-panel.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

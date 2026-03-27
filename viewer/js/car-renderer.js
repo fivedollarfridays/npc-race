@@ -230,6 +230,11 @@ function renderCar(ctx, car, prevCar, replay, transform) {
   // Braking detection
   const isBraking = prevCar != null && (car.speed < prevCar.speed - 2);
 
+  // Ghost cars render translucent
+  if (isGhostCar(car)) {
+    ctx.globalAlpha = 0.5;
+  }
+
   ctx.save();
   ctx.translate(sx, sy);
   ctx.rotate(heading);
@@ -268,8 +273,20 @@ function renderCar(ctx, car, prevCar, replay, transform) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
   ctx.fillText(getCarAbbrev(car.name), sx, sy - bodyWid / 2 - 4);
+
+  // Reset alpha after ghost rendering
+  if (isGhostCar(car)) {
+    ctx.globalAlpha = 1.0;
+  }
 }
 
 function getCarAbbrev(name) {
   return (name || '???').substring(0, 3).toUpperCase();
+}
+
+/**
+ * Detect whether a car object represents a ghost car.
+ */
+function isGhostCar(car) {
+  return car.name === 'Ghost' || car.name === 'Tortoise' || car.color === '#555555';
 }
