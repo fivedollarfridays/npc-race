@@ -238,8 +238,8 @@ def _check_car_metadata(tree: ast.Module) -> list[str]:
         name = assignments["CAR_NAME"]
         if len(name) > 64:
             violations.append("CAR_NAME too long (max 64 characters)")
-        if not name.replace("_", "").replace("-", "").isalnum():
-            violations.append("CAR_NAME must be alphanumeric (plus _ and -)")
+        if not name.replace("_", "").replace("-", "").replace(" ", "").isalnum():
+            violations.append("CAR_NAME must be alphanumeric (plus _, -, and spaces)")
 
     if "CAR_COLOR" not in assignments:
         violations.append("Missing CAR_COLOR assignment")

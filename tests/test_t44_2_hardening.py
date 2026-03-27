@@ -135,9 +135,16 @@ def test_car_name_special_chars_rejected():
     assert any("alphanumeric" in v for v in result.violations), result.violations
 
 
-def test_car_name_spaces_rejected():
-    """CAR_NAME with spaces fails validation."""
+def test_car_name_spaces_allowed():
+    """CAR_NAME with spaces is valid (many existing cars use them)."""
     source = _VALID_CAR_TEMPLATE.format(name="my car")
+    result = scan_car_source(source)
+    assert result.passed, f"Spaces should be allowed: {result.violations}"
+
+
+def test_car_name_at_sign_rejected():
+    """CAR_NAME with @ and ! chars fails validation."""
+    source = _VALID_CAR_TEMPLATE.format(name="my@car!")
     result = scan_car_source(source)
     assert not result.passed
     assert any("alphanumeric" in v for v in result.violations), result.violations
