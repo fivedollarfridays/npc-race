@@ -9,7 +9,7 @@ import sqlite3
 from fastapi.testclient import TestClient
 
 from server.auth import get_db
-from server.db import _create_tables, create_api_key, create_player, store_car
+from server.db import _create_tables, create_api_key, create_player
 
 
 @pytest.fixture()
