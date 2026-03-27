@@ -106,5 +106,5 @@ def test_register_then_submit_works(client: TestClient):
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert data["car_id"] >= 1
+    assert isinstance(data["car_id"], str)
     assert data["name"] == "TestCar"

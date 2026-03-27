@@ -98,7 +98,7 @@ def test_submit_valid_car(client: TestClient, auth_headers: dict):
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert data["car_id"] >= 1
+    assert isinstance(data["car_id"], str)
     assert data["name"] == "TestCar"
     assert data["color"] == "#ff0000"
     assert data["league"] == "F3"
@@ -125,4 +125,4 @@ def test_submit_existing_player(
     assert resp.status_code == 200
     data = resp.json()
     assert "api_key" not in data
-    assert data["car_id"] >= 1
+    assert isinstance(data["car_id"], str)

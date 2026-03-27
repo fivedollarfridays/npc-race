@@ -144,7 +144,7 @@ def _extract_hardware_specs(car: dict, mod) -> None:
     car["chassis_spec"] = getattr(mod, "CHASSIS_SPEC", "standard")
 
 
-def load_car(filepath):
+def load_car(filepath: str) -> dict:
     """Load and validate a car module."""
     name = os.path.splitext(os.path.basename(filepath))[0]
     spec = importlib.util.spec_from_file_location(name, filepath)
@@ -232,7 +232,7 @@ def _load_project_entry(project_dir: str, name: str) -> dict:
     return car
 
 
-def load_all_cars(directory):
+def load_all_cars(directory: str) -> list[dict]:
     """Load all car files and car project directories."""
     cars = []
     for f in sorted(os.listdir(directory)):

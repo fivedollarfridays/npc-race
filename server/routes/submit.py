@@ -20,7 +20,7 @@ class CarSubmission(BaseModel):
 
 
 class CarResponse(BaseModel):
-    car_id: int
+    car_id: str
     name: str
     color: str
     league: str

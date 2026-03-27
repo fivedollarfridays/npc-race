@@ -18,6 +18,57 @@ from .timing import create_timing, update_timing
 from .lap_accumulator import LapAccumulator
 
 
+def _get_hardware(car: dict) -> dict:
+    """Merge engine/aero/chassis hardware specs for a car definition."""
+    engine_spec = get_hardware_spec("ENGINE_SPEC", car.get("engine_spec", "v6_1000hp")) or {}
+    aero_spec = get_hardware_spec("AERO_SPEC", car.get("aero_spec", "medium_downforce")) or {}
+    chassis_spec = get_hardware_spec("CHASSIS_SPEC", car.get("chassis_spec", "standard")) or {}
+    return {**engine_spec, **aero_spec, **chassis_spec}
+
+
+def _build_car_state(car: dict, index: int, laps: int) -> tuple[dict, dict]:
+    """Build initial car state and hardware dict from a car definition."""
+    hw = _get_hardware(car)
+    state = create_initial_state(hw)
+    state["name"] = car["CAR_NAME"]
+    state["color"] = car["CAR_COLOR"]
+    state["car_idx"] = index
+    state["distance"] = -index * 15.0
+    state["laps_total"] = laps
+    state["finished"] = False
+    state["finish_tick"] = None
+    state.setdefault("position", index + 1)
+    state.setdefault("gap_ahead", 0)
+    return state, hw
+
+
+def _build_driver(car: dict, hw: dict, aero_spec: dict, chassis_spec: dict,
+                  track_points, curvatures, distances, headings,
+                  track_length: float, real_length_m: float | None):
+    """Create a driver model for one car."""
+    aero = get_hardware_spec("AERO_SPEC", car.get("aero_spec", "medium_downforce")) or {}
+    chassis = get_hardware_spec("CHASSIS_SPEC", car.get("chassis_spec", "standard")) or {}
+    car_stats = {"power": hw.get("max_hp", 1000) / 2000,
+                 "grip": aero.get("base_cl", 4.5) / 10,
+                 "weight": chassis.get("weight_kg", 798) / 1600}
+    return create_driver(track_points, curvatures, distances,
+                         headings, track_length, car_stats,
+                         real_length_m=real_length_m or 5793)
+
+
+def _compute_reliability(cars: list[dict]) -> list[float]:
+    """Compute reliability scores for each car from source code quality."""
+    reliabilities = []
+    for car in cars:
+        source = car.get("_source", "")
+        if source:
+            from .code_quality import compute_reliability_score
+            reliabilities.append(compute_reliability_score(source))
+        else:
+            reliabilities.append(1.0)
+    return reliabilities
+
+
 class PartsRaceSim:
     """Race simulation driven by player-coded part functions."""
 
@@ -48,56 +99,20 @@ class PartsRaceSim:
             self.world_scale = self.track_length / 5000.0
             self.real_per_sim = 5000.0 / self.track_length
 
-        # Build hardware specs for each car
-        self.car_states = []
-        self.car_parts = []
-        self.drivers = []
-        self.call_logs = []  # per-tick call logs for live terminal
+        self.car_states, self.car_parts, self.drivers = [], [], []
+        self.call_logs = []
         defaults = get_defaults()
-
         for i, car in enumerate(cars):
-            # Get hardware specs
-            engine_spec = get_hardware_spec("ENGINE_SPEC", car.get("engine_spec", "v6_1000hp")) or {}
-            aero_spec = get_hardware_spec("AERO_SPEC", car.get("aero_spec", "medium_downforce")) or {}
-            chassis_spec = get_hardware_spec("CHASSIS_SPEC", car.get("chassis_spec", "standard")) or {}
-            hw = {**engine_spec, **aero_spec, **chassis_spec}
-
-            # Create car state
-            state = create_initial_state(hw)
-            state["name"] = car["CAR_NAME"]
-            state["color"] = car["CAR_COLOR"]
-            state["car_idx"] = i
-            state["distance"] = -i * 15.0
-            state["laps_total"] = laps
-            state["finished"] = False
-            state["finish_tick"] = None
-            state.setdefault("position", i + 1)
-            state.setdefault("gap_ahead", 0)
+            state, hw = _build_car_state(car, i, laps)
             self.car_states.append(state)
-
-            # Get part functions
-            parts = car.get("parts", defaults)
-            self.car_parts.append(parts)
-
-            # Create driver model
-            car_stats = {"power": hw.get("max_hp", 1000) / 2000,
-                         "grip": aero_spec.get("base_cl", 4.5) / 10,
-                         "weight": chassis_spec.get("weight_kg", 798) / 1600}
-            driver = create_driver(track_points, self.curvatures, self.distances,
-                                   self.headings, self.track_length, car_stats,
-                                   real_length_m=real_length_m or 5793)
-            self.drivers.append(driver)
+            self.car_parts.append(car.get("parts", defaults))
+            self.drivers.append(_build_driver(
+                car, hw, {}, {}, track_points, self.curvatures,
+                self.distances, self.headings, self.track_length, real_length_m))
 
         self.prev_states = [None] * len(cars)
         self.glitch_engine = GlitchEngine(reliability_scale=0.3)
-        self.car_reliability = []
-        for car in cars:
-            source = car.get("_source", "")
-            if source:
-                from .code_quality import compute_reliability_score
-                self.car_reliability.append(compute_reliability_score(source))
-            else:
-                self.car_reliability.append(1.0)
+        self.car_reliability = _compute_reliability(cars)
         self.history = []
         self.tick = 0
         self.race_over = False
@@ -110,129 +125,99 @@ class PartsRaceSim:
         """Compatibility alias — RaceSim uses self.states."""
         return self.car_states
 
+    def _compute_physics(self, state: dict, driver_inputs: dict, curv: float) -> dict:
+        """Build the physics context dict for one car at the current tick."""
+        from .speed_profile import get_profile_speed
+        driver = self.drivers[state["car_idx"]]
+        profile_speed = get_profile_speed(
+            driver["profile"], state["distance"], self.distances, self.track_length)
+        if curv > 0.005:
+            profile_speed *= state.get("grip_factor", 1.0)
+        is_braking = state["speed_kmh"] > profile_speed * 1.02
+        corner_phase = "mid" if curv > 0.02 else ("entry" if curv > 0.005 else "straight")
+        return {
+            "curvature": curv,
+            "corner_phase": corner_phase,
+            "lateral_g": (state["speed_kmh"] / 3.6) ** 2 * curv / (self.real_per_sim * 9.81),
+            "bump_severity": 0.0,
+            "weather_wetness": 0.0,
+            "throttle_demand": driver_inputs["throttle"],
+            "target_speed": profile_speed,
+            "braking": is_braking,
+        }
+
+    def _advance_car(self, i: int, state: dict, dt: float) -> tuple[dict, list]:
+        """Run one tick of physics + parts for a single car, return (new_state, log)."""
+        driver_inputs = compute_driver_inputs(
+            self.drivers[i], state, state.get("tire_wear", 0), 0.0, 0.0)
+        curv = self.curvature_lookup[state["distance"]]
+        physics = self._compute_physics(state, driver_inputs, curv)
+        hw = _get_hardware(self.cars[i])
+
+        new_state, log, eff = run_efficiency_tick(
+            self.car_parts[i], state, physics, hw, dt, self.tick,
+            prev_state=self.prev_states[i], glitch_engine=self.glitch_engine,
+            reliability=self.car_reliability[i], car_idx=i, glitch_rng=self.rng)
+        self.prev_states[i] = dict(state)
+        new_state["efficiency_product"] = eff
+
+        speed_ms = new_state["speed_kmh"] / 3.6
+        new_state["distance"] = state["distance"] + speed_ms * self.world_scale * dt
+        new_state["lateral"] = state.get("lateral", 0.0)
+        lat_target = driver_inputs.get("lateral_target", 0.0)
+        new_state["lateral"] += (lat_target - new_state["lateral"]) * 0.05
+
+        current_lap = int(new_state["distance"] / self.track_length)
+        if current_lap > state.get("lap", 0):
+            new_state["lap"] = current_lap
+            new_state["ers_state"] = reset_ers_lap(new_state["ers_state"])
+        total_dist = self.track_length * self.laps
+        if new_state["distance"] >= total_dist:
+            new_state["finished"] = True
+            new_state["finish_tick"] = self.tick
+            new_state["distance"] = total_dist
+
+        for entry in log:
+            entry["car_name"] = state["name"]
+        return new_state, log
+
+    def _record_tick(self, legacy, positions) -> None:
+        """Record replay frame and fast-mode accumulation."""
+        if self.fast_mode:
+            name_pos = {s["name"]: positions[s["car_idx"]] for s in legacy}
+            self.accumulator.on_tick(legacy, name_pos, self.tick)
+            self._detect_lap_completions()
+            if self.tick % self.TICKS_PER_SEC != 0:
+                return
+        self.history.append(record_frame(
+            states=legacy, positions=positions,
+            track=self.track, distances=self.distances,
+            track_length=self.track_length, track_width=self.TRACK_WIDTH,
+            tick=self.tick, ticks_per_sec=self.TICKS_PER_SEC))
+
     def step(self):
         """Advance simulation by one tick."""
         if self.race_over:
             return
         dt = 1.0 / self.TICKS_PER_SEC
         tick_logs = []
-
         for i, state in enumerate(self.car_states):
             if state["finished"]:
                 continue
-
-            # Driver model provides throttle demand and lateral target
-            driver = self.drivers[i]
-            driver_inputs = compute_driver_inputs(
-                driver, state, state.get("tire_wear", 0),
-                0.0, 0.0)
-
-            # Compute curvature at current position
-            curv = self.curvature_lookup[state["distance"]]
-
-            # Brake when speed exceeds profile target
-            from .speed_profile import get_profile_speed
-            profile_speed = get_profile_speed(
-                driver["profile"], state["distance"], self.distances, self.track_length)
-            # Part outputs affect achievable corner speed through grip
-            if curv > 0.005:
-                grip_factor = state.get("grip_factor", 1.0)
-                profile_speed *= grip_factor
-            is_braking = state["speed_kmh"] > profile_speed * 1.02
-            corner_phase = "straight"
-            if curv > 0.02:
-                corner_phase = "mid"
-            elif curv > 0.005:
-                corner_phase = "entry"
-
-            physics = {
-                "curvature": curv,
-                "corner_phase": corner_phase,
-                "lateral_g": (state["speed_kmh"] / 3.6) ** 2 * curv / (self.real_per_sim * 9.81),
-                "bump_severity": 0.0,
-                "weather_wetness": 0.0,
-                "throttle_demand": driver_inputs["throttle"],
-                "target_speed": profile_speed,
-                "braking": is_braking,
-            }
-
-            # Get hardware specs
-            engine_spec = get_hardware_spec("ENGINE_SPEC",
-                                            self.cars[i].get("engine_spec", "v6_1000hp")) or {}
-            aero_spec = get_hardware_spec("AERO_SPEC",
-                                          self.cars[i].get("aero_spec", "medium_downforce")) or {}
-            chassis_spec = get_hardware_spec("CHASSIS_SPEC",
-                                             self.cars[i].get("chassis_spec", "standard")) or {}
-            hw = {**engine_spec, **aero_spec, **chassis_spec}
-
-            # Run all 10 parts via efficiency engine
-            new_state, log, efficiency_product = run_efficiency_tick(
-                self.car_parts[i], state, physics, hw, dt, self.tick,
-                prev_state=self.prev_states[i],
-                glitch_engine=self.glitch_engine,
-                reliability=self.car_reliability[i],
-                car_idx=i, glitch_rng=self.rng)
-            self.prev_states[i] = dict(state)  # snapshot for next tick's t-1
-            new_state["efficiency_product"] = efficiency_product
-
-            # Update distance
-            speed_ms = new_state["speed_kmh"] / 3.6
-            new_state["distance"] = state["distance"] + speed_ms * self.world_scale * dt
-
-            # Lateral from driver
-            new_state["lateral"] = state.get("lateral", 0.0)
-            lat_target = driver_inputs.get("lateral_target", 0.0)
-            rate = 0.05
-            new_state["lateral"] += (lat_target - new_state["lateral"]) * rate
-
-            # Check lap/finish
-            current_lap = int(new_state["distance"] / self.track_length)
-            if current_lap > state.get("lap", 0):
-                new_state["lap"] = current_lap
-                new_state["ers_state"] = reset_ers_lap(new_state["ers_state"])
-            total_dist = self.track_length * self.laps
-            if new_state["distance"] >= total_dist:
-                new_state["finished"] = True
-                new_state["finish_tick"] = self.tick
-                new_state["distance"] = total_dist
-
-            # Copy back
+            new_state, log = self._advance_car(i, state, dt)
             self.car_states[i] = new_state
-            for entry in log:
-                entry["car_name"] = state["name"]
             tick_logs.extend(log)
-
         self.call_logs.append(tick_logs)
 
-        # Update timing for each car
         for s in self.car_states:
             dist_in_lap = s["distance"] % self.track_length
             dist_pct = dist_in_lap / self.track_length if self.track_length > 0 else 0
-            update_timing(
-                self.timings, s["name"], dist_pct, s.get("lap", 0),
-                self.tick, self.TICKS_PER_SEC, self.sector_boundaries,
-            )
+            update_timing(self.timings, s["name"], dist_pct, s.get("lap", 0),
+                          self.tick, self.TICKS_PER_SEC, self.sector_boundaries)
 
-        # Record frame for replay (1Hz in fast_mode, every tick otherwise)
         legacy = self._to_legacy_states()
         positions = _compute_positions(legacy)
-        if self.fast_mode:
-            name_pos = {s["name"]: positions[s["car_idx"]] for s in legacy}
-            self.accumulator.on_tick(legacy, name_pos, self.tick)
-            self._detect_lap_completions()
-            if self.tick % self.TICKS_PER_SEC == 0:
-                self.history.append(record_frame(
-                    states=legacy, positions=positions,
-                    track=self.track, distances=self.distances,
-                    track_length=self.track_length, track_width=self.TRACK_WIDTH,
-                    tick=self.tick, ticks_per_sec=self.TICKS_PER_SEC))
-        else:
-            self.history.append(record_frame(
-                states=legacy, positions=positions,
-                track=self.track, distances=self.distances,
-                track_length=self.track_length, track_width=self.TRACK_WIDTH,
-                tick=self.tick, ticks_per_sec=self.TICKS_PER_SEC))
-
+        self._record_tick(legacy, positions)
         self.tick += 1
         if all(s["finished"] for s in self.car_states):
             self.race_over = True
