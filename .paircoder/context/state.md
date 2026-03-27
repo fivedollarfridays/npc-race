@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-03-26. QC audit v2 complete. Ready for S43-44.
+> Last updated: 2026-03-27. T44.2 done.
 
 ## Active Plan
 
@@ -21,7 +21,7 @@ Wave 3: T43.6 (security gate)                                                   
 ## Sprint 44 — Quality Polish (16 Cx)
 
 ```
-Wave 1: T44.1 (decompose big fns), T44.2 (remaining arch+CORS+validation), T44.3 (test files) [11 Cx]
+Wave 1: T44.1 (decompose big fns) DONE, T44.2 (remaining arch+CORS+validation) DONE, T44.3 (test files) DONE [11 Cx]
 Wave 2: T44.4 (type hints+Pydantic), T44.5 (UUID+pip-audit)                                     [5 Cx]
 ```
 
@@ -29,10 +29,16 @@ Wave 2: T44.4 (type hints+Pydantic), T44.5 (UUID+pip-audit)                     
 - Tests: 2090/2090 pass (100%), 2.62:1 ratio
 - Security: 1 critical, 4 high, 4 medium, 3 low
 - Features: 65+ working, 13 CLI commands, 9 API endpoints
-- Arch: 4 functions over 50-line limit
+- Arch: 0 functions over 50-line limit (all 4 decomposed)
 - Type coverage: 63.6%
 
 ## What Was Just Done
+
+- **T44.2 done** — Four hardening fixes: (1) Decomposed PartsRaceSim.__init__ (80->44 lines) and step (126->26 lines) by extracting _get_hardware, _build_car_state, _build_driver, _compute_reliability, _compute_physics, _advance_car, _record_tick helpers. All 17 functions in parts_simulation.py now under 50 lines. (2) CORS tightened: allow_methods=["GET","POST"], allow_headers=["X-API-Key","Content-Type"], cors_origins now reads CORS_ORIGINS env var. (3) CAR_NAME validation: max 64 chars + alphanumeric/underscore/dash only. (4) API keys hashed with SHA-256 in DB; plaintext returned only on creation. 14 new tests in test_t44_2_hardening.py. 114 targeted tests pass, ruff clean.
+
+- **T44.1 done** — Decomposed run_parts_tick (207->50 lines) and run_efficiency_tick (200->50 lines). Extracted 8 helpers into parts_runner.py and 7 helpers into efficiency_engine.py. Moved 8 pure efficiency functions + 2 computation helpers to new engine/efficiency_helpers.py (161 lines). efficiency_engine.py dropped from 400 to 315 lines. All 36 functions across 3 files are at or under 50 lines. 72 targeted tests pass, 2184 broader tests pass. 9 new characterization tests in test_decompose_characterization.py. Ruff clean.
+
+- **T44.3 done** — Added 5 dedicated test files for untested engine modules: test_league_gates.py (12 tests), test_safe_call_unit.py (7 tests), test_sim_step_unit.py (7 tests), test_race_runner_unit.py (10 tests), test_track_gen_unit.py (11 tests). Total: 47 new tests. All pass, ruff clean, arch check clean.
 
 - **T43.5 done** — Dedicated registration endpoint + removed auto-create from auth
 
@@ -45,4 +51,4 @@ Wave 2: T44.4 (type hints+Pydantic), T44.5 (UUID+pip-audit)                     
 
 ## What's Next
 
-- T43.6 (security gate)
+- T44.4 (type hints+Pydantic), T44.5 (UUID+pip-audit), T43.6 (security gate)

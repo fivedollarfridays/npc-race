@@ -1,8 +1,14 @@
 """SQLite database for NPC Race server."""
+import hashlib
 import os
 import sqlite3
 import uuid
 from datetime import datetime, timezone
+
+
+def _hash_key(key: str) -> str:
+    """SHA-256 hash an API key for storage."""
+    return hashlib.sha256(key.encode()).hexdigest()
 
 
 def init_db(db_path: str = "data/npcrace.db") -> sqlite3.Connection:
@@ -67,22 +73,24 @@ def get_player(conn: sqlite3.Connection, player_id: str) -> dict | None:
 
 
 def create_api_key(conn: sqlite3.Connection, player_id: str) -> str:
-    """Create an API key for a player and return it."""
+    """Create an API key for a player. Returns plaintext (stored as hash)."""
     key = f"cc_{uuid.uuid4().hex}"
+    hashed = _hash_key(key)
     now = datetime.now(timezone.utc).isoformat()
     conn.execute(
         "INSERT INTO api_keys (key, player_id, created_at) VALUES (?, ?, ?)",
-        (key, player_id, now),
+        (hashed, player_id, now),
     )
     conn.commit()
-    return key
+    return key  # plaintext returned once
 
 
 def get_player_by_api_key(conn: sqlite3.Connection, key: str) -> dict | None:
     """Look up a player by their API key, or None if invalid."""
+    hashed = _hash_key(key)
     row = conn.execute(
         "SELECT p.* FROM players p JOIN api_keys k ON p.id = k.player_id WHERE k.key = ?",
-        (key,),
+        (hashed,),
     ).fetchone()
     return dict(row) if row else None
 
