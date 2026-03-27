@@ -1,0 +1,24 @@
+name: Auth & Security
+description: Verify authentication, access control, and rate limiting
+tags: [critical, security]
+preconditions:
+  - "Server running at ${base_url}"
+
+scenarios:
+  - name: Unauthenticated access blocked
+    steps:
+      - navigate: "${api_url}/cars"
+      - verify: "Response is 401 or 'API key required' message"
+
+  - name: Register flow works
+    tags: [write]
+    steps:
+      - navigate: "${api_url}/docs"
+      - verify: "POST /api/register endpoint available"
+      # Manual: use Swagger to POST /api/register, verify api_key returned
+
+  - name: Source size limit enforced
+    tags: [write, security]
+    steps:
+      - verify: "POST /api/submit-car with >32KB source returns 400 or 422"
+      # This is better tested via API client, not browser

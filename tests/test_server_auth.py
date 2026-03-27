@@ -46,15 +46,11 @@ def client(_memory_db: sqlite3.Connection):
 # --- Tests ---
 
 
-def test_no_key_creates_player(client: TestClient):
-    """Request without X-API-Key auto-creates player and returns api_key."""
+def test_no_key_returns_401(client: TestClient):
+    """Request without X-API-Key returns 401 with registration hint."""
     resp = client.get("/test-auth")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "id" in data
-    assert "api_key" in data
-    assert data["api_key"].startswith("cc_")
-    assert data["_new"] is True
+    assert resp.status_code == 401
+    assert "register" in resp.json()["detail"].lower()
 
 
 def test_valid_key_returns_player(

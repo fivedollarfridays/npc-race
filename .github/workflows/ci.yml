@@ -125,6 +125,12 @@ jobs:
       - name: Validate all seed cars
         run: |
           for car in cars/*.py; do
+            basename=$(basename "$car")
+            # Skip underscore-prefixed modules (e.g., _rival_factory.py)
+            if [[ "$basename" == _* ]]; then
+              echo "Skipping $car (helper module)"
+              continue
+            fi
             echo "Validating $car..."
             npcrace validate "$car"
           done

@@ -1,8 +1,9 @@
 """Lobby API routes."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
+from server.rate_limit import limiter
 from server.auth import get_current_player, get_db
 from server.db import get_car
 from server.lobby import Lobby, LobbyClosedError, LobbyDuplicateError, LobbyFullError
@@ -33,7 +34,9 @@ class JoinRequest(BaseModel):
 
 
 @router.post("/lobby/join")
+@limiter.limit("5/minute")
 async def join_lobby(
+    request: Request,
     req: JoinRequest,
     player=Depends(get_current_player),
     conn=Depends(get_db),

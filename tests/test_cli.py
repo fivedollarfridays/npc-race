@@ -80,20 +80,24 @@ class TestValidateCommand:
         assert "pass" in captured.out.lower()
 
     def test_validate_invalid_car(self, capsys, tmp_path):
-        """validate on an invalid car file should report FAIL."""
+        """validate on an invalid car file should report FAIL and exit 1."""
         car = tmp_path / "bad_car.py"
         car.write_text("import os\n")
         from cli.main import main
 
-        main(["validate", str(car)])
+        with pytest.raises(SystemExit) as exc_info:
+            main(["validate", str(car)])
+        assert exc_info.value.code == 1
         captured = capsys.readouterr()
         assert "fail" in captured.out.lower()
 
     def test_validate_missing_file(self, capsys):
-        """validate on a missing file should report error."""
+        """validate on a missing file should report error and exit 1."""
         from cli.main import main
 
-        main(["validate", "/nonexistent/car.py"])
+        with pytest.raises(SystemExit) as exc_info:
+            main(["validate", "/nonexistent/car.py"])
+        assert exc_info.value.code == 1
         captured = capsys.readouterr()
         assert "fail" in captured.out.lower()
 

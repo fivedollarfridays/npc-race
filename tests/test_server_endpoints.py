@@ -102,15 +102,18 @@ def test_car_detail(
         _memory_db, auth["id"], "DetailCar", "#00ff00", "def setup(car): pass"
     )
 
-    resp = client.get(f"/api/cars/{car_id}")
+    resp = client.get(
+        f"/api/cars/{car_id}", headers={"X-API-Key": auth["X-API-Key"]}
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert data["name"] == "DetailCar"
     assert data["source"] == "def setup(car): pass"
 
 
-def test_car_not_found(client: TestClient):
-    """GET /api/cars/999 returns 404."""
-    resp = client.get("/api/cars/999")
+def test_car_not_found(authed_client):
+    """GET /api/cars/999 with valid auth returns 404."""
+    client, auth = authed_client
+    resp = client.get("/api/cars/999", headers={"X-API-Key": auth["X-API-Key"]})
     assert resp.status_code == 404
     assert resp.json()["detail"] == "Car not found"

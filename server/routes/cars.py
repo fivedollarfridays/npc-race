@@ -29,9 +29,13 @@ async def list_cars(
 
 
 @router.get("/cars/{car_id}")
-async def get_car_detail(car_id: int, conn=Depends(get_db)):
-    """Get car details by ID."""
+async def get_car_detail(
+    car_id: int,
+    player=Depends(get_current_player),
+    conn=Depends(get_db),
+):
+    """Get car details by ID (requires auth + ownership)."""
     car = get_car(conn, car_id)
-    if not car:
+    if not car or car["player_id"] != player["id"]:
         raise HTTPException(404, detail="Car not found")
     return dict(car)
