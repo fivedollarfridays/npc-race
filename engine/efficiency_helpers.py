@@ -26,7 +26,7 @@ def compute_grip_factor(tire_mu, downforce, mass_kg, _unused,
     return tire_ratio * df_ratio
 
 
-def compute_gearbox_efficiency(actual_rpm, speed_kmh):
+def compute_gearbox_efficiency(actual_rpm: float, speed_kmh: float) -> float:
     """Wrong gear = RPM outside optimal band = less power."""
     actual_tc = torque_curve(actual_rpm)
     best_tc = 0
@@ -53,7 +53,7 @@ def compute_ers_waste(drive_force_with_ers, drive_force_without_ers,
     return max(0.0, 1.0 - actual_ers_benefit / ers_force_added)
 
 
-def compute_brake_bias_efficiency(bias_pct, speed_kmh, grip_front, grip_rear):
+def compute_brake_bias_efficiency(bias_pct: float, speed_kmh: float, grip_front: float, grip_rear: float) -> float:
     """Fixed bias = suboptimal. Optimal shifts with speed (weight transfer)."""
     total_grip = grip_front + grip_rear
     if total_grip <= 0:
@@ -65,7 +65,7 @@ def compute_brake_bias_efficiency(bias_pct, speed_kmh, grip_front, grip_rear):
     return max(0.75, 1.0 - deviation * 0.030)
 
 
-def compute_suspension_efficiency(ride_height, speed_kmh):
+def compute_suspension_efficiency(ride_height: float, speed_kmh: float) -> float:
     """Effective ride height vs speed-dependent optimal. Bottoming kills downforce."""
     actual_rh, bottoming = compute_ride_height_effect(ride_height, speed_kmh)
     optimal_eff = -0.20 - min(0.58, speed_kmh / 500)
@@ -75,7 +75,7 @@ def compute_suspension_efficiency(ride_height, speed_kmh):
     return max(0.78, 1.0 - deviation * 0.4)
 
 
-def compute_cooling_efficiency(cooling_effort, engine_temp, speed_kmh):
+def compute_cooling_efficiency(cooling_effort: float, engine_temp: float, speed_kmh: float) -> float:
     """Balance temp management (108-118 C sweet spot) vs drag penalty."""
     if 108 <= engine_temp <= 118:
         temp_score = 1.0
@@ -87,7 +87,7 @@ def compute_cooling_efficiency(cooling_effort, engine_temp, speed_kmh):
     return max(0.70, temp_score * drag_score)
 
 
-def compute_diff_efficiency(lock_pct, corner_phase, lateral_g, speed_kmh):
+def compute_diff_efficiency(lock_pct: float, corner_phase: str, lateral_g: float, speed_kmh: float) -> float:
     """Over-locked = understeer. Under-locked = wheelspin. Phase-dependent."""
     if corner_phase == "straight":
         deviation = abs(lock_pct - 50)
@@ -105,7 +105,7 @@ def compute_diff_efficiency(lock_pct, corner_phase, lateral_g, speed_kmh):
     return max(0.80, 1.0 - deviation * 0.006)
 
 
-def compute_fuel_mix_efficiency(lambda_val, fuel_remaining_kg, laps_left):
+def compute_fuel_mix_efficiency(lambda_val: float, fuel_remaining_kg: float, laps_left: int) -> float:
     """Rich = power but wastes fuel. Lean = saves fuel but slower."""
     fuel_per_lap = fuel_remaining_kg / max(1, laps_left)
     if fuel_per_lap > 2.5:

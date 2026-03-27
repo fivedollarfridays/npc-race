@@ -98,7 +98,7 @@ def get_part_functions(car_module, defaults: dict) -> dict:
 # Tick helpers — extracted from run_parts_tick
 # ---------------------------------------------------------------------------
 
-def _call_powertrain_parts(s, car_parts, defaults, physics_state, tick):
+def _call_powertrain_parts(s: dict, car_parts: dict, defaults: dict, physics_state: dict, tick: int) -> list:
     """Call engine_map, gearbox, fuel_mix. Returns (log, torque_pct, fuel_flow_pct, lambda_val)."""
     log = []
     s["rpm"] = compute_rpm(s["speed_kmh"], s["gear"])
@@ -131,7 +131,7 @@ def _call_powertrain_parts(s, car_parts, defaults, physics_state, tick):
     return log, torque_pct, fuel_flow_pct, lambda_val
 
 
-def _call_chassis_parts(s, car_parts, defaults, physics_state, tick):
+def _call_chassis_parts(s: dict, car_parts: dict, defaults: dict, physics_state: dict, tick: int) -> list:
     """Call suspension + cooling. Returns (log, actual_rh, bottoming, cooling_effort)."""
     log = []
     entry = _safe_call(
@@ -250,7 +250,7 @@ def _call_ers_harvest(s, car_parts, defaults, is_braking, downforce,
     return 0
 
 
-def _sync_physics_state(s, physics_state):
+def _sync_physics_state(s: dict, physics_state: dict) -> None:
     """Copy physics inputs into car state dict."""
     s["throttle_demand"] = physics_state.get("throttle_demand", s.get("throttle_demand", 1.0))
     s["lateral_g"] = physics_state.get("lateral_g", s.get("lateral_g", 0.0))
@@ -258,7 +258,7 @@ def _sync_physics_state(s, physics_state):
     s["corner_phase"] = physics_state.get("corner_phase", s.get("corner_phase", "straight"))
 
 
-def _call_ers_deploy(s, car_parts, defaults, is_braking, tick):
+def _call_ers_deploy(s: dict, car_parts: dict, defaults: dict, is_braking: bool, tick: int) -> list:
     """Call ERS deploy part. Returns (entry, deploy_kw)."""
     entry = _safe_call(
         "ers_deploy", car_parts["ers_deploy"],

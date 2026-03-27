@@ -9,7 +9,7 @@ import bisect
 import math
 
 
-def get_track_pos(distance, track, distances, track_length):
+def get_track_pos(distance: float, track: list, distances: list[float], track_length: float) -> tuple[float, float]:
     """Get x,y position on track from distance traveled."""
     d = distance % track_length
     if d < 0:
@@ -108,7 +108,7 @@ def record_frame(states, positions, track, distances, track_length,
     return frame
 
 
-def get_results(states, num_cars, timings=None, ticks_per_sec=30):
+def get_results(states: list[dict], num_cars: int, timings: dict | None = None, ticks_per_sec: int = 30) -> list[dict]:
     """Get final race results with optional timing enrichment."""
     positions = _compute_positions(states)
     results = []

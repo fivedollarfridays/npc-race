@@ -96,7 +96,7 @@ def test_join_without_car(authed_client):
     tc, auth = authed_client
     resp = tc.post(
         "/api/lobby/join",
-        json={"car_id": 9999},
+        json={"car_id": "00000000-0000-0000-0000-000000009999"},
         headers={"X-API-Key": auth["X-API-Key"]},
     )
     assert resp.status_code == 404

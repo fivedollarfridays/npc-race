@@ -76,7 +76,7 @@ def test_store_and_get_car(conn: sqlite3.Connection) -> None:
     """store_car persists a car; get_car retrieves it."""
     player = create_player(conn, name="Dave")
     car_id = store_car(conn, player["id"], "Speedster", "#ff0000", "print('go')")
-    assert isinstance(car_id, int)
+    assert isinstance(car_id, str)
     car = get_car(conn, car_id)
     assert car is not None
     assert car["name"] == "Speedster"

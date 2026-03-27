@@ -36,7 +36,7 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             created_at TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS cars (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
             player_id TEXT NOT NULL REFERENCES players(id),
             name TEXT NOT NULL,
             color TEXT NOT NULL DEFAULT '#ffffff',
@@ -102,19 +102,20 @@ def store_car(
     color: str,
     source: str,
     league: str = "F3",
-) -> int:
-    """Store a car and return its auto-generated ID."""
+) -> str:
+    """Store a car and return its UUID."""
+    car_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
-    cursor = conn.execute(
-        "INSERT INTO cars (player_id, name, color, source, league, created_at, updated_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (player_id, name, color, source, league, now, now),
+    conn.execute(
+        "INSERT INTO cars (id, player_id, name, color, source, league, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (car_id, player_id, name, color, source, league, now, now),
     )
     conn.commit()
-    return cursor.lastrowid
+    return car_id
 
 
-def get_car(conn: sqlite3.Connection, car_id: int) -> dict | None:
+def get_car(conn: sqlite3.Connection, car_id: str) -> dict | None:
     """Get a car by ID, or None if not found."""
     row = conn.execute("SELECT * FROM cars WHERE id = ?", (car_id,)).fetchone()
     return dict(row) if row else None

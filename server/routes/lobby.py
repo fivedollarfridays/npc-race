@@ -30,7 +30,7 @@ def reset_lobby() -> None:
 class JoinRequest(BaseModel):
     """Request body for joining a lobby."""
 
-    car_id: int
+    car_id: str
 
 
 @router.post("/lobby/join")

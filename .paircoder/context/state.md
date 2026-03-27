@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-03-27. T44.2 done.
+> Last updated: 2026-03-27. T44.5 done.
 
 ## Active Plan
 
@@ -22,7 +22,7 @@ Wave 3: T43.6 (security gate)                                                   
 
 ```
 Wave 1: T44.1 (decompose big fns) DONE, T44.2 (remaining arch+CORS+validation) DONE, T44.3 (test files) DONE [11 Cx]
-Wave 2: T44.4 (type hints+Pydantic), T44.5 (UUID+pip-audit)                                     [5 Cx]
+Wave 2: T44.4 (type hints+Pydantic), T44.5 (UUID+pip-audit) DONE                                [5 Cx]
 ```
 
 ## QC Summary (v2)
@@ -33,6 +33,8 @@ Wave 2: T44.4 (type hints+Pydantic), T44.5 (UUID+pip-audit)                     
 - Type coverage: 63.6%
 
 ## What Was Just Done
+
+- **T44.5 done** — UUID car IDs + pip-audit in CI. Changed cars table PK from INTEGER AUTOINCREMENT to TEXT UUID. store_car() now generates uuid4 and returns str. Updated type hints in db.py (get_car), cars.py (get_car_detail), submit.py (CarResponse), lobby.py (JoinRequest). 3 new tests in test_uuid_car_ids.py. Fixed 4 existing tests across test_server_submit.py, test_server_lobby_routes.py, test_server_db.py, test_server_register.py that asserted int car_ids. Added pip-audit step to CI lint job (advisory, || true). 103 server tests pass, ruff clean, arch clean.
 
 - **T44.2 done** — Four hardening fixes: (1) Decomposed PartsRaceSim.__init__ (80->44 lines) and step (126->26 lines) by extracting _get_hardware, _build_car_state, _build_driver, _compute_reliability, _compute_physics, _advance_car, _record_tick helpers. All 17 functions in parts_simulation.py now under 50 lines. (2) CORS tightened: allow_methods=["GET","POST"], allow_headers=["X-API-Key","Content-Type"], cors_origins now reads CORS_ORIGINS env var. (3) CAR_NAME validation: max 64 chars + alphanumeric/underscore/dash only. (4) API keys hashed with SHA-256 in DB; plaintext returned only on creation. 14 new tests in test_t44_2_hardening.py. 114 targeted tests pass, ruff clean.
 
@@ -51,4 +53,4 @@ Wave 2: T44.4 (type hints+Pydantic), T44.5 (UUID+pip-audit)                     
 
 ## What's Next
 
-- T44.4 (type hints+Pydantic), T44.5 (UUID+pip-audit), T43.6 (security gate)
+- T44.4 (type hints+Pydantic), T43.6 (security gate)
