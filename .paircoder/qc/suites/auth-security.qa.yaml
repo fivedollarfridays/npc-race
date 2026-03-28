@@ -2,18 +2,18 @@ name: Auth & Security
 description: Verify authentication, access control, and rate limiting
 tags: [critical, security]
 preconditions:
-  - "Server running at ${base_url}"
+  - "Server running at ${QC_BASE_URL}"
 
 scenarios:
   - name: Unauthenticated access blocked
     steps:
-      - navigate: "${api_url}/cars"
+      - navigate: "${QC_API_URL}/cars"
       - verify: "Response is 401 or 'API key required' message"
 
   - name: Register flow works
     tags: [write]
     steps:
-      - navigate: "${api_url}/docs"
+      - navigate: "${QC_API_URL}/docs"
       - verify: "POST /api/register endpoint available"
       # Manual: use Swagger to POST /api/register, verify api_key returned
 

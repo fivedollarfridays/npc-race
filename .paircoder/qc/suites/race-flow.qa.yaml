@@ -2,13 +2,13 @@ name: Race Flow (Browser)
 description: Full browser flow — editor → lobby → grid → race → results
 tags: [critical, integration]
 preconditions:
-  - "Server running at ${base_url}"
+  - "Server running at ${QC_BASE_URL}"
   - "Sprint 41 (dashboard wiring) complete"
 
 scenarios:
   - name: Complete player journey
     steps:
-      - navigate: "${base_url}/static/index.html"
+      - navigate: "${QC_BASE_URL}/static/index.html"
       - click: "BUILD YOUR CAR button"
       - verify: "Editor page loads"
       - verify: "Monaco editor contains car template"

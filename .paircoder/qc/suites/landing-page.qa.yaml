@@ -2,23 +2,23 @@ name: Landing Page
 description: Verify the Code Circuit landing page loads and has correct content
 tags: [critical, smoke]
 preconditions:
-  - "Server running at ${base_url}"
+  - "Server running at ${QC_BASE_URL}"
 
 scenarios:
   - name: Page loads with title
     steps:
-      - navigate: "${base_url}/static/index.html"
+      - navigate: "${QC_BASE_URL}/static/index.html"
       - verify: "Page title contains 'CODE CIRCUIT'"
       - verify: "BUILD YOUR CAR button is visible and prominent"
 
   - name: Editor link works
     steps:
-      - navigate: "${base_url}/static/index.html"
+      - navigate: "${QC_BASE_URL}/static/index.html"
       - click: "BUILD YOUR CAR button"
       - verify: "Editor page loads with Monaco code editor"
 
   - name: Content is accurate
     steps:
-      - navigate: "${base_url}/static/index.html"
+      - navigate: "${QC_BASE_URL}/static/index.html"
       - verify: "Page mentions '10 car parts' or similar"
       - verify: "Page mentions '20 tracks' or similar"

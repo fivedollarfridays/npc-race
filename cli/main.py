@@ -18,6 +18,7 @@ from .commands import (
     cmd_validate,
 )
 from .ghost_command import cmd_ghost
+from .progression import cmd_progress
 from .trial_command import cmd_trial
 from .race_commands import cmd_qualify, cmd_race
 
@@ -39,6 +40,10 @@ def _add_run_parser(subs) -> None:
                        help="Enable live replay mode (full replay.json export)")
     run_p.add_argument("--verbose", "-v", action="store_true", default=False,
                        help="Show per-car league validation details")
+    run_p.add_argument("--tier", choices=["rookie", "midfield", "front", "full"],
+                       default=None, help="Opponent tier (default: from progression)")
+    run_p.add_argument("--full-grid", action="store_true",
+                       help="Race against all 19 rivals")
 
 
 def _add_season_parser(subs) -> None:
@@ -85,6 +90,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_race_parser(subs)
     _add_trial_parser(subs)
     _add_ghost_parser(subs)
+    subs.add_parser("progress", help="Show your progression status")
 
     return parser
 
@@ -188,6 +194,7 @@ _DISPATCH = {
     "race": cmd_race,
     "trial": cmd_trial,
     "ghost": cmd_ghost,
+    "progress": cmd_progress,
 }
 
 

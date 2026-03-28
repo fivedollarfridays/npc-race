@@ -2,19 +2,19 @@ name: Editor Flow
 description: Verify car code editor loads, accepts code, and submits successfully
 tags: [critical, write]
 preconditions:
-  - "Server running at ${base_url}"
+  - "Server running at ${QC_BASE_URL}"
 
 scenarios:
   - name: Editor loads with template
     steps:
-      - navigate: "${base_url}/static/editor.html"
+      - navigate: "${QC_BASE_URL}/static/editor.html"
       - verify: "Monaco editor visible with Python syntax highlighting"
       - verify: "Template code contains CAR_NAME"
       - verify: "Submit button visible"
 
   - name: Submit valid car
     steps:
-      - navigate: "${base_url}/static/editor.html"
+      - navigate: "${QC_BASE_URL}/static/editor.html"
       - verify: "Editor contains default car template"
       - click: "Submit button"
       - verify: "Success message or lobby status appears"
@@ -22,7 +22,7 @@ scenarios:
 
   - name: Analysis panels update
     steps:
-      - navigate: "${base_url}/static/editor.html"
+      - navigate: "${QC_BASE_URL}/static/editor.html"
       - verify: "Parts detection panel visible"
       - verify: "League indicator shows F3"
       - verify: "Quality meter visible"
@@ -30,7 +30,7 @@ scenarios:
   - name: Validation error shown
     tags: [error-handling]
     steps:
-      - navigate: "${base_url}/static/editor.html"
+      - navigate: "${QC_BASE_URL}/static/editor.html"
       - fill:
           field: "Monaco editor"
           value: "import os\nCAR_NAME = 'Bad'"

@@ -3,6 +3,15 @@
 import os
 
 
+def _record_win(track: str, level: int) -> None:
+    """Record a ghost win and print tier upgrade if applicable."""
+    from cli.progression import record_ghost_completion
+
+    progress = record_ghost_completion(track, level)
+    if progress["tier"] != "rookie" and level == 5:
+        print(f"\n  Tier upgraded to: {progress['tier'].upper()}")
+
+
 def cmd_ghost(args) -> int:
     """Run a ghost race at the specified level."""
     from engine.ghost_race import format_ghost_result, run_ghost_race
@@ -45,4 +54,8 @@ def cmd_ghost(args) -> int:
 
     # Print formatted output
     print(format_ghost_result(result))
+
+    if result.winner == "player":
+        _record_win(track, level)
+
     return 0

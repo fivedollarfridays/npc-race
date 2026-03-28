@@ -3,6 +3,7 @@ cli/__init__.py
 cli/commands.py
 cli/ghost_command.py
 cli/main.py
+cli/progression.py
 cli/race_commands.py
 cli/trial_command.py
 engine/__init__.py
@@ -23,6 +24,7 @@ engine/drama.py
 engine/driver_model.py
 engine/drs_system.py
 engine/efficiency_engine.py
+engine/efficiency_helpers.py
 engine/ers_model.py
 engine/fast_export.py
 engine/fuel_model.py
@@ -60,6 +62,7 @@ engine/sim_step.py
 engine/simulation.py
 engine/spatial.py
 engine/speed_profile.py
+engine/tiers.py
 engine/time_trial.py
 engine/timing.py
 engine/tire_model.py
@@ -128,6 +131,7 @@ tests/test_damage.py
 tests/test_dashboard.py
 tests/test_dashboard_integration.py
 tests/test_data_persistence.py
+tests/test_decompose_characterization.py
 tests/test_default_project.py
 tests/test_default_project_exclusion.py
 tests/test_diagnostic.py
@@ -170,6 +174,7 @@ tests/test_lateral.py
 tests/test_layered_canvas.py
 tests/test_leaderboard.py
 tests/test_leaderboard_cli.py
+tests/test_league_gates.py
 tests/test_league_integration.py
 tests/test_league_system.py
 tests/test_league_wiring.py
@@ -199,11 +204,14 @@ tests/test_play.py
 tests/test_polish_fixes.py
 tests/test_powertrain_physics.py
 tests/test_process_sandbox.py
+tests/test_progression.py
+tests/test_pydantic_models.py
 tests/test_pytest_marks.py
 tests/test_qualifying.py
 tests/test_race_dashboard.py
 tests/test_race_pipeline.py
 tests/test_race_report.py
+tests/test_race_runner_unit.py
 tests/test_racing_line.py
 tests/test_reactive_cars.py
 tests/test_realism.py
@@ -214,6 +222,7 @@ tests/test_replay_v2.py
 tests/test_results.py
 tests/test_results_export.py
 tests/test_rival_factory.py
+tests/test_safe_call_unit.py
 tests/test_safety_car.py
 tests/test_sandbox.py
 tests/test_sandbox_v2.py
@@ -237,6 +246,7 @@ tests/test_server_register.py
 tests/test_server_submit.py
 tests/test_setup_model.py
 tests/test_sim_step_extraction.py
+tests/test_sim_step_unit.py
 tests/test_simulation_v2.py
 tests/test_sound_engine.py
 tests/test_sound_integration.py
@@ -246,9 +256,12 @@ tests/test_speed_profile.py
 tests/test_strategy_throttle.py
 tests/test_submission_pipeline.py
 tests/test_submit_command.py
+tests/test_t44_2_hardening.py
 tests/test_telemetry_panel.py
 tests/test_telemetry_strip.py
 tests/test_tier2_integration.py
+tests/test_tiered_run.py
+tests/test_tiers.py
 tests/test_time_calibration.py
 tests/test_time_trial.py
 tests/test_timing.py
@@ -257,12 +270,14 @@ tests/test_timing_tower.py
 tests/test_tire_model.py
 tests/test_tire_temperature.py
 tests/test_tournament.py
+tests/test_track_gen_unit.py
 tests/test_track_laps.py
 tests/test_track_performance.py
 tests/test_track_renderer.py
 tests/test_tracks.py
 tests/test_traction.py
 tests/test_trial_cli.py
+tests/test_uuid_car_ids.py
 tests/test_verbose_league.py
 tests/test_viewer_code_terminal.py
 tests/test_viewer_integration_gate.py
