@@ -1,5 +1,6 @@
 """Tests for CRT-compatible game UI (T48.4)."""
 
+import pytest
 from pathlib import Path
 
 
@@ -72,6 +73,7 @@ class TestGameFrameEndpoint:
     """A /api/game-frame endpoint must exist for embedding."""
 
     def test_game_frame_route_registered(self) -> None:
+        pytest.importorskip("fastapi")
         from server.app import app
 
         route_paths = [r.path for r in app.routes]
