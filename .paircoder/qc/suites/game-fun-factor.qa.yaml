@@ -1,0 +1,36 @@
+name: Fun Factor — Does the Player Want to Keep Playing?
+description: Subjective but measurable indicators of engagement and addictiveness.
+tags: [critical, fun, cli]
+preconditions:
+  - "npcrace CLI installed"
+
+scenarios:
+  - name: "Aha moment within 2 minutes"
+    steps:
+      - verify: "From npcrace init to first efficiency improvement < 2 minutes"
+      - verify: "Player sees a number go UP after editing (efficiency or position)"
+      - verify: "The improvement is clearly caused by their edit (not random)"
+
+  - name: "What-if loop is irresistible"
+    steps:
+      - verify: "After seeing efficiency tip, player naturally wants to try the suggestion"
+      - verify: "Trial is fast enough (< 1s) that trying costs nothing"
+      - verify: "At least 3 different edits produce visible changes"
+
+  - name: "Competition is motivating not demoralizing"
+    steps:
+      - verify: "Rookie race: player is mid-pack (P2-P4), not last"
+      - verify: "Player sees specific rivals they could beat with better code"
+      - verify: "Leaderboard shows their position among rivals"
+
+  - name: "Clear next step always visible"
+    steps:
+      - verify: "Trial output includes a Tip suggesting what to change next"
+      - verify: "Ghost win shows 'NEXT: Level N' with preview of what's coming"
+      - verify: "npcrace progress shows current tier and what's needed for next"
+
+  - name: "Track variety creates replay value"
+    steps:
+      - verify: "Different tracks produce different results (car position changes)"
+      - verify: "npcrace list-tracks shows 20 tracks with character types"
+      - verify: "Player wants to try optimizing for a different track"

@@ -161,6 +161,16 @@
 
         .lobby-info p { margin-bottom: 0.4rem; }
         .lobby-players { color: var(--muted); font-size: 0.8rem; }
+
+        /* Embedded mode — for CRT monitor frame (agentgrounds.ai) */
+        body.embedded {
+            margin: 0;
+            padding: 8px;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        body.embedded header { display: none; }
+        body.embedded .status-pane { padding: 0.75rem; }
     </style>
 </head>
 <body>
@@ -208,6 +218,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/min/vs/loader.js"></script>
     <script>
+        // Detect embedded mode (iframe or ?embed=true query param)
+        const isEmbedded = window !== window.top
+            || new URLSearchParams(window.location.search).get('embed') === 'true';
+        if (isEmbedded) {
+            document.body.classList.add('embedded');
+        }
+
         const CAR_TEMPLATE = `"""My race car."""
 
 CAR_NAME = "MyRacer"

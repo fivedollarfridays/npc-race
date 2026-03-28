@@ -1,0 +1,35 @@
+name: Progression — Rookie to Full Grid
+description: Tiered racing feels competitive at every stage.
+tags: [critical, fun, cli]
+preconditions:
+  - "npcrace CLI installed"
+  - "Player car exists"
+  - "Fresh progression (~/.npcrace deleted)"
+
+scenarios:
+  - name: "New player starts at ROOKIE tier"
+    steps:
+      - verify: "npcrace progress shows 'Tier: ROOKIE'"
+      - verify: "npcrace run defaults to rookie tier (5 cars)"
+
+  - name: "Rookie race is competitive"
+    steps:
+      - verify: "npcrace run --tier rookie has 5 cars on grid"
+      - verify: "Player finishes P2-P4 (NOT P5/last)"
+      - verify: "Gap to P1 is < 5 seconds (competitive)"
+
+  - name: "Ghost L5 unlocks midfield"
+    steps:
+      - verify: "After ghost --level 5 win, progress shows 'Tier: MIDFIELD'"
+      - verify: "npcrace run --tier midfield has 11 cars"
+      - verify: "Player finishes in top half (P1-P6)"
+
+  - name: "Full grid still accessible"
+    steps:
+      - verify: "npcrace run --full-grid loads 20 cars"
+      - verify: "Player finishes but knows they need to improve"
+
+  - name: "Progression persists across sessions"
+    steps:
+      - verify: "~/.npcrace/progress.json exists after ghost win"
+      - verify: "Restarting and running npcrace progress shows saved tier"
