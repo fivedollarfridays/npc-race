@@ -1,0 +1,33 @@
+name: Trial Loop — Edit → Race → Improve
+description: The core fun loop. Edit code, trial in < 1s, see improvement.
+tags: [critical, fun, cli]
+preconditions:
+  - "npcrace CLI installed (pip install -e .)"
+
+scenarios:
+  - name: "Init creates editable car"
+    steps:
+      - navigate: "terminal"
+      - verify: "npcrace init creates cars/ directory with gearbox.py, cooling.py, strategy.py"
+      - verify: "gearbox.py docstring explains shift points and peak torque RPM"
+
+  - name: "Trial runs in under 2 seconds"
+    steps:
+      - navigate: "terminal"
+      - verify: "npcrace trial --track monza completes in < 2 seconds wall time"
+      - verify: "Output shows lap time in mm:ss.fff format"
+      - verify: "EFFICIENCY BREAKDOWN shows gearbox, cooling, strategy bars"
+      - verify: "At least one Tip is shown with actionable advice"
+
+  - name: "Cooling edit improves lap time"
+    steps:
+      - navigate: "terminal"
+      - verify: "Edit cooling.py from 0.48 → adaptive (0.1-0.6 based on temp)"
+      - verify: "Re-run trial — lap time DECREASES (faster)"
+      - verify: "Cooling efficiency increases (closer to 1.0)"
+      - verify: "Tip about cooling disappears or changes"
+
+  - name: "Multiple iterations in under 30 seconds"
+    steps:
+      - verify: "Player can run 5+ trial iterations in under 30 seconds"
+      - verify: "Each edit produces a visible change in efficiency or lap time"

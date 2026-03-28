@@ -14,6 +14,7 @@ from server.routes.health import router as health_router
 from server.routes.lobby import router as lobby_router
 from server.routes.register import router as register_router
 from server.routes.submit import router as submit_router
+from server.routes.game_frame import router as game_frame_router
 from server.routes.tracks import router as tracks_router
 
 app = FastAPI(title="Code Circuit", version="0.1.0")
@@ -33,6 +34,7 @@ app.include_router(health_router)
 app.include_router(register_router)
 app.include_router(submit_router)
 app.include_router(cars_router)
+app.include_router(game_frame_router)
 app.include_router(tracks_router)
 app.include_router(lobby_router)
 

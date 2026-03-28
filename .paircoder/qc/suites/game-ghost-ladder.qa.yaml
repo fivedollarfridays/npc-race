@@ -1,0 +1,32 @@
+name: Ghost Ladder — Progressive Teaching
+description: 5 ghost levels teach mechanics through adversarial opponents.
+tags: [critical, fun, cli]
+preconditions:
+  - "npcrace CLI installed"
+  - "Player car exists in cars/"
+
+scenarios:
+  - name: "Ghost Level 1 — easy win teaches gearbox exists"
+    steps:
+      - verify: "npcrace ghost --level 1 completes in < 1 second"
+      - verify: "Player wins (default car beats over-revving ghost)"
+      - verify: "Output shows 'Ghost flaw: Over-revving engine'"
+      - verify: "Output shows 'NEXT: Level 2'"
+
+  - name: "Ghost Level 3 — teaches cooling tradeoff"
+    steps:
+      - verify: "npcrace ghost --level 3 completes in < 1 second"
+      - verify: "Ghost has optimal gearbox but cooling 1.0 (max drag)"
+      - verify: "Player wins by significant margin (3+ seconds)"
+      - verify: "Side-by-side efficiency shows ghost cooling much lower"
+
+  - name: "Ghost Level 5 — graduation to grid"
+    steps:
+      - verify: "npcrace ghost --level 5 completes in < 1 second"
+      - verify: "Output says 'You beat all ghost levels! Ready for the grid.'"
+      - verify: "Tier upgraded to MIDFIELD"
+
+  - name: "Ghost times are sub-second"
+    steps:
+      - verify: "All 5 ghost levels complete in < 1 second each"
+      - verify: "No level takes more than 2 seconds wall time"

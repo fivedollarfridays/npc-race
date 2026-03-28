@@ -92,6 +92,7 @@ server/rate_limit.py
 server/routes/__init__.py
 server/routes/analysis.py
 server/routes/cars.py
+server/routes/game_frame.py
 server/routes/health.py
 server/routes/lobby.py
 server/routes/register.py
@@ -126,6 +127,7 @@ tests/test_code_quality.py
 tests/test_code_review_fixes.py
 tests/test_collision.py
 tests/test_commentary.py
+tests/test_crt_compat.py
 tests/test_curvature_lookup.py
 tests/test_damage.py
 tests/test_dashboard.py
@@ -134,6 +136,7 @@ tests/test_data_persistence.py
 tests/test_decompose_characterization.py
 tests/test_default_project.py
 tests/test_default_project_exclusion.py
+tests/test_deployment.py
 tests/test_diagnostic.py
 tests/test_dirty_air.py
 tests/test_drama.py
