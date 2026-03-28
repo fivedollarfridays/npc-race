@@ -123,13 +123,17 @@ def _export_replay(sim, results, output, track_name, cars, league):
     print(f"\n{report}")
 
 
-def _load_and_filter_cars(car_dir, car_data_dir, league, *, verbose=False):
+def _load_and_filter_cars(car_dir, car_data_dir, league, *, verbose=False, tier=None):
     """Load cars from directory, apply league gates, return filtered list and league."""
     if car_data_dir:
         os.makedirs(car_data_dir, exist_ok=True)
         os.makedirs("cars/data", exist_ok=True)
 
-    cars = load_all_cars(car_dir)
+    if tier and tier != "full":
+        from .tiers import load_tier_cars
+        cars = load_tier_cars(tier, car_dir)
+    else:
+        cars = load_all_cars(car_dir)
     if len(cars) < 2:
         raise ValueError("Need at least 2 cars to race!")
 
@@ -210,6 +214,7 @@ def run_race(
     grid_file: str | None = None,
     verbose: bool = False,
     quiet: bool = False,
+    tier: str | None = None,
 ) -> list[dict]:
     """Load cars, apply league gates, run simulation, and export replay."""
     track, effective_laps, real_length_m, drs_zones = _resolve_track(
@@ -220,7 +225,7 @@ def run_race(
         _print_race_banner(effective_laps, car_dir, 0, track_name, track_seed)
 
     cars, effective_league = _load_and_filter_cars(
-        car_dir, car_data_dir, league, verbose=verbose,
+        car_dir, car_data_dir, league, verbose=verbose, tier=tier,
     )
     cars = _apply_grid_file(cars, grid_file)
     if not quiet:

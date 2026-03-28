@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-03-27. T44.5 done.
+> Last updated: 2026-03-28. T47.3 done.
 
 ## Active Plan
 
@@ -34,6 +34,12 @@ Wave 2: T44.4 (type hints+Pydantic), T44.5 (UUID+pip-audit) DONE                
 
 ## What Was Just Done
 
+- **T47.3 done** — Progression tracking system. Expanded cli/progression.py (106 lines) with _load_progress, _save_progress, record_ghost_completion, record_race_win, get_progress_summary, reset_progress, and cmd_progress. Ghost L5 on any track unlocks midfield tier; midfield race win upgrades to front; front win upgrades to full. Wired record_ghost_completion into cli/ghost_command.py (extracted _record_win helper to stay under 50-line function limit). Added `npcrace progress` subcommand to cli/main.py. 14 tests in tests/test_progression.py covering defaults, ghost recording, tier unlocks, race wins, summary formatting, reset, and CLI command. All pass, ruff clean, arch clean (no errors).
+
+- **T47.2 done** — Tiered `npcrace run` (default to player tier). Added `--tier` (choices: rookie/midfield/front/full) and `--full-grid` flags to the run subparser in cli/main.py. Extracted `get_player_tier()` to cli/progression.py (reads `~/.npcrace/progress.json`, defaults to "rookie"). Wired tier logic in cmd_run: `--full-grid` sets tier="full", `--tier` takes explicit value, otherwise reads from progression. Added `tier` parameter to `run_race()` and `_load_and_filter_cars()` in engine/race_runner.py; when tier is set and not "full", delegates to `load_tier_cars()` from engine/tiers.py. 14 tests in tests/test_tiered_run.py covering parser flags, progression helper, cmd_run wiring, and load_and_filter_cars tier routing. All pass, ruff clean, arch clean (no errors).
+
+- **T47.1 done** — Tier system in car loader. Created engine/tiers.py (67 lines) with TIERS dict classifying all 19 rivals into rookie (4), midfield (6), front (5), veterans (4). TIER_GROUPS maps progression levels to cumulative tier sets. load_tier_cars() filters by tier, get_tier_for_car() returns tier name. 8 tests in tests/test_tiers.py using mocked load_all_cars. All pass, ruff clean, arch clean.
+
 - **T44.5 done** — UUID car IDs + pip-audit in CI. Changed cars table PK from INTEGER AUTOINCREMENT to TEXT UUID. store_car() now generates uuid4 and returns str. Updated type hints in db.py (get_car), cars.py (get_car_detail), submit.py (CarResponse), lobby.py (JoinRequest). 3 new tests in test_uuid_car_ids.py. Fixed 4 existing tests across test_server_submit.py, test_server_lobby_routes.py, test_server_db.py, test_server_register.py that asserted int car_ids. Added pip-audit step to CI lint job (advisory, || true). 103 server tests pass, ruff clean, arch clean.
 
 - **T44.2 done** — Four hardening fixes: (1) Decomposed PartsRaceSim.__init__ (80->44 lines) and step (126->26 lines) by extracting _get_hardware, _build_car_state, _build_driver, _compute_reliability, _compute_physics, _advance_car, _record_tick helpers. All 17 functions in parts_simulation.py now under 50 lines. (2) CORS tightened: allow_methods=["GET","POST"], allow_headers=["X-API-Key","Content-Type"], cors_origins now reads CORS_ORIGINS env var. (3) CAR_NAME validation: max 64 chars + alphanumeric/underscore/dash only. (4) API keys hashed with SHA-256 in DB; plaintext returned only on creation. 14 new tests in test_t44_2_hardening.py. 114 targeted tests pass, ruff clean.
@@ -53,4 +59,4 @@ Wave 2: T44.4 (type hints+Pydantic), T44.5 (UUID+pip-audit) DONE                
 
 ## What's Next
 
-- T44.4 (type hints+Pydantic), T43.6 (security gate)
+- T47.4+ (remaining tier sprint tasks), T44.4 (type hints+Pydantic), T43.6 (security gate)

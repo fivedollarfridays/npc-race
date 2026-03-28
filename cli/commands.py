@@ -14,6 +14,7 @@ from tracks import TRACKS, list_tracks
 from viewer.launcher import launch_viewer
 
 from engine.championship import F1_POINTS
+from cli.progression import get_player_tier as _get_player_tier
 
 
 def cmd_list_tracks(_args) -> int:
@@ -88,6 +89,15 @@ def cmd_run(args) -> int:
     live = getattr(args, "live", False)
     fast_mode = not live
     verbose = getattr(args, "verbose", False)
+
+    # Determine tier for car filtering
+    if getattr(args, "full_grid", False):
+        tier = "full"
+    elif getattr(args, "tier", None):
+        tier = args.tier
+    else:
+        tier = _get_player_tier()
+
     try:
         run_race(
             car_dir=args.car_dir,
@@ -98,6 +108,7 @@ def cmd_run(args) -> int:
             league=league,
             fast_mode=fast_mode,
             verbose=verbose,
+            tier=tier,
         )
     except (ValueError, FileNotFoundError) as e:
         print(f"Error: {e}")

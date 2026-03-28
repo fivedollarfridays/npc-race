@@ -18,3 +18,4 @@ cars/data/
 .paircoder/feedback/
 .paircoder/.cli_version
 cars/my_car/
+data/npcrace.db

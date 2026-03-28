@@ -1,28 +1,31 @@
 environments:
   dev:
-    base_url: "http://localhost:8000"
-    api_url: "http://localhost:8000/api"
-    restrictions:
-      read_only: false
     variables:
-      TRACK: monza
-      LAPS: "1"
+      QC_BASE_URL: "http://localhost:8000"
+      QC_API_URL: "http://localhost:8000/api"
+    chrome:
+      require_login: false
 
   staging:
-    base_url: "${STAGING_URL}"
-    api_url: "${STAGING_URL}/api"
+    variables:
+      QC_BASE_URL: "${STAGING_URL}"
+      QC_API_URL: "${STAGING_URL}/api"
+    chrome:
+      require_login: false
     restrictions:
-      read_only: false
-      skip_tags: [destructive]
+      skip_tags:
+        - destructive
 
   prod:
-    base_url: "${PROD_URL}"
-    api_url: "${PROD_URL}/api"
+    variables:
+      QC_BASE_URL: "${PROD_URL}"
+      QC_API_URL: "${PROD_URL}/api"
+    chrome:
+      require_login: false
     restrictions:
       read_only: true
-      skip_tags: [destructive, write]
+      skip_tags:
+        - destructive
+        - write
 
-defaults:
-  environment: dev
-  timeout_s: 10
-  tags: [critical]
+default_environment: dev
