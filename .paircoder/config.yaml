@@ -1,4 +1,4 @@
-version: 2.25.1
+version: 2.25.2
 project:
   name: NPC Race
   description: Racing game where you upload a car file with stats and strategy AI
@@ -36,6 +36,7 @@ models:
       - claude-haiku-4-5
       default_effort: medium
   nayru: claude-sonnet-4-6
+  vaivora: claude-opus-4-6
 routing:
   by_complexity:
     trivial:
@@ -279,18 +280,15 @@ hooks:
   on_task_ready:
   - sync_pm
   - update_state
-  - sync_trello
   on_task_start:
   - select_model
   - check_token_budget
   - start_timer
   - sync_pm
   - update_state
-  - sync_trello
   on_task_review:
   - sync_pm
   - update_state
-  - sync_trello
   on_task_complete:
   - arch_check_modified
   - contract_break_check
@@ -302,11 +300,9 @@ hooks:
   - sync_pm
   - update_state
   - check_unblocked
-  - sync_trello
   on_task_block:
   - sync_pm
   - update_state
-  - sync_trello
 containment:
   enabled: false
   mode: advisory
