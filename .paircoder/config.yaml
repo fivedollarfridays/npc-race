@@ -1,4 +1,4 @@
-version: 2.25.2
+version: 2.25.3
 project:
   name: NPC Race
   description: Racing game where you upload a car file with stats and strategy AI
@@ -37,6 +37,9 @@ models:
       default_effort: medium
   nayru: claude-sonnet-4-6
   vaivora: claude-opus-4-6
+  bellona: claude-sonnet-4-6
+  divona: claude-sonnet-4-6
+  laverna: claude-sonnet-4-6
 routing:
   by_complexity:
     trivial:
