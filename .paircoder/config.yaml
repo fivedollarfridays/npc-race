@@ -1,4 +1,4 @@
-version: 2.25.5
+version: 2.25.7
 project:
   name: NPC Race
   description: Racing game where you upload a car file with stats and strategy AI
