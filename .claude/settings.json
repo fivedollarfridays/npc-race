@@ -28,11 +28,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bpsai-pair enforce task-edit --file \"$CLAUDE_TOOL_INPUT_file_path\" --new-content \"$CLAUDE_TOOL_INPUT_new_string$CLAUDE_TOOL_INPUT_content\""
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/cc_hook.py\" task-edit"
           },
           {
             "type": "command",
-            "command": "bpsai-pair enforce state-edit --file \"$CLAUDE_TOOL_INPUT_file_path\" --new-content \"$CLAUDE_TOOL_INPUT_new_string$CLAUDE_TOOL_INPUT_content\""
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/cc_hook.py\" state-edit"
           }
         ]
       }
@@ -52,7 +52,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bpsai-pair compaction snapshot save --trigger \"$CLAUDE_COMPACT_TRIGGER\" --quiet"
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/cc_hook.py\" compact"
           }
         ]
       }
@@ -72,7 +72,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bpsai-pair orchestrate evaluate teammate_idle --agent-id \"$CLAUDE_AGENT_ID\" --agent-type \"$CLAUDE_AGENT_TYPE\" --quiet"
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/cc_hook.py\" teammate-idle"
           }
         ]
       }
@@ -82,7 +82,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bpsai-pair orchestrate evaluate task_completed --agent-id \"$CLAUDE_AGENT_ID\" --agent-type \"$CLAUDE_AGENT_TYPE\" --quiet"
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/cc_hook.py\" task-completed"
           }
         ]
       }
